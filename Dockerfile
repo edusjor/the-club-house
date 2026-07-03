@@ -13,9 +13,12 @@ COPY package.json package-lock.json ./
 RUN npm ci --no-audit --fund=false || npm install --no-audit --fund=false
 
 FROM base AS builder
+ENV DATABASE_URL=file:/tmp/prisma/build.db
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
-RUN npm run build
+RUN mkdir -p /tmp/prisma \
+  && npx prisma migrate deploy \
+  && npm run build
 
 FROM node:20-bookworm-slim AS runner
 WORKDIR /app
