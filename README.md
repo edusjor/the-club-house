@@ -193,10 +193,14 @@ npm run docker:down
 ```
 
 Notas Docker:
-- El contenedor expone la app en `http://localhost:3000`.
+- El contenedor expone la app por defecto en `http://localhost:4387`.
+- Si quieres otro puerto, cambia `DOCKER_HOST_PORT` en `.env` antes de levantar Docker.
 - La base SQLite persiste en `./data/dev.db` (volumen `./data:/app/data`).
 - Dentro de Docker se usa `DATABASE_URL=file:/app/data/dev.db`.
 - Al iniciar, el contenedor ejecuta `prisma migrate deploy` automáticamente.
+
+Nota:
+- En desarrollo sin Docker (`npm run dev`) se mantiene `http://localhost:3000`.
 
 ## 📝 Credenciales de Prueba
 

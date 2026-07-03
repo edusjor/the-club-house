@@ -5,11 +5,11 @@ services:
       dockerfile: Dockerfile
     container_name: the-club-house
     ports:
-      - "3000:3000"
+      - "${DOCKER_HOST_PORT:-4387}:3000"
     environment:
       NODE_ENV: production
       AUTH_SECRET: change-this-in-production
-      NEXTAUTH_URL: http://localhost:3000
+      NEXTAUTH_URL: http://localhost:${DOCKER_HOST_PORT:-4387}
       AUTH_TRUST_HOST: "true"
       DATABASE_URL: file:/app/data/dev.db
     volumes:
