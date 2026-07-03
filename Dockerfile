@@ -10,7 +10,7 @@ RUN apt-get update -y \
 
 FROM base AS deps
 COPY package.json package-lock.json ./
-RUN npm ci
+RUN npm ci --no-audit --fund=false || npm install --no-audit --fund=false
 
 FROM base AS builder
 COPY --from=deps /app/node_modules ./node_modules
