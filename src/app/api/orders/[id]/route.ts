@@ -1,0 +1,146 @@
+import { auth } from "@/auth";
+import { prisma } from "@/lib/db";
+import { NextRequest, NextResponse } from "next/server";
+
+const ORDER_STATUSES = ["PENDING", "PAID", "PREPARING", "DELIVERED", "CANCELLED"] as const;
+const VENDOR_ALLOWED_STATUSES = ["PREPARING", "DELIVERED"] as const;
+const PARENT_CANCELLATION_WINDOW_MS = 2 * 60 * 60 * 1000;
+
+export async function PUT(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const session = await auth();
+  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const role = (session.user as { role?: string }).role;
+  const userId = (session.user as { id?: string }).id;
+
+  const { id } = await params;
+  const { status } = await req.json();
+
+  if (!status || !ORDER_STATUSES.includes(status)) {
+    return NextResponse.json({ error: "Estado inválido" }, { status: 400 });
+  }
+
+  const order = await prisma.order.findUnique({
+    where: { id },
+    include: {
+      items: { select: { id: true, delivered: true, scheduledDate: true } },
+    },
+  });
+
+  if (!order) {
+    return NextResponse.json({ error: "Pedido no encontrado" }, { status: 404 });
+  }
+
+  if (role === "PARENT") {
+    if (order.parentId !== userId) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
+    if (status !== "CANCELLED") {
+      return NextResponse.json(
+        { error: "Los padres solo pueden cancelar pedidos" },
+        { status: 403 }
+      );
+    }
+
+    if (order.items.some((item) => item.delivered)) {
+      return NextResponse.json(
+        { error: "No se puede cancelar un pedido con ítems entregados" },
+        { status: 400 }
+      );
+    }
+
+    const undeliveredItems = order.items.filter((item) => !item.delivered);
+    if (undeliveredItems.length === 0) {
+      return NextResponse.json(
+        { error: "No hay ítems pendientes por cancelar" },
+        { status: 400 }
+      );
+    }
+
+    const earliestScheduledDate = undeliveredItems
+      .map((item) => new Date(item.scheduledDate))
+      .sort((a, b) => a.getTime() - b.getTime())[0];
+
+    const cancellationDeadline =
+      earliestScheduledDate.getTime() - PARENT_CANCELLATION_WINDOW_MS;
+
+    if (Date.now() > cancellationDeadline) {
+      return NextResponse.json(
+        {
+          error:
+            "Solo puedes cancelar hasta 2 horas antes del horario programado.",
+        },
+        { status: 400 }
+      );
+    }
+  }
+
+  if (role === "VENDOR" && !VENDOR_ALLOWED_STATUSES.includes(status)) {
+    return NextResponse.json(
+      { error: "El vendedor no puede aplicar ese estado" },
+      { status: 403 }
+    );
+  }
+
+  if (status === "CANCELLED" && order.items.some((item) => item.delivered)) {
+    return NextResponse.json(
+      { error: "No se puede cancelar un pedido con ítems entregados" },
+      { status: 400 }
+    );
+  }
+
+  if (order.status === "CANCELLED") {
+    return NextResponse.json(
+      { error: "No se puede cambiar un pedido cancelado" },
+      { status: 400 }
+    );
+  }
+
+  if (role !== "ADMIN" && role !== "VENDOR" && role !== "PARENT") {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  const updated = await prisma.$transaction(async (tx) => {
+    let nextStatus = status;
+
+    if (status === "DELIVERED") {
+      await tx.orderItem.updateMany({
+        where: { orderId: id, delivered: false },
+        data: { delivered: true },
+      });
+
+      nextStatus = "DELIVERED";
+    }
+
+    const result = await tx.order.update({
+      where: { id },
+      data: { status: nextStatus },
+      include: {
+        parent: { select: { name: true, email: true } },
+        items: {
+          include: {
+            student: true,
+            foodItem: { include: { category: true } },
+          },
+        },
+        payments: true,
+      },
+    });
+
+    await tx.notification.create({
+      data: {
+        userId: result.parentId,
+        title: "Actualización de pedido",
+        message: `Tu pedido ${result.id.slice(0, 8)} cambió a estado ${result.status}.`,
+      },
+    });
+
+    return result;
+  });
+
+  return NextResponse.json(updated);
+}

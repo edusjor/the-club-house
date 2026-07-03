@@ -1,0 +1,17 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: the-club-house
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: production
+      AUTH_SECRET: change-this-in-production
+      NEXTAUTH_URL: http://localhost:3000
+      AUTH_TRUST_HOST: "true"
+      DATABASE_URL: file:/app/data/dev.db
+    volumes:
+      - ./data:/app/data
+    restart: unless-stopped

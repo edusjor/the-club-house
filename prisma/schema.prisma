@@ -1,0 +1,214 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(cuid())
+  name         String
+  email        String?  @unique
+  password     String
+  role         String   @default("PARENT") // ADMIN, PARENT, VENDOR, STUDENT
+  phone        String?
+  avatar       String?
+  active       Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  parentStudents       Student[]       @relation("ParentStudents")
+  studentProfile       Student?        @relation("StudentProfile")
+  payments             Payment[]
+  orders               Order[]
+  consumptionsLogged   Consumption[]   @relation("RegisteredBy")
+  activityLogs         ActivityLog[]
+  notifications        Notification[]
+  paymentsApproved     Payment[]       @relation("ApprovedBy")
+}
+
+model Student {
+  id            String   @id @default(cuid())
+  userId         String   @unique
+  user           User     @relation("StudentProfile", fields: [userId], references: [id])
+  name          String
+  grade         String
+  level         String
+  allergies     String?
+  restrictions  String?
+  medicalNotes  String?
+  photo         String?
+  active        Boolean  @default(true)
+  parentId      String
+  parent        User     @relation("ParentStudents", fields: [parentId], references: [id])
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  consumptions    Consumption[]
+  orderItems      OrderItem[]
+  studentPackages StudentPackage[]
+}
+
+model FoodCategory {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  description String?
+  color       String?
+  icon        String?
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+
+  foodItems    FoodItem[]
+  packageItems PackageItem[]
+}
+
+model FoodItem {
+  id            String       @id @default(cuid())
+  name          String
+  image         String?
+  description   String?
+  categoryId    String
+  category      FoodCategory @relation(fields: [categoryId], references: [id])
+  ingredients   String?
+  tags          String?
+  available     Boolean      @default(true)
+  availableDays String?
+  stockQuantity Int?
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  prices       FoodItemPrice[]
+  orderItems   OrderItem[]
+  consumptions Consumption[]
+}
+
+model FoodItemPrice {
+  id         String   @id @default(cuid())
+  foodItemId String
+  foodItem   FoodItem @relation(fields: [foodItemId], references: [id])
+  level      String
+  price      Int
+
+  @@unique([foodItemId, level])
+}
+
+model Package {
+  id           String   @id @default(cuid())
+  name         String
+  description  String?
+  level        String?
+  price        Int
+  validityDays Int?
+  status       String   @default("ACTIVE")
+  rules        String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  packageItems    PackageItem[]
+  studentPackages StudentPackage[]
+}
+
+model PackageItem {
+  id         String       @id @default(cuid())
+  packageId  String
+  package    Package      @relation(fields: [packageId], references: [id])
+  categoryId String
+  category   FoodCategory @relation(fields: [categoryId], references: [id])
+  quantity   Int
+}
+
+model StudentPackage {
+  id          String    @id @default(cuid())
+  studentId   String
+  student     Student   @relation(fields: [studentId], references: [id])
+  packageId   String
+  package     Package   @relation(fields: [packageId], references: [id])
+  startDate   DateTime  @default(now())
+  endDate     DateTime?
+  status      String    @default("ACTIVE")
+  consumed    Int       @default(0)
+  remaining   Int
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  consumptions Consumption[]
+}
+
+model Order {
+  id        String      @id @default(cuid())
+  parentId  String
+  parent    User        @relation(fields: [parentId], references: [id])
+  status    String      @default("PENDING")
+  total     Int
+  notes     String?
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+
+  items    OrderItem[]
+  payments Payment[]
+}
+
+model OrderItem {
+  id            String   @id @default(cuid())
+  orderId       String
+  order         Order    @relation(fields: [orderId], references: [id])
+  studentId     String
+  student       Student  @relation(fields: [studentId], references: [id])
+  foodItemId    String
+  foodItem      FoodItem @relation(fields: [foodItemId], references: [id])
+  scheduledDate DateTime
+  quantity      Int      @default(1)
+  price         Int
+  delivered     Boolean  @default(false)
+}
+
+model Consumption {
+  id               String          @id @default(cuid())
+  studentId        String
+  student          Student         @relation(fields: [studentId], references: [id])
+  foodItemId       String
+  foodItem         FoodItem        @relation(fields: [foodItemId], references: [id])
+  studentPackageId String?
+  studentPackage   StudentPackage? @relation(fields: [studentPackageId], references: [id])
+  registeredById   String
+  registeredBy     User            @relation("RegisteredBy", fields: [registeredById], references: [id])
+  consumedAt       DateTime        @default(now())
+  notes            String?
+}
+
+model Payment {
+  id           String   @id @default(cuid())
+  parentId     String
+  parent       User     @relation(fields: [parentId], references: [id])
+  orderId      String?
+  order        Order?   @relation(fields: [orderId], references: [id])
+  amount       Int
+  receipt      String?
+  status       String   @default("PENDING")
+  comment      String?
+  approvedById String?
+  approvedBy   User?    @relation("ApprovedBy", fields: [approvedById], references: [id])
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model ActivityLog {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  action    String
+  details   String?
+  createdAt DateTime @default(now())
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  title     String
+  message   String
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
