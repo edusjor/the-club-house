@@ -13,11 +13,11 @@ COPY package.json package-lock.json ./
 RUN npm ci --no-audit --fund=false || npm install --no-audit --fund=false
 
 FROM base AS builder
-ENV DATABASE_URL=file:/tmp/prisma/build.db
+ARG DATABASE_URL
+ENV DATABASE_URL=${DATABASE_URL}
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
-RUN mkdir -p /tmp/prisma \
-  && npx prisma migrate deploy \
+RUN npx prisma db push --skip-generate \
   && npm run build
 
 FROM node:20-bookworm-slim AS runner
@@ -25,6 +25,8 @@ WORKDIR /app
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV PORT=3000
+ARG DATABASE_URL
+ENV DATABASE_URL=${DATABASE_URL}
 
 RUN apt-get update -y \
   && apt-get install -y --no-install-recommends openssl ca-certificates \
@@ -38,9 +40,8 @@ COPY --from=builder /app/public ./public
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/next.config.ts ./next.config.ts
 
-RUN npm prune --omit=dev \
-  && mkdir -p /app/data
+RUN npm prune --omit=dev
 
 EXPOSE 3000
 
-CMD ["sh", "-c", "npx prisma migrate deploy && npm run start"]
+CMD ["sh", "-c", "npx prisma db push --skip-generate && npm run start"]

@@ -38,7 +38,7 @@ Una plataforma web moderna y completa para gestionar comidas escolares, pagos, p
 
 - **Framework**: [Next.js 16](https://nextjs.org/) (React 19)
 - **Lenguaje**: TypeScript
-- **Base de Datos**: SQLite (Prisma ORM)
+- **Base de Datos**: PostgreSQL (Neon + Prisma ORM)
 - **Autenticación**: NextAuth v5 (JWT + Credentials)
 - **Estilos**: [Tailwind CSS](https://tailwindcss.com/)
 - **UI Components**: Lucide Icons
@@ -176,7 +176,7 @@ La aplicación estará disponible en `http://localhost:3000`
 
 ### Docker (producción local)
 
-Este proyecto incluye Dockerfile multi-stage y docker-compose con persistencia de SQLite.
+Este proyecto incluye Dockerfile multi-stage y docker-compose conectado a Neon PostgreSQL.
 
 ```bash
 # Construir imagen
@@ -195,9 +195,8 @@ npm run docker:down
 Notas Docker:
 - El contenedor expone la app por defecto en `http://localhost:4387`.
 - Si quieres otro puerto, cambia `DOCKER_HOST_PORT` en `.env` antes de levantar Docker.
-- La base SQLite persiste en `./data/dev.db` (volumen `./data:/app/data`).
-- Dentro de Docker se usa `DATABASE_URL=file:/app/data/dev.db`.
-- Al iniciar, el contenedor ejecuta `prisma migrate deploy` automáticamente.
+- Usa `DATABASE_URL` de Neon desde `.env` para build y runtime.
+- Al iniciar, el contenedor ejecuta `prisma db push` para asegurar esquema actualizado.
 
 Nota:
 - En desarrollo sin Docker (`npm run dev`) se mantiene `http://localhost:3000`.
@@ -330,8 +329,8 @@ La plataforma es completamente responsive:
 ## 🔧 Variables de Entorno
 
 ```env
-# Base de datos
-DATABASE_URL="file:./dev.db"
+# Base de datos (Neon PostgreSQL)
+DATABASE_URL="postgresql://<user>:<password>@<host>/<database>?sslmode=require&channel_binding=require"
 
 # NextAuth
 AUTH_SECRET="theclubhouse-super-secret-key-change-in-production-2025"
@@ -371,24 +370,16 @@ Nota de autenticación en desarrollo:
 
 ### Cambios Necesarios
 
-1. **Cambiar base de datos**: PostgreSQL en lugar de SQLite
-   ```prisma
-   datasource db {
-     provider = "postgresql"
-     url      = env("DATABASE_URL")
-   }
-   ```
-
-2. **Configurar AUTH_SECRET**:
+1. **Configurar AUTH_SECRET**:
    ```bash
    openssl rand -base64 32
    ```
 
-3. **Variables de entorno**:
+2. **Variables de entorno**:
    - `NODE_ENV=production`
    - `AUTH_SECRET=<generated-secret>`
    - `NEXTAUTH_URL=<your-domain>`
-   - `DATABASE_URL=<production-db>`
+  - `DATABASE_URL=<neon-postgresql-url>`
 
 ### Opciones de Deploy
 
@@ -464,3 +455,11 @@ Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/bui
 
 
 ## 
+cd /home/theclubhousecr/htdocs/theclubhousecr.com/the-club-house
+
+git pull
+docker compose down --remove-orphans
+docker compose build --no-cache --pull
+docker compose up -d --force-recreate --remove-orphans
+docker image prune -f
+docker builder prune -f

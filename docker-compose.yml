@@ -3,15 +3,15 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      args:
+        DATABASE_URL: ${DATABASE_URL:?DATABASE_URL is required}
     container_name: the-club-house
     ports:
       - "${DOCKER_HOST_PORT:-4387}:3000"
     environment:
       NODE_ENV: production
-      AUTH_SECRET: change-this-in-production
-      NEXTAUTH_URL: http://localhost:${DOCKER_HOST_PORT:-4387}
-      AUTH_TRUST_HOST: "true"
-      DATABASE_URL: file:/app/data/dev.db
-    volumes:
-      - ./data:/app/data
+      AUTH_SECRET: ${AUTH_SECRET}
+      NEXTAUTH_URL: ${NEXTAUTH_URL:-http://localhost:4387}
+      AUTH_TRUST_HOST: ${AUTH_TRUST_HOST:-true}
+      DATABASE_URL: ${DATABASE_URL:?DATABASE_URL is required}
     restart: unless-stopped
