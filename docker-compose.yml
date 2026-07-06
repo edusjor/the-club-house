@@ -11,7 +11,7 @@ services:
     environment:
       NODE_ENV: production
       AUTH_SECRET: ${AUTH_SECRET}
-      NEXTAUTH_URL: ${NEXTAUTH_URL:-http://localhost:4387}
+      NEXTAUTH_URL: ${NEXTAUTH_URL:?NEXTAUTH_URL is required}
       AUTH_TRUST_HOST: ${AUTH_TRUST_HOST:-true}
       DATABASE_URL: ${DATABASE_URL:?DATABASE_URL is required}
     restart: unless-stopped

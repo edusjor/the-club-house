@@ -1,52 +1,41 @@
 ﻿"use client";
 
 import { Suspense, useState } from "react";
-import { signIn } from "next-auth/react";
 import { useSearchParams } from "next/navigation";
+import { useFormStatus } from "react-dom";
+import { credentialsLoginAction } from "./actions";
 import { Eye, EyeOff, LogIn, AlertCircle } from "lucide-react";
+
+function SubmitButton() {
+  const { pending } = useFormStatus();
+
+  return (
+    <button
+      type="submit"
+      disabled={pending}
+      className="w-full h-11 bg-cyan-500 hover:bg-cyan-600 disabled:opacity-60 text-white font-bold rounded-xl transition-colors flex items-center justify-center gap-2"
+    >
+      {pending ? (
+        <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+      ) : (
+        <LogIn className="w-4 h-4" />
+      )}
+      {pending ? "Ingresando..." : "Iniciar Sesión"}
+    </button>
+  );
+}
 
 function LoginForm() {
   const searchParams = useSearchParams();
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useState(searchParams.get("email") ?? "");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
 
   const authError = searchParams.get("error");
   const errorMessage =
-    error ||
     (authError
       ? "Credenciales incorrectas. Verifica tu email y contraseña."
       : "");
-
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setLoading(true);
-    setError("");
-
-    const result = await signIn("credentials", {
-      email,
-      password,
-      redirect: false,
-      callbackUrl: "/post-login",
-    });
-
-    if (result?.error) {
-      setLoading(false);
-      setError("Credenciales incorrectas. Verifica tu email y contraseña.");
-      return;
-    }
-
-    if (result?.url) {
-      window.location.assign(result.url);
-      return;
-    }
-
-    // Fallback if provider does not return url.
-    setLoading(false);
-    setError("No fue posible iniciar sesión. Intenta nuevamente.");
-  }
 
   return (
     <div className="bg-white rounded-3xl border border-slate-200 p-8">
@@ -62,12 +51,13 @@ function LoginForm() {
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form action={credentialsLoginAction} className="space-y-4">
         <div>
           <label className="block text-xs font-semibold text-slate-700 mb-1.5 uppercase tracking-wide">
             Correo electrónico
           </label>
           <input
+            name="email"
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
@@ -83,6 +73,7 @@ function LoginForm() {
           </label>
           <div className="relative">
             <input
+              name="password"
               type={showPassword ? "text" : "password"}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
@@ -100,18 +91,7 @@ function LoginForm() {
           </div>
         </div>
 
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full h-11 bg-cyan-500 hover:bg-cyan-600 disabled:opacity-60 text-white font-bold rounded-xl transition-colors flex items-center justify-center gap-2"
-        >
-          {loading ? (
-            <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-          ) : (
-            <LogIn className="w-4 h-4" />
-          )}
-          {loading ? "Ingresando..." : "Iniciar Sesión"}
-        </button>
+        <SubmitButton />
       </form>
 
       <div className="mt-6 pt-6 border-t border-slate-100">
