@@ -1,9 +1,11 @@
-﻿"use client";
+"use client";
 
-import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
 import { cn } from "@/lib/utils";
+import Link from "@/i18n/Link";
+import LanguageSwitcher from "@/i18n/LanguageSwitcher";
+import { useLocale, useTranslations } from "@/i18n/I18nProvider";
 import {
   LayoutDashboard,
   Users,
@@ -11,68 +13,48 @@ import {
   GraduationCap,
   UtensilsCrossed,
   Tag,
-  Package,
   ShoppingCart,
-  ClipboardList,
   CreditCard,
-  BarChart3,
-  Settings,
   LogOut,
   ChefHat,
   Calendar,
   History,
-  FileText,
   Search,
-  ShoppingBag,
-  BookOpen,
   Baby,
   DollarSign,
-  Bell,
-  Receipt,
-  Home,
 } from "lucide-react";
 
 type NavItem = {
   href: string;
-  label: string;
+  labelKey: string;
   icon: React.ElementType;
 };
 
 const adminNav: NavItem[] = [
-  { href: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/admin/users", label: "Usuarios", icon: Users },
-  { href: "/admin/parents", label: "Padres", icon: UserCircle },
-  { href: "/admin/students", label: "Estudiantes", icon: GraduationCap },
-  { href: "/admin/menu", label: "Menú de Comidas", icon: UtensilsCrossed },
-  { href: "/admin/categories", label: "Categorías", icon: Tag },
-  { href: "/admin/packages", label: "Paquetes", icon: Package },
-  { href: "/admin/orders", label: "Pedidos", icon: ShoppingCart },
-  { href: "/admin/consumptions", label: "Consumos", icon: ClipboardList },
-  { href: "/admin/payments", label: "Pagos Pendientes", icon: CreditCard },
-  { href: "/admin/reports", label: "Reportes", icon: BarChart3 },
-  { href: "/admin/settings", label: "Configuración", icon: Settings },
+  { href: "/admin/dashboard", labelKey: "nav.admin.dashboard", icon: LayoutDashboard },
+  { href: "/admin/users", labelKey: "nav.admin.users", icon: Users },
+  { href: "/admin/parents", labelKey: "nav.admin.parents", icon: UserCircle },
+  { href: "/admin/students", labelKey: "nav.admin.students", icon: GraduationCap },
+  { href: "/admin/menu", labelKey: "nav.admin.menu", icon: UtensilsCrossed },
+  { href: "/admin/categories", labelKey: "nav.admin.categories", icon: Tag },
+  { href: "/admin/orders", labelKey: "nav.admin.orders", icon: ShoppingCart },
+  { href: "/admin/payments", labelKey: "nav.admin.payments", icon: CreditCard },
 ];
 
 const parentNav: NavItem[] = [
-  { href: "/parent/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/parent/children", label: "Mis Hijos", icon: Baby },
-  { href: "/parent/menu", label: "Menú", icon: UtensilsCrossed },
-  { href: "/parent/plan", label: "Planificar Comidas", icon: Calendar },
-  { href: "/parent/packages", label: "Paquetes", icon: Package },
-  { href: "/parent/history", label: "Historial de Consumo", icon: History },
-  { href: "/parent/payments", label: "Pagos", icon: DollarSign },
-  { href: "/parent/receipts", label: "Comprobantes", icon: Receipt },
-  { href: "/parent/statements", label: "Estados de Cuenta", icon: FileText },
+  { href: "/parent/dashboard", labelKey: "nav.parent.dashboard", icon: LayoutDashboard },
+  { href: "/parent/children", labelKey: "nav.parent.myChildren", icon: Baby },
+  { href: "/parent/menu", labelKey: "nav.parent.menu", icon: UtensilsCrossed },
+  { href: "/parent/plan", labelKey: "nav.parent.plan", icon: Calendar },
+  { href: "/parent/history", labelKey: "nav.parent.history", icon: History },
+  { href: "/parent/balance", labelKey: "nav.parent.balance", icon: DollarSign },
 ];
 
 const vendorNav: NavItem[] = [
-  { href: "/vendor/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/vendor/orders", label: "Pedidos del Día", icon: ShoppingCart },
-  { href: "/vendor/register", label: "Registrar Consumo", icon: ClipboardList },
-  { href: "/vendor/search", label: "Buscar Estudiante", icon: Search },
-  { href: "/vendor/menu", label: "Menú Disponible", icon: BookOpen },
-  { href: "/vendor/sales", label: "Ventas del Día", icon: ShoppingBag },
-  { href: "/vendor/history", label: "Historial", icon: History },
+  { href: "/vendor/dashboard", labelKey: "nav.vendor.dashboard", icon: LayoutDashboard },
+  { href: "/vendor/new-order", labelKey: "nav.vendor.newOrder", icon: UtensilsCrossed },
+  { href: "/vendor/orders", labelKey: "nav.vendor.ordersOfDay", icon: ShoppingCart },
+  { href: "/vendor/search", labelKey: "nav.vendor.searchStudent", icon: Search },
 ];
 
 type SidebarRole = "ADMIN" | "PARENT" | "VENDOR";
@@ -83,10 +65,10 @@ const navByRole: Record<SidebarRole, NavItem[]> = {
   VENDOR: vendorNav,
 };
 
-const titleByRole: Record<SidebarRole, string> = {
-  ADMIN: "Panel Admin",
-  PARENT: "Portal de Padres",
-  VENDOR: "Panel Vendedor",
+const titleKeyByRole: Record<SidebarRole, string> = {
+  ADMIN: "nav.admin.title",
+  PARENT: "nav.parent.title",
+  VENDOR: "nav.vendor.title",
 };
 
 interface SidebarProps {
@@ -99,8 +81,10 @@ interface SidebarProps {
 
 export default function Sidebar({ role, userName, userEmail, className, onNavigate }: SidebarProps) {
   const pathname = usePathname();
+  const locale = useLocale();
+  const t = useTranslations();
   const navItems = navByRole[role];
-  const title = titleByRole[role];
+  const title = t(titleKeyByRole[role]);
 
   return (
     <aside className={cn("fixed inset-y-0 left-0 z-50 w-64 bg-slate-900 text-white flex flex-col shadow-2xl", className)}>
@@ -121,8 +105,8 @@ export default function Sidebar({ role, userName, userEmail, className, onNaviga
       <nav className="flex-1 overflow-y-auto py-4 px-3 space-y-0.5">
         {navItems.map((item) => {
           const Icon = item.icon;
-          const active =
-            pathname === item.href || pathname.startsWith(item.href + "/");
+          const fullHref = `/${locale}${item.href}`;
+          const active = pathname === fullHref || pathname.startsWith(fullHref + "/");
           return (
             <Link
               key={item.href}
@@ -136,7 +120,7 @@ export default function Sidebar({ role, userName, userEmail, className, onNaviga
               )}
             >
               <Icon className="w-4 h-4 flex-shrink-0" />
-              <span className="text-inherit text-outline-subtle">{item.label}</span>
+              <span className="text-inherit text-outline-subtle">{t(item.labelKey)}</span>
             </Link>
           );
         })}
@@ -144,22 +128,9 @@ export default function Sidebar({ role, userName, userEmail, className, onNaviga
 
       {/* User info & logout */}
       <div className="border-t border-slate-700 p-4 space-y-3">
-        <Link
-          href={`/${role.toLowerCase()}/notifications`}
-          onClick={onNavigate}
-          className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-semibold tracking-[0.01em] text-slate-400 hover:bg-slate-800 hover:text-white transition-all"
-        >
-          <Bell className="w-4 h-4" />
-          <span className="text-inherit text-outline-subtle">Notificaciones</span>
-        </Link>
-        <Link
-          href={`/${role.toLowerCase()}/profile`}
-          onClick={onNavigate}
-          className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-semibold tracking-[0.01em] text-slate-400 hover:bg-slate-800 hover:text-white transition-all"
-        >
-          <Home className="w-4 h-4" />
-          <span className="text-inherit text-outline-subtle">Mi Perfil</span>
-        </Link>
+        <div className="px-3">
+          <LanguageSwitcher />
+        </div>
 
         {/* User avatar */}
         <div className="flex items-center gap-3 px-3 py-2">
@@ -168,7 +139,7 @@ export default function Sidebar({ role, userName, userEmail, className, onNaviga
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-white text-xs font-semibold truncate text-outline-subtle">
-              {userName ?? "Usuario"}
+              {userName ?? "User"}
             </p>
             <p className="text-slate-500 text-xs truncate">
               {userEmail ?? ""}
@@ -179,15 +150,14 @@ export default function Sidebar({ role, userName, userEmail, className, onNaviga
         <button
           onClick={() => {
             onNavigate?.();
-            signOut({ callbackUrl: "/login" });
+            signOut({ callbackUrl: `/${locale}/login` });
           }}
           className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-semibold tracking-[0.01em] text-slate-400 hover:bg-red-500/20 hover:text-red-400 transition-all"
         >
           <LogOut className="w-4 h-4" />
-          <span className="text-inherit text-outline-subtle">Cerrar Sesión</span>
+          <span className="text-inherit text-outline-subtle">{t("nav.logout")}</span>
         </button>
       </div>
     </aside>
   );
 }
-

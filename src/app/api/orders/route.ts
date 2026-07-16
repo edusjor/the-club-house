@@ -1,5 +1,6 @@
 import { auth } from "@/auth";
 import { prisma } from "@/lib/db";
+import { normalizePriceLevel } from "@/lib/utils";
 import { NextRequest, NextResponse } from "next/server";
 
 type IncomingOrderItem = {
@@ -39,11 +40,17 @@ function resolveUnitPrice(
   selectedLevel?: string
 ) {
   if (selectedLevel) {
-    const selected = prices.find((price) => price.level === selectedLevel);
+    const normalizedSelectedLevel = normalizePriceLevel(selectedLevel);
+    const selected = prices.find(
+      (price) => normalizePriceLevel(price.level) === normalizedSelectedLevel
+    );
     return selected ? selected.price : null;
   }
 
-  const exactFallback = prices.find((price) => price.level === fallbackLevel);
+  const normalizedFallbackLevel = normalizePriceLevel(fallbackLevel);
+  const exactFallback = prices.find(
+    (price) => normalizePriceLevel(price.level) === normalizedFallbackLevel
+  );
   if (exactFallback) return exactFallback.price;
 
   if (prices.length === 0) return null;
@@ -114,6 +121,7 @@ export async function GET(req: NextRequest) {
       ? await prisma.order.findMany({
           include: {
             parent: { select: { name: true, email: true } },
+            createdBy: { select: { name: true, role: true } },
             items: { include: { student: true, foodItem: { include: { category: true } } } },
             payments: true,
           },
@@ -124,6 +132,7 @@ export async function GET(req: NextRequest) {
           where: { parentId: userId },
           include: {
             parent: { select: { name: true, email: true } },
+            createdBy: { select: { name: true, role: true } },
             items: { include: { student: true, foodItem: { include: { category: true } } } },
             payments: true,
           },
@@ -132,7 +141,7 @@ export async function GET(req: NextRequest) {
       : role === "VENDOR"
       ? await prisma.order.findMany({
           where: {
-            status: { in: ["PAID", "PREPARING", "DELIVERED"] },
+            status: { in: ["PAID", "PREPARING", "DELIVERED", "NOT_PICKED_UP"] },
             items: {
               some: {
                 scheduledDate: {
@@ -144,6 +153,7 @@ export async function GET(req: NextRequest) {
           },
           include: {
             parent: { select: { name: true } },
+            createdBy: { select: { name: true, role: true } },
             items: {
               where: {
                 scheduledDate: {
@@ -177,14 +187,44 @@ export async function POST(req: NextRequest) {
   const role = (session.user as { role?: string }).role;
   const userId = (session.user as { id?: string }).id;
 
-  if (role !== "PARENT" && role !== "ADMIN") {
+  if (role !== "PARENT" && role !== "ADMIN" && role !== "VENDOR") {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
   const body = await req.json();
   const items = (body.items ?? []) as IncomingOrderItem[];
   const notes = body.notes;
-  const parentId = role === "ADMIN" ? body.parentId : userId;
+
+  let parentId: string | undefined;
+
+  if (role === "PARENT") {
+    parentId = userId;
+  } else if (role === "ADMIN") {
+    parentId = body.parentId;
+  } else {
+    // VENDOR: a walk-in order is always placed for one specific student —
+    // resolve the parent from that student instead of trusting the client.
+    const studentId = items[0]?.studentId;
+    const allSameStudent = studentId && items.every((item) => item.studentId === studentId);
+
+    if (!allSameStudent) {
+      return NextResponse.json(
+        { error: "Un pedido de vendedor solo puede ser para un estudiante" },
+        { status: 400 }
+      );
+    }
+
+    const student = await prisma.student.findUnique({
+      where: { id: studentId },
+      select: { parentId: true, active: true },
+    });
+
+    if (!student || !student.active) {
+      return NextResponse.json({ error: "Estudiante inválido" }, { status: 400 });
+    }
+
+    parentId = student.parentId;
+  }
 
   if (!parentId) {
     return NextResponse.json({ error: "No se pudo determinar el padre del pedido" }, { status: 400 });
@@ -260,7 +300,6 @@ export async function POST(req: NextRequest) {
     price: number;
   }[] = [];
 
-  let total = 0;
   const now = new Date();
   const minimumAllowedTimestamp = now.getTime() - 5 * 60 * 1000;
 
@@ -315,8 +354,6 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    total += unitPrice * quantity;
-
     for (let index = 0; index < quantity; index += 1) {
       normalizedItems.push({
         studentId: item.studentId,
@@ -328,26 +365,75 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  const order = await prisma.order.create({
-    data: {
-      parentId,
-      total,
-      notes,
-      items: {
-        create: normalizedItems,
-      },
-    },
-    include: {
-      parent: { select: { name: true, email: true } },
-      items: {
-        include: {
-          student: true,
-          foodItem: { include: { category: true } },
+  // Each order represents one student's items for one scheduled date/time,
+  // not everything the parent happened to submit in one checkout.
+  const groupsByKey = new Map<string, { studentId: string; scheduledDate: Date; items: typeof normalizedItems }>();
+
+  for (const normalizedItem of normalizedItems) {
+    const key = `${normalizedItem.studentId}|${normalizedItem.scheduledDate.getTime()}`;
+    const group = groupsByKey.get(key);
+    if (group) {
+      group.items.push(normalizedItem);
+    } else {
+      groupsByKey.set(key, {
+        studentId: normalizedItem.studentId,
+        scheduledDate: normalizedItem.scheduledDate,
+        items: [normalizedItem],
+      });
+    }
+  }
+
+  // Orders are charged to the parent's credit balance immediately on creation —
+  // there is no separate "submit for payment" step. The parent pays down the
+  // balance later from /parent/balance.
+  const isVendorWalkIn = role === "VENDOR";
+
+  const orders = await prisma.$transaction(async (tx) => {
+    let balance = await tx.parentBalance.findUnique({ where: { parentId } });
+    if (!balance) {
+      balance = await tx.parentBalance.create({
+        data: { parentId, pendingBalance: 0, approvedBalance: 0 },
+      });
+    }
+
+    const createdOrders = [];
+    for (const group of groupsByKey.values()) {
+      const order = await tx.order.create({
+        data: {
+          parentId,
+          // A vendor "Aceptar" sends the order straight to the kitchen —
+          // there's no separate PAID-but-not-started step for walk-ins.
+          status: isVendorWalkIn ? "PREPARING" : "PAID",
+          total: group.items.reduce((sum, item) => sum + item.price * item.quantity, 0),
+          notes,
+          source: isVendorWalkIn ? "VENDOR" : "PARENT",
+          createdById: role === "PARENT" ? null : userId,
+          items: {
+            create: group.items,
+          },
         },
-      },
-      payments: true,
-    },
+        include: {
+          parent: { select: { name: true, email: true } },
+          items: {
+            include: {
+              student: true,
+              foodItem: { include: { category: true } },
+            },
+          },
+          payments: true,
+        },
+      });
+      createdOrders.push(order);
+    }
+
+    const totalCharged = createdOrders.reduce((sum, order) => sum + order.total, 0);
+    await tx.parentBalance.update({
+      where: { parentId },
+      data: { pendingBalance: balance.pendingBalance + totalCharged },
+    });
+
+    return createdOrders;
   });
 
-  return NextResponse.json(order, { status: 201 });
+  return NextResponse.json(orders, { status: 201 });
 }

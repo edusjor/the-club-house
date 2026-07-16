@@ -18,11 +18,8 @@ export type StudentFormValues = {
   email: string;
   phone: string;
   password?: string;
-  grade: string;
   level: string;
   allergies: string;
-  restrictions: string;
-  medicalNotes: string;
   active: boolean;
 };
 
@@ -54,11 +51,8 @@ export default function StudentFormModal({
     email: initialData?.email ?? "",
     phone: initialData?.phone ?? "",
     password: "",
-    grade: initialData?.grade ?? "",
     level: initialData?.level ?? "ELEMENTARY",
     allergies: initialData?.allergies ?? "",
-    restrictions: initialData?.restrictions ?? "",
-    medicalNotes: initialData?.medicalNotes ?? "",
     active: initialData?.active ?? true,
   });
 
@@ -160,17 +154,6 @@ export default function StudentFormModal({
 
           <div>
             <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-700">
-              Grado
-            </label>
-            <input
-              value={form.grade}
-              onChange={(e) => setForm({ ...form, grade: e.target.value })}
-              className="h-10 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500"
-            />
-          </div>
-
-          <div>
-            <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-700">
               Nivel
             </label>
             <select
@@ -186,39 +169,15 @@ export default function StudentFormModal({
             </select>
           </div>
 
-          <div>
+          <div className="md:col-span-2">
             <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-700">
-              Alergias
+              Alergias y restricciones
             </label>
             <input
               value={form.allergies}
               onChange={(e) => setForm({ ...form, allergies: e.target.value })}
-              placeholder="Ej: Maní"
+              placeholder="Ej: Maní, sin lactosa"
               className="h-10 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500"
-            />
-          </div>
-
-          <div>
-            <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-700">
-              Restricciones
-            </label>
-            <input
-              value={form.restrictions}
-              onChange={(e) => setForm({ ...form, restrictions: e.target.value })}
-              placeholder="Ej: Sin lactosa"
-              className="h-10 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500"
-            />
-          </div>
-
-          <div className="md:col-span-2">
-            <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-700">
-              Notas médicas
-            </label>
-            <textarea
-              value={form.medicalNotes}
-              onChange={(e) => setForm({ ...form, medicalNotes: e.target.value })}
-              rows={3}
-              className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500"
             />
           </div>
 

@@ -192,7 +192,7 @@ npm run docker:logs
 npm run docker:down
 ```
 
-Notas Docker:
+Notas Docker:   
 - El contenedor expone la app por defecto en `http://localhost:4387`.
 - Si quieres otro puerto, cambia `DOCKER_HOST_PORT` en `.env` antes de levantar Docker.
 - Usa `DATABASE_URL` de Neon desde `.env` para build y runtime.

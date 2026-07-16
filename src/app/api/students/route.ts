@@ -85,7 +85,7 @@ export async function POST(req: NextRequest) {
   }
 
   const role = currentUser.role;
-  if (role !== "ADMIN") {
+  if (role !== "ADMIN" && role !== "PARENT") {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
@@ -96,27 +96,34 @@ export async function POST(req: NextRequest) {
     email,
     phone,
     password,
-    grade,
     level,
     allergies,
-    restrictions,
-    medicalNotes,
     photo,
     parentId,
     active,
   } = body;
+
+  const requestedParentId = typeof parentId === "string" ? parentId : "";
+  const effectiveParentId = role === "PARENT" ? currentUser.id : requestedParentId;
   const normalizedEmail = typeof email === "string" ? email.trim() : "";
   const normalizedPhone = typeof phone === "string" ? phone.trim() : "";
   const normalizedPassword = typeof password === "string" ? password : "";
 
-  if (!parentId || !grade || !level) {
+  if (!effectiveParentId || !level) {
     return NextResponse.json(
-      { error: "Padre, grado y nivel son requeridos" },
+      { error: "Padre y nivel son requeridos" },
       { status: 400 }
     );
   }
 
-  const parent = await prisma.user.findUnique({ where: { id: parentId } });
+  if (role === "PARENT" && existingStudentUserId) {
+    return NextResponse.json(
+      { error: "No puedes vincular usuarios existentes desde esta cuenta" },
+      { status: 403 }
+    );
+  }
+
+  const parent = await prisma.user.findUnique({ where: { id: effectiveParentId } });
   if (!parent || parent.role !== "PARENT") {
     return NextResponse.json(
       { error: "El padre seleccionado no es válido" },
@@ -125,91 +132,122 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const student = await prisma.$transaction(async (tx) => {
-      if (existingStudentUserId) {
-        const existingUser = await tx.user.findUnique({ where: { id: existingStudentUserId } });
-        if (!existingUser || existingUser.role !== "STUDENT") {
-          throw new Error("USER_NOT_STUDENT");
-        }
-
-        const existingProfile = await tx.student.findUnique({ where: { userId: existingStudentUserId } });
-        if (existingProfile) {
-          throw new Error("STUDENT_PROFILE_EXISTS");
-        }
-
-        const updatedUser = await tx.user.update({
-          where: { id: existingStudentUserId },
-          data: {
-            name: name ?? existingUser.name,
-            phone: normalizedPhone || null,
-            active: active ?? existingUser.active,
-          },
-        });
-
-        return tx.student.create({
-          data: {
-            userId: existingStudentUserId,
-            name: updatedUser.name,
-            grade,
-            level,
-            allergies,
-            restrictions,
-            medicalNotes,
-            photo,
-            active: active ?? true,
-            parentId,
-          },
-          include: {
-            parent: { select: { id: true, name: true, email: true } },
-            user: { select: { id: true, name: true, email: true, phone: true, active: true, role: true } },
-          },
-        });
-      }
-
-      if (!name) {
-        throw new Error("MISSING_USER_FIELDS");
-      }
-
-      const finalEmail = normalizedEmail || buildInternalStudentEmail();
-      const emailTaken = await tx.user.findUnique({ where: { email: finalEmail } });
-      if (emailTaken) {
-        throw new Error("EMAIL_IN_USE");
-      }
-
-      const finalPassword = normalizedPassword || crypto.randomUUID();
-      const hashed = await bcrypt.hash(finalPassword, 12);
-      const createdUser = await tx.user.create({
-        data: {
-          name,
-          email: finalEmail,
-          password: hashed,
-          role: "STUDENT",
-          phone: normalizedPhone || null,
-          active: active ?? true,
-        },
+    if (existingStudentUserId) {
+      const existingUser = await prisma.user.findUnique({
+        where: { id: existingStudentUserId },
+        select: { id: true, name: true, role: true, active: true },
       });
 
-      return tx.student.create({
+      if (!existingUser || existingUser.role !== "STUDENT") {
+        throw new Error("USER_NOT_STUDENT");
+      }
+
+      const existingProfile = await prisma.student.findUnique({
+        where: { userId: existingStudentUserId },
+      });
+      if (existingProfile) {
+        throw new Error("STUDENT_PROFILE_EXISTS");
+      }
+
+      const nextStudentName = name ?? existingUser.name;
+      const updatedUser = await prisma.user.update({
+        where: { id: existingStudentUserId },
         data: {
-          userId: createdUser.id,
-          name,
-          grade,
-          level,
-          allergies,
-          restrictions,
-          medicalNotes,
-          photo,
-          active: active ?? true,
-          parentId,
+          name: nextStudentName,
+          phone: normalizedPhone || null,
+          active: active ?? existingUser.active,
+          studentProfile: {
+            create: {
+              name: nextStudentName,
+              level,
+              allergies,
+              photo,
+              active: active ?? true,
+              parentId: effectiveParentId,
+            },
+          },
         },
         include: {
-          parent: { select: { id: true, name: true, email: true } },
-          user: { select: { id: true, name: true, email: true, phone: true, active: true, role: true } },
+          studentProfile: {
+            include: {
+              parent: { select: { id: true, name: true, email: true } },
+              user: {
+                select: {
+                  id: true,
+                  name: true,
+                  email: true,
+                  phone: true,
+                  active: true,
+                  role: true,
+                },
+              },
+            },
+          },
         },
       });
+
+      if (!updatedUser.studentProfile) {
+        throw new Error("STUDENT_CREATE_FAILED");
+      }
+
+      return NextResponse.json(updatedUser.studentProfile, { status: 201 });
+    }
+
+    if (!name) {
+      throw new Error("MISSING_USER_FIELDS");
+    }
+
+    const finalEmail = normalizedEmail || buildInternalStudentEmail();
+    const emailTaken = await prisma.user.findUnique({ where: { email: finalEmail } });
+    if (emailTaken) {
+      throw new Error("EMAIL_IN_USE");
+    }
+
+    const finalPassword = normalizedPassword || crypto.randomUUID();
+    const hashed = await bcrypt.hash(finalPassword, 12);
+    const createdUser = await prisma.user.create({
+      data: {
+        name,
+        email: finalEmail,
+        password: hashed,
+        role: "STUDENT",
+        phone: normalizedPhone || null,
+        active: active ?? true,
+        studentProfile: {
+          create: {
+            name,
+            level,
+            allergies,
+            photo,
+            active: active ?? true,
+            parentId: effectiveParentId,
+          },
+        },
+      },
+      include: {
+        studentProfile: {
+          include: {
+            parent: { select: { id: true, name: true, email: true } },
+            user: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+                phone: true,
+                active: true,
+                role: true,
+              },
+            },
+          },
+        },
+      },
     });
 
-    return NextResponse.json(student, { status: 201 });
+    if (!createdUser.studentProfile) {
+      throw new Error("STUDENT_CREATE_FAILED");
+    }
+
+    return NextResponse.json(createdUser.studentProfile, { status: 201 });
   } catch (error) {
     const message = error instanceof Error ? error.message : "UNKNOWN_ERROR";
 

@@ -20,6 +20,7 @@ export async function GET(
       name: true,
       email: true,
       role: true,
+      isStaff: true,
       phone: true,
       active: true,
       createdAt: true,
@@ -29,11 +30,8 @@ export async function GET(
         select: {
           id: true,
           name: true,
-          grade: true,
           level: true,
           allergies: true,
-          restrictions: true,
-          medicalNotes: true,
           active: true,
           user: {
             select: {
@@ -49,7 +47,6 @@ export async function GET(
         select: {
           id: true,
           parentId: true,
-          grade: true,
           level: true,
           active: true,
         },
@@ -75,7 +72,7 @@ export async function PUT(
 
   const { id } = await params;
   const body = await req.json();
-  const { name, email, role, phone, active, password } = body;
+  const { name, email, role, phone, active, password, isStaff } = body;
   const allowedRoles = ["ADMIN", "PARENT", "VENDOR", "STUDENT"];
   const normalizedEmail = typeof email === "string" ? email.trim() : undefined;
   const normalizedPhone = typeof phone === "string" ? phone.trim() : undefined;
@@ -121,6 +118,7 @@ export async function PUT(
     name,
     role,
     active,
+    isStaff: typeof isStaff === "boolean" ? isStaff : undefined,
     email: normalizedEmail,
     phone: normalizedPhone ? normalizedPhone : resultingRole === "STUDENT" ? null : normalizedPhone,
   };
@@ -131,7 +129,7 @@ export async function PUT(
   const user = await prisma.user.update({
     where: { id },
     data: updateData,
-    select: { id: true, name: true, email: true, role: true, phone: true, active: true, createdAt: true },
+    select: { id: true, name: true, email: true, role: true, isStaff: true, phone: true, active: true, createdAt: true },
   });
 
   return NextResponse.json(user);

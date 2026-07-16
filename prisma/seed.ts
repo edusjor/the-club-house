@@ -1,5 +1,6 @@
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
+import { buildFixedMenuPrices } from "./price-levels";
 
 const prisma = new PrismaClient();
 
@@ -354,6 +355,36 @@ async function main() {
 
   console.log("✅ Comidas creadas:", items.length);
 
+  const menuWithLegacyPrices = await prisma.foodItem.findMany({
+    select: {
+      id: true,
+      prices: {
+        select: {
+          level: true,
+          price: true,
+        },
+      },
+    },
+  });
+
+  for (const menuItem of menuWithLegacyPrices) {
+    const normalizedPrices = buildFixedMenuPrices(menuItem.prices);
+
+    await prisma.foodItemPrice.deleteMany({
+      where: { foodItemId: menuItem.id },
+    });
+
+    await prisma.foodItemPrice.createMany({
+      data: normalizedPrices.map((price) => ({
+        foodItemId: menuItem.id,
+        level: price.level,
+        price: price.price,
+      })),
+    });
+  }
+
+  console.log("✅ Menu de prueba normalizado a 4 tipos de precio");
+
   // Create packages
   const pkg1 = await prisma.package.create({
     data: {
@@ -423,13 +454,10 @@ async function main() {
     data: {
       userId: studentUser1.id,
       name: "Mateo Cortés",
-      grade: "3º Grado",
       level: "ELEMENTARY",
       parentId: parent1.id,
       active: true,
-      allergies: "Maní",
-      restrictions: "Sin huevo",
-      medicalNotes: "Ninguna",
+      allergies: "Maní, sin huevo",
     },
   });
 
@@ -437,12 +465,10 @@ async function main() {
     data: {
       userId: studentUser2.id,
       name: "Sofia Cortés",
-      grade: "1º Preescolar",
-      level: "PRESCHOOL",
+      level: "ELEMENTARY",
       parentId: parent1.id,
       active: true,
       allergies: "Ninguna",
-      restrictions: "Ninguna",
     },
   });
 
@@ -450,12 +476,10 @@ async function main() {
     data: {
       userId: studentUser3.id,
       name: "Lucía López",
-      grade: "6º Grado",
       level: "MIDDLE_HIGH",
       parentId: parent2.id,
       active: true,
-      allergies: "Lácteos",
-      restrictions: "Vegetariana",
+      allergies: "Lácteos, vegetariana",
     },
   });
 

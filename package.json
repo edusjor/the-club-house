@@ -9,6 +9,8 @@
     "start": "next start",
     "lint": "eslint",
     "seed": "tsx prisma/seed.ts",
+    "prices:normalize": "tsx prisma/normalize-menu-prices.ts",
+    "images:demo": "tsx prisma/add-demo-images.ts",
     "docker:build": "docker compose build",
     "docker:up": "docker compose up -d",
     "docker:down": "docker compose down",

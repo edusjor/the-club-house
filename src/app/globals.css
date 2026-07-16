@@ -29,11 +29,11 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: var(--font-manrope), var(--font-geist-sans), "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-  letter-spacing: 0.01em;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+  font-family: "Segoe UI Variable Text", "Segoe UI", var(--font-manrope), Tahoma, Geneva, Verdana, sans-serif;
+  letter-spacing: normal;
+  text-rendering: auto;
+  -webkit-font-smoothing: auto;
+  -moz-osx-font-smoothing: auto;
 }
 
 @layer base {
@@ -44,9 +44,9 @@ body {
   h5,
   h6 {
     color: inherit;
-    font-family: var(--font-sora), var(--font-manrope), "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+    font-family: "Segoe UI Variable Text", "Segoe UI", var(--font-manrope), Tahoma, Geneva, Verdana, sans-serif;
     font-weight: 700;
-    letter-spacing: -0.015em;
+    letter-spacing: normal;
   }
 
   p,
@@ -84,4 +84,17 @@ body {
     opacity: 1;
     -webkit-text-fill-color: #334155;
   }
+}
+
+@keyframes marquee {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.animate-marquee {
+  animation: marquee 25s linear infinite;
 }

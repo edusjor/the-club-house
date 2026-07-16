@@ -1,0 +1,359 @@
+{
+  "common": {
+    "loading": "Loading...",
+    "save": "Save",
+    "cancel": "Cancel",
+    "search": "Search",
+    "close": "Close",
+    "back": "Back"
+  },
+  "meta": {
+    "title": "The Club House – School Meal Management",
+    "description": "Platform for managing school meals, payments, packages and family accounts."
+  },
+  "languageSwitcher": {
+    "label": "Language"
+  },
+  "nav": {
+    "admin": {
+      "title": "Admin Panel",
+      "dashboard": "Dashboard",
+      "users": "Users",
+      "parents": "Parents",
+      "students": "Students",
+      "menu": "Food Menu",
+      "categories": "Categories",
+      "orders": "Orders",
+      "payments": "Pending Payments"
+    },
+    "parent": {
+      "title": "Parent Portal",
+      "dashboard": "Dashboard",
+      "myChildren": "My Children",
+      "menu": "Menu",
+      "plan": "Plan Meals",
+      "history": "History & Tracking",
+      "balance": "Balance & Payments"
+    },
+    "vendor": {
+      "title": "Vendor Panel",
+      "dashboard": "Dashboard",
+      "newOrder": "New Order",
+      "ordersOfDay": "Today's Orders",
+      "searchStudent": "Find Student"
+    },
+    "logout": "Log out",
+    "openMenu": "Open menu",
+    "closeMenu": "Close menu"
+  },
+  "auth": {
+    "layout": {
+      "tagline": "School Meal Program",
+      "backToSite": "← Back to public site"
+    },
+    "login": {
+      "title": "Welcome",
+      "subtitle": "Enter your credentials to access your portal.",
+      "errorCredentials": "Incorrect credentials. Check your email and password.",
+      "registeredSuccess": "Account created successfully. Now sign in.",
+      "registeredSuccessFor": "Account created successfully for {email}. Now sign in.",
+      "email": "Email",
+      "emailPlaceholder": "you@email.com",
+      "password": "Password",
+      "submit": "Sign In",
+      "submitting": "Signing in...",
+      "noAccount": "Don't have an account?",
+      "createAccount": "Create a parent/guardian account",
+      "loadingTitle": "Welcome",
+      "loadingSubtitle": "Loading form..."
+    },
+    "register": {
+      "title": "Create Account",
+      "subtitle": "Registration for parents and guardians. You'll be able to manage children, orders and payments.",
+      "errorRequired": "Fill in your name, email and password.",
+      "errorPasswordLength": "Password must be at least 8 characters.",
+      "errorPasswordMismatch": "Passwords don't match.",
+      "errorGeneric": "Couldn't create the account. Please try again.",
+      "fullName": "Full name",
+      "fullNamePlaceholder": "Your name",
+      "email": "Email",
+      "phoneOptional": "Phone (optional)",
+      "password": "Password",
+      "passwordPlaceholder": "At least 8 characters",
+      "confirmPassword": "Confirm password",
+      "confirmPasswordPlaceholder": "Repeat your password",
+      "staffLabel": "I'm part of the school staff",
+      "staffHint": "In addition to being a parent, check this if you work at the school.",
+      "submit": "Create Account",
+      "submitting": "Creating account...",
+      "haveAccount": "Already have an account?",
+      "signIn": "Sign in"
+    },
+    "unauthorized": {
+      "title": "Access Denied",
+      "message": "You don't have permission to access this section. Please contact the administrator.",
+      "backHome": "Back to home"
+    }
+  },
+  "publicNav": {
+    "home": "Home",
+    "menu": "Menu",
+    "preschool": "Preschool",
+    "elementary": "Elementary",
+    "middle": "Middle/High",
+    "monthMenu": "Monthly Menu",
+    "nutrition": "Nutritionist & Tips",
+    "myPanel": "My Panel",
+    "signIn": "Sign In"
+  },
+  "publicFooter": {
+    "description": "Healthy and delicious meals for students. Quality nutrition prepared with love.",
+    "menuTitle": "Menu",
+    "menuItems": ["Breakfasts", "Lunches", "Snacks", "Drinks", "Snacks & Treats", "Packages"],
+    "portalTitle": "Portal",
+    "portalSignIn": "Sign In",
+    "portalParent": "Parent Portal",
+    "portalAdmin": "Admin Panel",
+    "portalNutrition": "Nutritionist & Tips",
+    "contactTitle": "Contact",
+    "rights": "All rights reserved.",
+    "privacy": "Privacy",
+    "terms": "Terms"
+  },
+  "publicHome": {
+    "hero": {
+      "badge": "Healthy School Meals",
+      "titlePart1": "Healthy",
+      "titleHighlight": "food",
+      "titlePart2": "for your kids",
+      "subtitle": "Easily manage your children's meals. Fresh menu, flexible packages and simple payments all in one place.",
+      "ctaMenu": "View Menu",
+      "ctaLogin": "Sign In"
+    },
+    "stats": [
+      { "value": "500+", "label": "Active students" },
+      { "value": "4.9★", "label": "Average rating" },
+      { "value": "15+", "label": "Daily menu options" },
+      { "value": "3", "label": "School levels" }
+    ],
+    "sponsors": {
+      "title": "Our Sponsors"
+    },
+    "features": {
+      "eyebrow": "Why choose us?",
+      "title": "Quality in every meal",
+      "items": [
+        {
+          "title": "Fresh Ingredients",
+          "desc": "Selected daily from trusted local suppliers."
+        },
+        {
+          "title": "Expert Chefs",
+          "desc": "Trained staff with knowledge of child nutrition."
+        },
+        {
+          "title": "On Time, Fast",
+          "desc": "Delivered on time, every time, no excuses."
+        },
+        {
+          "title": "100% Quality",
+          "desc": "Guaranteed hygiene and quality in every preparation."
+        }
+      ]
+    },
+    "usefulLinks": {
+      "eyebrow": "Useful resources",
+      "title": "Helpful links for parents and students",
+      "items": [
+        {
+          "title": "Nutritionist",
+          "desc": "Consult with our child nutrition specialists",
+          "href": "/nutricionista"
+        },
+        {
+          "title": "Food Guide",
+          "desc": "Healthy eating recommendations and guides",
+          "href": "/guia-alimentaria"
+        },
+        {
+          "title": "Physical Activities",
+          "desc": "Exercise and wellness programs for students",
+          "href": "/actividades"
+        },
+        {
+          "title": "Contact",
+          "desc": "Have questions? Get in touch with us",
+          "href": "/contacto"
+        }
+      ]
+    },
+    "portalBenefits": {
+      "eyebrow": "Parent Portal",
+      "title": "Complete control of your children's meals",
+      "subtitle": "With The Club House Parent Portal you have full visibility into what your children eat, their payments and active packages.",
+      "cta": "Access the Portal",
+      "items": [
+        "Plan your children's meals weekly",
+        "Pay conveniently by SINPE Móvil",
+        "Get alerts for allergies and restrictions",
+        "Check consumption history in real time",
+        "Buy monthly or annual packages at a discount",
+        "Manage multiple children from a single profile"
+      ]
+    },
+    "panels": {
+      "title": "Panels for your role",
+      "subtitle": "Every user gets access to a personalized panel with the tools they need.",
+      "items": [
+        {
+          "title": "Administrator",
+          "desc": "Manage users, menu, packages, payments and complete system reports.",
+          "href": "/admin/dashboard"
+        },
+        {
+          "title": "Parent / Guardian",
+          "desc": "Check the menu, plan meals, buy packages and pay by SINPE Móvil.",
+          "href": "/parent/dashboard"
+        },
+        {
+          "title": "Vendor",
+          "desc": "Log consumption, manage today's orders and validate students' active packages.",
+          "href": "/vendor/dashboard"
+        }
+      ],
+      "access": "Access"
+    },
+    "cta": {
+      "title": "Ready to get started?",
+      "subtitle": "Healthy meals, simple payments, and total control in your hands.",
+      "button": "Sign In to My Portal"
+    }
+  },
+  "status": {
+    "pending": "Pending",
+    "paid": "Paid",
+    "preparing": "Preparing",
+    "delivered": "Delivered",
+    "notPickedUp": "Not picked up",
+    "cancelled": "Cancelled",
+    "approved": "Approved",
+    "rejected": "Rejected",
+    "active": "Active",
+    "expired": "Expired",
+    "exhausted": "Used up",
+    "paused": "Paused",
+    "inactive": "Inactive",
+    "admin": "Admin",
+    "parent": "Parent",
+    "vendor": "Vendor",
+    "student": "Student"
+  },
+  "admin": {
+    "dashboard": {
+      "subtitle": "General overview of The Club House system",
+      "registeredParents": "Registered parents",
+      "activeAccounts": "Active accounts",
+      "activeStudents": "Active students",
+      "inSystem": "In the system",
+      "todayOrders": "Today's orders",
+      "generatedToday": "Generated today",
+      "activePackages": "Active packages",
+      "current": "Current",
+      "pendingPayments": "Pending payments",
+      "toReview": "{amount} to review",
+      "monthlyRevenue": "Monthly revenue",
+      "approvedPayments": "Approved payments",
+      "recentPayments": "Recent Payments",
+      "recentOrders": "Recent Orders",
+      "viewAll": "View all →",
+      "noRecentPayments": "No recent payments",
+      "noRecentOrders": "No recent orders",
+      "items": "item(s)",
+      "quickActions": "Quick Actions",
+      "newUser": "New User",
+      "viewParents": "View Parents",
+      "viewStudents": "View Students",
+      "addFood": "Add Food",
+      "viewOrders": "View Orders",
+      "reviewPayments": "Review Payments"
+    }
+  },
+  "parent": {
+    "dashboard": {
+      "title": "Family Dashboard",
+      "subtitle": "Overview of children, meal calendar and recent activity",
+      "linkedChildren": "Linked children",
+      "inYourAccount": "In your account",
+      "activePackages": "Active packages",
+      "current": "Current",
+      "pendingBalance": "Pending balance",
+      "accruedCredit": "Accrued credit",
+      "viewBalance": "View balance →",
+      "myChildren": "My Children",
+      "viewAll": "View all →",
+      "noChildrenYet": "No children linked yet",
+      "noActivePackage": "No active package",
+      "recentActivity": "Recent Activity",
+      "viewHistory": "View history →",
+      "noRecentActivity": "No recent activity",
+      "orderCreated": "Order #{id} created",
+      "orderCancelled": "Order #{id} cancelled",
+      "payment": "Payment #{id}",
+      "items": "item(s)"
+    }
+  },
+  "vendor": {
+    "dashboard": {
+      "subtitle": "Today's orders, consumption and operational activity",
+      "todayOrders": "Today's orders",
+      "generatedToday": "Generated today",
+      "pending": "Pending",
+      "itemsToDeliver": "Items to deliver",
+      "todayConsumptions": "Today's consumption",
+      "registered": "Registered",
+      "activeStudents": "Active students",
+      "available": "Available",
+      "monthlySales": "Monthly sales",
+      "accumulatedOrders": "Accumulated orders",
+      "quickSearch": "Quick search",
+      "quickSearchDesc": "Find students and log consumption from the search section.",
+      "search": "Search",
+      "recentOrders": "Recent Orders",
+      "viewAll": "View all →",
+      "noOrdersToday": "No orders today",
+      "items": "item(s)"
+    }
+  },
+  "mealCalendar": {
+    "title": "Meal Calendar",
+    "subtitle": "Click a day to see the detail",
+    "allChildren": "All children",
+    "prevMonth": "Previous month",
+    "nextMonth": "Next month",
+    "calendarView": "Calendar",
+    "listView": "List",
+    "noMealsForMonth": "No meals ordered for {month}.",
+    "meals": "meal(s)",
+    "closeDetail": "Close detail",
+    "noOrdersForDay": "No orders for this day.",
+    "order": "Order"
+  },
+  "foodTabs": {
+    "general": "General food",
+    "drinks": "Drinks",
+    "casados": "Casados"
+  },
+  "publicMenu": {
+    "eyebrow": "Menu of the month",
+    "title": "Our Menu",
+    "subtitle": "Fresh, nutritious and delicious meals for every school level — the same ones you can schedule for your children from your account.",
+    "loginNotice": "To see prices and place orders you need to",
+    "loginLink": "sign in",
+    "emptyTitle": "The menu will be available soon",
+    "emptySubtitle": "Check back later to see today's options.",
+    "order": "Order",
+    "searchPlaceholder": "Search food...",
+    "noResultsTitle": "No food available for this tab.",
+    "noResultsSubtitle": "Try another tab or change the search filter."
+  }
+}

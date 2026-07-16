@@ -13,6 +13,7 @@ model User {
   email        String?  @unique
   password     String
   role         String   @default("PARENT") // ADMIN, PARENT, VENDOR, STUDENT
+  isStaff      Boolean  @default(false) // tags a PARENT-role account as school staff (still uses the parent portal)
   phone        String?
   avatar       String?
   active       Boolean  @default(true)
@@ -23,10 +24,12 @@ model User {
   studentProfile       Student?        @relation("StudentProfile")
   payments             Payment[]
   orders               Order[]
+  ordersCreated        Order[]         @relation("OrderCreatedBy")
   consumptionsLogged   Consumption[]   @relation("RegisteredBy")
   activityLogs         ActivityLog[]
   notifications        Notification[]
   paymentsApproved     Payment[]       @relation("ApprovedBy")
+  parentBalance         ParentBalance?
 }
 
 model Student {
@@ -34,11 +37,8 @@ model Student {
   userId         String   @unique
   user           User     @relation("StudentProfile", fields: [userId], references: [id])
   name          String
-  grade         String
   level         String
   allergies     String?
-  restrictions  String?
-  medicalNotes  String?
   photo         String?
   active        Boolean  @default(true)
   parentId      String
@@ -137,14 +137,17 @@ model StudentPackage {
 }
 
 model Order {
-  id        String      @id @default(cuid())
-  parentId  String
-  parent    User        @relation(fields: [parentId], references: [id])
-  status    String      @default("PENDING")
-  total     Int
-  notes     String?
-  createdAt DateTime    @default(now())
-  updatedAt DateTime    @updatedAt
+  id          String      @id @default(cuid())
+  parentId    String
+  parent      User        @relation(fields: [parentId], references: [id])
+  status      String      @default("PENDING")
+  total       Int
+  notes       String?
+  source      String      @default("PARENT") // PARENT (app) or VENDOR (walk-in at the restaurant)
+  createdById String?
+  createdBy   User?       @relation("OrderCreatedBy", fields: [createdById], references: [id])
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
 
   items    OrderItem[]
   payments Payment[]
@@ -192,6 +195,16 @@ model Payment {
   approvedBy   User?    @relation("ApprovedBy", fields: [approvedById], references: [id])
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+}
+
+model ParentBalance {
+  id              String   @id @default(cuid())
+  parentId        String   @unique
+  parent          User     @relation(fields: [parentId], references: [id])
+  pendingBalance  Int      @default(0)
+  approvedBalance Int      @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 }
 
 model ActivityLog {

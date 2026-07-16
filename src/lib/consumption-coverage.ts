@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/db";
+import { normalizePriceLevel } from "@/lib/utils";
 
 type CoverageDb = Pick<
   typeof prisma,
@@ -35,7 +36,10 @@ function resolveUnitPrice(
   prices: { level: string; price: number }[],
   level: string
 ) {
-  const exact = prices.find((price) => price.level === level);
+  const normalizedLevel = normalizePriceLevel(level);
+  const exact = prices.find(
+    (price) => normalizePriceLevel(price.level) === normalizedLevel
+  );
   if (exact) return exact.price;
 
   if (prices.length === 0) return null;
@@ -51,11 +55,9 @@ export type ConsumptionCoverageResult = {
     id: string;
     name: string;
     level: string;
-    grade: string;
     parentId: string;
     parentName: string;
     allergies: string | null;
-    restrictions: string | null;
   };
   foodItem: {
     id: string;
@@ -95,10 +97,8 @@ export async function resolveConsumptionCoverage(
         name: true,
         active: true,
         level: true,
-        grade: true,
         parentId: true,
         allergies: true,
-        restrictions: true,
         parent: { select: { name: true } },
       },
     }),
@@ -160,11 +160,9 @@ export async function resolveConsumptionCoverage(
         id: student.id,
         name: student.name,
         level: student.level,
-        grade: student.grade,
         parentId: student.parentId,
         parentName: student.parent.name,
         allergies: student.allergies,
-        restrictions: student.restrictions,
       },
       foodItem: {
         id: foodItem.id,
@@ -216,11 +214,9 @@ export async function resolveConsumptionCoverage(
         id: student.id,
         name: student.name,
         level: student.level,
-        grade: student.grade,
         parentId: student.parentId,
         parentName: student.parent.name,
         allergies: student.allergies,
-        restrictions: student.restrictions,
       },
       foodItem: {
         id: foodItem.id,
@@ -244,11 +240,9 @@ export async function resolveConsumptionCoverage(
       id: student.id,
       name: student.name,
       level: student.level,
-      grade: student.grade,
       parentId: student.parentId,
       parentName: student.parent.name,
       allergies: student.allergies,
-      restrictions: student.restrictions,
     },
     foodItem: {
       id: foodItem.id,

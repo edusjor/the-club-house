@@ -1,23 +1,26 @@
-﻿"use client";
+"use client";
 
-import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { ChefHat, Menu, X, LogIn } from "lucide-react";
 import { useState } from "react";
-
-const navLinks = [
-  { href: "/", label: "Inicio" },
-  { href: "/menu", label: "Menú" },
-  { href: "/menu#preschool", label: "Preescolar" },
-  { href: "/menu#elementary", label: "Primaria" },
-  { href: "/menu#middle", label: "Secundaria" },
-  { href: "/menu#this-month", label: "Menú del Mes" },
-  { href: "/nutrition", label: "Nutricionista y Tips" },
-];
+import Link from "@/i18n/Link";
+import LanguageSwitcher from "@/i18n/LanguageSwitcher";
+import { useTranslations } from "@/i18n/I18nProvider";
 
 export default function PublicNavbar() {
   const { data: session } = useSession();
   const [open, setOpen] = useState(false);
+  const t = useTranslations();
+
+  const navLinks = [
+    { href: "/", label: t("publicNav.home") },
+    { href: "/menu", label: t("publicNav.menu") },
+    { href: "/menu#preschool", label: t("publicNav.preschool") },
+    { href: "/menu#elementary", label: t("publicNav.elementary") },
+    { href: "/menu#middle", label: t("publicNav.middle") },
+    { href: "/menu#this-month", label: t("publicNav.monthMenu") },
+    { href: "/nutrition", label: t("publicNav.nutrition") },
+  ];
 
   const dashboardHref =
     session?.user && (session.user as { role?: string }).role === "ADMIN"
@@ -41,7 +44,7 @@ export default function PublicNavbar() {
               The Club House
             </span>
             <span className="block text-cyan-500 text-[10px] font-semibold uppercase tracking-widest">
-              Alimentación Escolar
+              {t("auth.layout.tagline")}
             </span>
           </div>
         </Link>
@@ -61,12 +64,13 @@ export default function PublicNavbar() {
 
         {/* Auth */}
         <div className="hidden lg:flex items-center gap-3">
+          <LanguageSwitcher />
           {session?.user ? (
             <Link
               href={dashboardHref}
               className="px-4 py-2 bg-cyan-500 hover:bg-cyan-600 text-white text-sm font-semibold rounded-xl transition-colors"
             >
-              Mi Panel
+              {t("publicNav.myPanel")}
             </Link>
           ) : (
             <Link
@@ -74,7 +78,7 @@ export default function PublicNavbar() {
               className="flex items-center gap-2 px-4 py-2 bg-cyan-500 hover:bg-cyan-600 text-white text-sm font-semibold rounded-xl transition-colors"
             >
               <LogIn className="w-4 h-4" />
-              Iniciar Sesión
+              {t("publicNav.signIn")}
             </Link>
           )}
         </div>
@@ -101,20 +105,23 @@ export default function PublicNavbar() {
               {l.label}
             </Link>
           ))}
+          <div className="flex items-center justify-between gap-2 pt-2">
+            <LanguageSwitcher />
+          </div>
           <div className="pt-2">
             {session?.user ? (
               <Link
                 href={dashboardHref}
                 className="block w-full text-center px-4 py-2.5 bg-cyan-500 text-white text-sm font-semibold rounded-xl"
               >
-                Mi Panel
+                {t("publicNav.myPanel")}
               </Link>
             ) : (
               <Link
                 href="/login"
                 className="block w-full text-center px-4 py-2.5 bg-cyan-500 text-white text-sm font-semibold rounded-xl"
               >
-                Iniciar Sesión
+                {t("publicNav.signIn")}
               </Link>
             )}
           </div>
@@ -123,4 +130,3 @@ export default function PublicNavbar() {
     </header>
   );
 }
-

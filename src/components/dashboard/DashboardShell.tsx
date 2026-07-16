@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Menu, X } from "lucide-react";
 import Sidebar from "@/components/dashboard/Sidebar";
+import { useTranslations } from "@/i18n/I18nProvider";
 
 type ShellRole = "ADMIN" | "PARENT" | "VENDOR";
 
@@ -20,6 +21,7 @@ export default function DashboardShell({
   children,
 }: DashboardShellProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const t = useTranslations();
 
   return (
     <div className="flex h-screen overflow-hidden bg-slate-50">
@@ -34,7 +36,7 @@ export default function DashboardShell({
         <button
           onClick={() => setMobileOpen(false)}
           className="fixed inset-0 z-40 bg-slate-950/45 xl:hidden"
-          aria-label="Cerrar menú"
+          aria-label={t("nav.closeMenu")}
         />
       ) : null}
 
@@ -51,13 +53,15 @@ export default function DashboardShell({
       <button
         onClick={() => setMobileOpen((current) => !current)}
         className="fixed left-3 top-3 z-50 inline-flex h-11 w-11 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-700 shadow-sm transition-colors hover:bg-slate-50 xl:hidden"
-        aria-label={mobileOpen ? "Cerrar menú" : "Abrir menú"}
+        aria-label={mobileOpen ? t("nav.closeMenu") : t("nav.openMenu")}
       >
         {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
       </button>
 
       <div className="ml-0 flex flex-1 flex-col overflow-hidden xl:ml-64">
-        <main className="flex-1 overflow-y-auto pt-14 xl:pt-0">{children}</main>
+        <main id="dashboard-scroll-area" className="flex-1 overflow-y-auto">
+          {children}
+        </main>
       </div>
     </div>
   );

@@ -27,7 +27,6 @@ export async function GET(req: NextRequest) {
       ...coverage,
       alerts: {
         allergies: coverage.student.allergies,
-        restrictions: coverage.student.restrictions,
       },
     });
   } catch (error) {

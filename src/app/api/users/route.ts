@@ -16,6 +16,7 @@ export async function GET() {
       name: true,
       email: true,
       role: true,
+      isStaff: true,
       phone: true,
       active: true,
       createdAt: true,
@@ -32,7 +33,7 @@ export async function POST(req: NextRequest) {
   }
 
   const body = await req.json();
-  const { name, email, role, phone, active, password } = body;
+  const { name, email, role, phone, active, password, isStaff } = body;
   const allowedRoles = ["ADMIN", "PARENT", "VENDOR", "STUDENT"];
   const normalizedRole = role ?? "PARENT";
   const normalizedEmail = typeof email === "string" ? email.trim() : "";
@@ -77,11 +78,12 @@ export async function POST(req: NextRequest) {
       name,
       email: normalizedEmail,
       role: normalizedRole,
+      isStaff: Boolean(isStaff),
       phone: normalizedPhone,
       active: active ?? true,
       password: hashed,
     },
-    select: { id: true, name: true, email: true, role: true, phone: true, active: true, createdAt: true },
+    select: { id: true, name: true, email: true, role: true, isStaff: true, phone: true, active: true, createdAt: true },
   });
 
   return NextResponse.json(user, { status: 201 });

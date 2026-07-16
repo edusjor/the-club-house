@@ -1,0 +1,359 @@
+{
+  "common": {
+    "loading": "Cargando...",
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "search": "Buscar",
+    "close": "Cerrar",
+    "back": "Volver"
+  },
+  "meta": {
+    "title": "The Club House – Gestión de Alimentación Escolar",
+    "description": "Plataforma de gestión de comidas escolares, pagos, paquetes y cuentas familiares."
+  },
+  "languageSwitcher": {
+    "label": "Idioma"
+  },
+  "nav": {
+    "admin": {
+      "title": "Panel Admin",
+      "dashboard": "Dashboard",
+      "users": "Usuarios",
+      "parents": "Padres",
+      "students": "Estudiantes",
+      "menu": "Menú de Comidas",
+      "categories": "Categorías",
+      "orders": "Pedidos",
+      "payments": "Pagos Pendientes"
+    },
+    "parent": {
+      "title": "Portal de Padres",
+      "dashboard": "Dashboard",
+      "myChildren": "Mis Hijos",
+      "menu": "Menú",
+      "plan": "Planificar Comidas",
+      "history": "Historial y Seguimiento",
+      "balance": "Saldo y Pagos"
+    },
+    "vendor": {
+      "title": "Panel Vendedor",
+      "dashboard": "Dashboard",
+      "newOrder": "Nueva Orden",
+      "ordersOfDay": "Pedidos del Día",
+      "searchStudent": "Buscar Estudiante"
+    },
+    "logout": "Cerrar Sesión",
+    "openMenu": "Abrir menú",
+    "closeMenu": "Cerrar menú"
+  },
+  "auth": {
+    "layout": {
+      "tagline": "Alimentación Escolar",
+      "backToSite": "← Volver al sitio público"
+    },
+    "login": {
+      "title": "Bienvenido",
+      "subtitle": "Ingresa tus credenciales para acceder a tu panel.",
+      "errorCredentials": "Credenciales incorrectas. Verifica tu email y contraseña.",
+      "registeredSuccess": "Cuenta creada correctamente. Ahora inicia sesión.",
+      "registeredSuccessFor": "Cuenta creada correctamente para {email}. Ahora inicia sesión.",
+      "email": "Correo electrónico",
+      "emailPlaceholder": "tu@email.com",
+      "password": "Contraseña",
+      "submit": "Iniciar Sesión",
+      "submitting": "Ingresando...",
+      "noAccount": "¿No tienes cuenta?",
+      "createAccount": "Crear cuenta de padre/madre",
+      "loadingTitle": "Bienvenido",
+      "loadingSubtitle": "Cargando formulario..."
+    },
+    "register": {
+      "title": "Crear Cuenta",
+      "subtitle": "Registro para padres y madres. Podrás gestionar hijos, pedidos y pagos.",
+      "errorRequired": "Completa nombre, email y contraseña.",
+      "errorPasswordLength": "La contraseña debe tener al menos 8 caracteres.",
+      "errorPasswordMismatch": "Las contraseñas no coinciden.",
+      "errorGeneric": "No se pudo crear la cuenta. Intenta nuevamente.",
+      "fullName": "Nombre completo",
+      "fullNamePlaceholder": "Tu nombre",
+      "email": "Correo electrónico",
+      "phoneOptional": "Teléfono (opcional)",
+      "password": "Contraseña",
+      "passwordPlaceholder": "Mínimo 8 caracteres",
+      "confirmPassword": "Confirmar contraseña",
+      "confirmPasswordPlaceholder": "Repite la contraseña",
+      "staffLabel": "Soy parte del staff del colegio",
+      "staffHint": "Además de padre/madre, marca esto si trabajas en el colegio.",
+      "submit": "Crear cuenta",
+      "submitting": "Creando cuenta...",
+      "haveAccount": "¿Ya tienes cuenta?",
+      "signIn": "Iniciar sesión"
+    },
+    "unauthorized": {
+      "title": "Acceso Denegado",
+      "message": "No tienes permisos para acceder a esta sección. Por favor, comunícate con el administrador.",
+      "backHome": "Volver al inicio"
+    }
+  },
+  "publicNav": {
+    "home": "Inicio",
+    "menu": "Menú",
+    "preschool": "Preescolar",
+    "elementary": "Primaria",
+    "middle": "Secundaria",
+    "monthMenu": "Menú del Mes",
+    "nutrition": "Nutricionista y Tips",
+    "myPanel": "Mi Panel",
+    "signIn": "Iniciar Sesión"
+  },
+  "publicFooter": {
+    "description": "Comidas saludables y deliciosas para estudiantes. Nutrición de calidad preparada con amor.",
+    "menuTitle": "Menú",
+    "menuItems": ["Desayunos", "Almuerzos", "Meriendas", "Bebidas", "Snacks", "Paquetes"],
+    "portalTitle": "Portal",
+    "portalSignIn": "Iniciar Sesión",
+    "portalParent": "Portal de Padres",
+    "portalAdmin": "Panel Admin",
+    "portalNutrition": "Nutricionista & Tips",
+    "contactTitle": "Contacto",
+    "rights": "Todos los derechos reservados.",
+    "privacy": "Privacidad",
+    "terms": "Términos"
+  },
+  "publicHome": {
+    "hero": {
+      "badge": "Alimentación Escolar Saludable",
+      "titlePart1": "Comida",
+      "titleHighlight": "saludable",
+      "titlePart2": "para tus hijos",
+      "subtitle": "Gestiona las comidas de tus hijos fácilmente. Menú fresco, paquetes flexibles y pagos simples desde un solo lugar.",
+      "ctaMenu": "Ver Menú",
+      "ctaLogin": "Iniciar Sesión"
+    },
+    "stats": [
+      { "value": "500+", "label": "Estudiantes activos" },
+      { "value": "4.9★", "label": "Calificación promedio" },
+      { "value": "15+", "label": "Opciones de menú diario" },
+      { "value": "3", "label": "Niveles escolares" }
+    ],
+    "sponsors": {
+      "title": "Nuestros Patrocinadores"
+    },
+    "features": {
+      "eyebrow": "¿Por qué elegirnos?",
+      "title": "Calidad en cada comida",
+      "items": [
+        {
+          "title": "Ingredientes Frescos",
+          "desc": "Seleccionados diariamente de proveedores locales de confianza."
+        },
+        {
+          "title": "Chefs Expertos",
+          "desc": "Personal capacitado con conocimiento en nutrición infantil."
+        },
+        {
+          "title": "Puntual y Rápido",
+          "desc": "Entrega en tiempo, cada vez, sin excusas."
+        },
+        {
+          "title": "100% Calidad",
+          "desc": "Higiene y calidad garantizada en cada preparación."
+        }
+      ]
+    },
+    "usefulLinks": {
+      "eyebrow": "Recursos de interés",
+      "title": "Links útiles para padres y estudiantes",
+      "items": [
+        {
+          "title": "Nutricionista",
+          "desc": "Consulta con nuestros especialistas en nutrición infantil",
+          "href": "/nutricionista"
+        },
+        {
+          "title": "Guía Alimentaria",
+          "desc": "Recomendaciones y guías de alimentación saludable",
+          "href": "/guia-alimentaria"
+        },
+        {
+          "title": "Actividades Físicas",
+          "desc": "Programas de ejercicio y bienestar para estudiantes",
+          "href": "/actividades"
+        },
+        {
+          "title": "Contacto",
+          "desc": "¿Tienes dudas? Contáctanos directamente",
+          "href": "/contacto"
+        }
+      ]
+    },
+    "portalBenefits": {
+      "eyebrow": "Portal de Padres",
+      "title": "Todo el control de la alimentación de tus hijos",
+      "subtitle": "Con el Portal de Padres de The Club House tienes visibilidad completa sobre lo que comen tus hijos, sus pagos y paquetes activos.",
+      "cta": "Acceder al Portal",
+      "items": [
+        "Planifica las comidas de tus hijos semanalmente",
+        "Paga cómodamente por SINPE Móvil",
+        "Recibe alertas de alergias y restricciones",
+        "Consulta historial de consumo en tiempo real",
+        "Compra paquetes mensuales o anuales con descuento",
+        "Administra múltiples hijos desde un solo perfil"
+      ]
+    },
+    "panels": {
+      "title": "Paneles según tu rol",
+      "subtitle": "Cada usuario tiene acceso a un panel personalizado con las herramientas que necesita.",
+      "items": [
+        {
+          "title": "Administrador",
+          "desc": "Gestiona usuarios, menú, paquetes, pagos y reportes completos del sistema.",
+          "href": "/admin/dashboard"
+        },
+        {
+          "title": "Padre / Madre",
+          "desc": "Consulta el menú, planifica comidas, compra paquetes y realiza pagos por SINPE Móvil.",
+          "href": "/parent/dashboard"
+        },
+        {
+          "title": "Vendedor",
+          "desc": "Registra consumos, gestiona pedidos del día y valida paquetes activos de estudiantes.",
+          "href": "/vendor/dashboard"
+        }
+      ],
+      "access": "Acceder"
+    },
+    "cta": {
+      "title": "¿Listo para comenzar?",
+      "subtitle": "Comidas saludables, pagos simples y control total en tus manos.",
+      "button": "Iniciar Sesión en mi Portal"
+    }
+  },
+  "status": {
+    "pending": "Pendiente",
+    "paid": "Pagado",
+    "preparing": "En preparación",
+    "delivered": "Entregado",
+    "notPickedUp": "No recogido",
+    "cancelled": "Cancelado",
+    "approved": "Aprobado",
+    "rejected": "Rechazado",
+    "active": "Activo",
+    "expired": "Vencido",
+    "exhausted": "Agotado",
+    "paused": "Pausado",
+    "inactive": "Inactivo",
+    "admin": "Admin",
+    "parent": "Padre/Madre",
+    "vendor": "Vendedor",
+    "student": "Estudiante"
+  },
+  "admin": {
+    "dashboard": {
+      "subtitle": "Resumen general del sistema The Club House",
+      "registeredParents": "Padres registrados",
+      "activeAccounts": "Cuentas activas",
+      "activeStudents": "Estudiantes activos",
+      "inSystem": "En el sistema",
+      "todayOrders": "Pedidos de hoy",
+      "generatedToday": "Generados hoy",
+      "activePackages": "Paquetes activos",
+      "current": "Vigentes",
+      "pendingPayments": "Pagos pendientes",
+      "toReview": "{amount} por revisar",
+      "monthlyRevenue": "Recaudación del mes",
+      "approvedPayments": "Pagos aprobados",
+      "recentPayments": "Pagos Recientes",
+      "recentOrders": "Pedidos Recientes",
+      "viewAll": "Ver todos →",
+      "noRecentPayments": "Sin pagos recientes",
+      "noRecentOrders": "Sin pedidos recientes",
+      "items": "ítem(s)",
+      "quickActions": "Accesos Rápidos",
+      "newUser": "Nuevo Usuario",
+      "viewParents": "Ver Padres",
+      "viewStudents": "Ver Estudiantes",
+      "addFood": "Agregar Comida",
+      "viewOrders": "Ver Pedidos",
+      "reviewPayments": "Revisar Pagos"
+    }
+  },
+  "parent": {
+    "dashboard": {
+      "title": "Dashboard Familiar",
+      "subtitle": "Resumen de hijos, calendario de comidas y actividad reciente",
+      "linkedChildren": "Hijos vinculados",
+      "inYourAccount": "En tu cuenta",
+      "activePackages": "Paquetes activos",
+      "current": "Vigentes",
+      "pendingBalance": "Saldo pendiente",
+      "accruedCredit": "Crédito acumulado",
+      "viewBalance": "Ver saldo →",
+      "myChildren": "Mis Hijos",
+      "viewAll": "Ver todo →",
+      "noChildrenYet": "Aún no hay estudiantes vinculados",
+      "noActivePackage": "Sin paquete activo",
+      "recentActivity": "Actividad Reciente",
+      "viewHistory": "Ver historial →",
+      "noRecentActivity": "Sin actividad reciente",
+      "orderCreated": "Orden #{id} creada",
+      "orderCancelled": "Orden #{id} cancelada",
+      "payment": "Pago #{id}",
+      "items": "ítem(s)"
+    }
+  },
+  "vendor": {
+    "dashboard": {
+      "subtitle": "Pedidos del día, consumos y actividad operativa",
+      "todayOrders": "Pedidos de hoy",
+      "generatedToday": "Generados hoy",
+      "pending": "Pendientes",
+      "itemsToDeliver": "Ítems por entregar",
+      "todayConsumptions": "Consumos de hoy",
+      "registered": "Registrados",
+      "activeStudents": "Estudiantes activos",
+      "available": "Disponibles",
+      "monthlySales": "Ventas del mes",
+      "accumulatedOrders": "Pedidos acumulados",
+      "quickSearch": "Búsqueda rápida",
+      "quickSearchDesc": "Localiza estudiantes y registra consumos desde la sección de búsqueda.",
+      "search": "Buscar",
+      "recentOrders": "Pedidos Recientes",
+      "viewAll": "Ver todos →",
+      "noOrdersToday": "No hay pedidos hoy",
+      "items": "ítem(s)"
+    }
+  },
+  "mealCalendar": {
+    "title": "Calendario de comidas",
+    "subtitle": "Clic en un día para ver el detalle",
+    "allChildren": "Todos los hijos",
+    "prevMonth": "Mes anterior",
+    "nextMonth": "Mes siguiente",
+    "calendarView": "Calendario",
+    "listView": "Lista",
+    "noMealsForMonth": "No hay comidas pedidas para {month}.",
+    "meals": "comida(s)",
+    "closeDetail": "Cerrar detalle",
+    "noOrdersForDay": "No hay pedidos para este día.",
+    "order": "Orden"
+  },
+  "foodTabs": {
+    "general": "Comida general",
+    "drinks": "Bebidas",
+    "casados": "Casados"
+  },
+  "publicMenu": {
+    "eyebrow": "Menú del mes",
+    "title": "Nuestro Menú",
+    "subtitle": "Comidas frescas, nutritivas y deliciosas para cada nivel escolar, las mismas que puedes agendar para tus hijos desde tu cuenta.",
+    "loginNotice": "Para ver precios y realizar pedidos necesitas",
+    "loginLink": "iniciar sesión",
+    "emptyTitle": "El menú estará disponible pronto",
+    "emptySubtitle": "Vuelve más tarde para ver las opciones del día.",
+    "order": "Pedir",
+    "searchPlaceholder": "Buscar comida...",
+    "noResultsTitle": "No hay comidas disponibles para esta pestaña.",
+    "noResultsSubtitle": "Prueba otra pestaña o cambia el filtro de búsqueda."
+  }
+}

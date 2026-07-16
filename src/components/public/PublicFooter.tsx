@@ -1,7 +1,28 @@
-﻿import Link from "next/link";
+"use client";
+
+import Link from "@/i18n/Link";
 import { ChefHat, Mail, Phone, MapPin, Globe, AtSign, MessageCircle } from "lucide-react";
+import { useTranslations } from "@/i18n/I18nProvider";
 
 export default function PublicFooter() {
+  const t = useTranslations();
+
+  const menuItems: string[] = [
+    t("publicFooter.menuItems.0"),
+    t("publicFooter.menuItems.1"),
+    t("publicFooter.menuItems.2"),
+    t("publicFooter.menuItems.3"),
+    t("publicFooter.menuItems.4"),
+    t("publicFooter.menuItems.5"),
+  ];
+
+  const portalLinks = [
+    { href: "/login", label: t("publicFooter.portalSignIn") },
+    { href: "/parent/dashboard", label: t("publicFooter.portalParent") },
+    { href: "/admin/dashboard", label: t("publicFooter.portalAdmin") },
+    { href: "/nutrition", label: t("publicFooter.portalNutrition") },
+  ];
+
   return (
     <footer className="bg-slate-900 text-slate-300">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-12 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-10">
@@ -16,13 +37,12 @@ export default function PublicFooter() {
                 The Club House
               </p>
               <p className="text-cyan-400 text-[10px] uppercase tracking-widest">
-                Alimentación Escolar
+                {t("auth.layout.tagline")}
               </p>
             </div>
           </div>
           <p className="text-sm text-slate-400 leading-relaxed">
-            Comidas saludables y deliciosas para estudiantes. Nutrición de
-            calidad preparada con amor.
+            {t("publicFooter.description")}
           </p>
           <div className="flex gap-3 mt-4">
             {[Globe, AtSign, MessageCircle].map((Icon, i) => (
@@ -40,33 +60,26 @@ export default function PublicFooter() {
         {/* Links */}
         <div>
           <h3 className="font-semibold text-white mb-4 text-sm uppercase tracking-wide">
-            Menú
+            {t("publicFooter.menuTitle")}
           </h3>
           <ul className="space-y-2 text-sm">
-            {["Desayunos", "Almuerzos", "Meriendas", "Bebidas", "Snacks", "Paquetes"].map(
-              (l) => (
-                <li key={l}>
-                  <Link href="/menu" className="hover:text-cyan-400 transition-colors">
-                    {l}
-                  </Link>
-                </li>
-              )
-            )}
+            {menuItems.map((l) => (
+              <li key={l}>
+                <Link href="/menu" className="hover:text-cyan-400 transition-colors">
+                  {l}
+                </Link>
+              </li>
+            ))}
           </ul>
         </div>
 
         {/* Portal */}
         <div>
           <h3 className="font-semibold text-white mb-4 text-sm uppercase tracking-wide">
-            Portal
+            {t("publicFooter.portalTitle")}
           </h3>
           <ul className="space-y-2 text-sm">
-            {[
-              { href: "/login", label: "Iniciar Sesión" },
-              { href: "/parent/dashboard", label: "Portal de Padres" },
-              { href: "/admin/dashboard", label: "Panel Admin" },
-              { href: "/nutrition", label: "Nutricionista & Tips" },
-            ].map((l) => (
+            {portalLinks.map((l) => (
               <li key={l.href}>
                 <Link href={l.href} className="hover:text-cyan-400 transition-colors">
                   {l.label}
@@ -79,7 +92,7 @@ export default function PublicFooter() {
         {/* Contact */}
         <div>
           <h3 className="font-semibold text-white mb-4 text-sm uppercase tracking-wide">
-            Contacto
+            {t("publicFooter.contactTitle")}
           </h3>
           <ul className="space-y-3 text-sm">
             <li className="flex items-start gap-2.5">
@@ -99,17 +112,16 @@ export default function PublicFooter() {
       </div>
 
       <div className="border-t border-slate-800 py-5 px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-500">
-        <p>© {new Date().getFullYear()} The Club House. Todos los derechos reservados.</p>
+        <p>© {new Date().getFullYear()} The Club House. {t("publicFooter.rights")}</p>
         <div className="flex gap-4">
           <Link href="#" className="hover:text-cyan-400 transition-colors">
-            Privacidad
+            {t("publicFooter.privacy")}
           </Link>
           <Link href="#" className="hover:text-cyan-400 transition-colors">
-            Términos
+            {t("publicFooter.terms")}
           </Link>
         </div>
       </div>
     </footer>
   );
 }
-

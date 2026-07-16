@@ -2,8 +2,8 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/db";
 import { NextRequest, NextResponse } from "next/server";
 
-const ORDER_STATUSES = ["PENDING", "PAID", "PREPARING", "DELIVERED", "CANCELLED"] as const;
-const VENDOR_ALLOWED_STATUSES = ["PREPARING", "DELIVERED"] as const;
+const ORDER_STATUSES = ["PENDING", "PAID", "PREPARING", "DELIVERED", "NOT_PICKED_UP", "CANCELLED"] as const;
+const VENDOR_ALLOWED_STATUSES = ["PREPARING", "DELIVERED", "NOT_PICKED_UP"] as const;
 const PARENT_CANCELLATION_WINDOW_MS = 2 * 60 * 60 * 1000;
 
 export async function PUT(
@@ -86,16 +86,16 @@ export async function PUT(
     );
   }
 
-  if (status === "CANCELLED" && order.items.some((item) => item.delivered)) {
+  if ((status === "CANCELLED" || status === "NOT_PICKED_UP") && order.items.some((item) => item.delivered)) {
     return NextResponse.json(
-      { error: "No se puede cancelar un pedido con ítems entregados" },
+      { error: "No se puede aplicar ese estado a un pedido con ítems entregados" },
       { status: 400 }
     );
   }
 
-  if (order.status === "CANCELLED") {
+  if (order.status === "CANCELLED" || order.status === "NOT_PICKED_UP") {
     return NextResponse.json(
-      { error: "No se puede cambiar un pedido cancelado" },
+      { error: "No se puede cambiar un pedido cancelado o no recogido" },
       { status: 400 }
     );
   }
@@ -130,6 +130,21 @@ export async function PUT(
         payments: true,
       },
     });
+
+    // Orders are charged to the parent's balance as soon as they're created
+    // (status leaves PENDING), so cancelling one has to refund that amount.
+    if (nextStatus === "CANCELLED" && order.status !== "PENDING") {
+      const balance = await tx.parentBalance.findUnique({
+        where: { parentId: result.parentId },
+      });
+
+      if (balance) {
+        await tx.parentBalance.update({
+          where: { parentId: result.parentId },
+          data: { pendingBalance: Math.max(0, balance.pendingBalance - order.total) },
+        });
+      }
+    }
 
     await tx.notification.create({
       data: {

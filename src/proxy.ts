@@ -1,42 +1,62 @@
 import { auth } from "@/auth";
 import { NextResponse } from "next/server";
+import { defaultLocale, isLocale, locales, type Locale } from "@/i18n/config";
+
+function extractLocalePrefix(pathname: string): Locale | null {
+  const match = locales.find(
+    (locale) => pathname === `/${locale}` || pathname.startsWith(`/${locale}/`)
+  );
+  return match ?? null;
+}
 
 export default auth((req) => {
-  const { pathname } = req.nextUrl;
-  const session = req.auth;
+  const { pathname, search } = req.nextUrl;
+  const localePrefix = extractLocalePrefix(pathname);
 
-  if (pathname.startsWith("/admin")) {
+  if (!localePrefix) {
+    const cookieLocale = req.cookies.get("NEXT_LOCALE")?.value ?? "";
+    const locale = isLocale(cookieLocale) ? cookieLocale : defaultLocale;
+    return NextResponse.redirect(new URL(`/${locale}${pathname}${search}`, req.url));
+  }
+
+  const session = req.auth;
+  const path = pathname.slice(`/${localePrefix}`.length) || "/";
+
+  const redirectWithLocale = (target: "login" | "unauthorized") =>
+    NextResponse.redirect(new URL(`/${localePrefix}/${target}`, req.url));
+
+  if (path.startsWith("/admin")) {
     if (!session) {
-      return NextResponse.redirect(new URL("/login", req.url));
+      return redirectWithLocale("login");
     }
     if (session.user && (session.user as { role?: string }).role !== "ADMIN") {
-      return NextResponse.redirect(new URL("/unauthorized", req.url));
+      return redirectWithLocale("unauthorized");
     }
   }
 
-  if (pathname.startsWith("/parent")) {
+  if (path.startsWith("/parent")) {
     if (!session) {
-      return NextResponse.redirect(new URL("/login", req.url));
+      return redirectWithLocale("login");
     }
     if (
       session.user &&
       (session.user as { role?: string }).role !== "PARENT" &&
       (session.user as { role?: string }).role !== "ADMIN"
     ) {
-      return NextResponse.redirect(new URL("/unauthorized", req.url));
+      return redirectWithLocale("unauthorized");
     }
   }
 
-  if (pathname.startsWith("/vendor")) {
+  if (path.startsWith("/vendor")) {
     if (!session) {
-      return NextResponse.redirect(new URL("/login", req.url));
+      return redirectWithLocale("login");
     }
     if (
       session.user &&
       (session.user as { role?: string }).role !== "VENDOR" &&
       (session.user as { role?: string }).role !== "ADMIN"
     ) {
-      return NextResponse.redirect(new URL("/unauthorized", req.url));
+      return redirectWithLocale("unauthorized");
     }
   }
 
@@ -44,5 +64,5 @@ export default auth((req) => {
 });
 
 export const config = {
-  matcher: ["/admin/:path*", "/parent/:path*", "/vendor/:path*"],
+  matcher: ["/((?!api|_next|.*\\..*).*)"],
 };

@@ -1,4 +1,4 @@
-﻿import Link from "next/link";
+﻿import Link from "@/i18n/Link";
 import Header from "@/components/dashboard/Header";
 
 type ComingSoonPageProps = {

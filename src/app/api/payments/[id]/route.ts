@@ -24,7 +24,7 @@ export async function PUT(
     const payment = await prisma.$transaction(async (tx) => {
       const existing = await tx.payment.findUnique({
         where: { id },
-        select: { id: true, parentId: true, orderId: true },
+        select: { id: true, parentId: true, orderId: true, amount: true },
       });
 
       if (!existing) {
@@ -46,6 +46,24 @@ export async function PUT(
         },
       });
 
+      // Handle balance payments (no orderId)
+      if (!updated.order?.id && status === "APPROVED") {
+        let balance = await tx.parentBalance.findUnique({
+          where: { parentId: updated.parentId },
+        });
+
+        if (balance) {
+          balance = await tx.parentBalance.update({
+            where: { parentId: updated.parentId },
+            data: {
+              pendingBalance: Math.max(0, balance.pendingBalance - updated.amount),
+              approvedBalance: balance.approvedBalance + updated.amount,
+            },
+          });
+        }
+      }
+
+      // Handle order payments
       if (updated.order?.id) {
         const [approved, undeliveredItems] = await Promise.all([
           tx.payment.aggregate({
