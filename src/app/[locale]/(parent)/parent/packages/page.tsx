@@ -6,6 +6,7 @@ import axios from "axios";
 import Header from "@/components/dashboard/Header";
 import StatusBadge from "@/components/dashboard/StatusBadge";
 import { formatCurrency, formatDate } from "@/lib/utils";
+import { useTranslations } from "@/i18n/I18nProvider";
 import { CheckCircle2, PackagePlus } from "lucide-react";
 
 type Student = { id: string; name: string; level: string };
@@ -30,6 +31,7 @@ type StudentPackage = {
 };
 
 export default function ParentPackagesPage() {
+  const t = useTranslations();
   const queryClient = useQueryClient();
   const [studentId, setStudentId] = useState("");
   const [packageId, setPackageId] = useState("");
@@ -62,7 +64,7 @@ export default function ParentPackagesPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["student-packages"] });
       queryClient.invalidateQueries({ queryKey: ["parent-payments"] });
-      setFeedback("Paquete comprado correctamente. Se generó un pago pendiente para revisión.");
+      setFeedback(t("parent.packages.purchaseSuccess"));
       setError("");
       setPackageId("");
       setStudentId("");
@@ -71,7 +73,7 @@ export default function ParentPackagesPage() {
       const message =
         axios.isAxiosError(mutationError) && mutationError.response?.data?.error
           ? String(mutationError.response.data.error)
-          : "No se pudo comprar el paquete";
+          : t("parent.packages.purchaseError");
       setFeedback("");
       setError(message);
     },
@@ -79,12 +81,12 @@ export default function ParentPackagesPage() {
 
   return (
     <div>
-      <Header title="Paquetes" subtitle="Consulta y compra planes de comidas para tus hijos" />
+      <Header title={t("parent.packages.title")} subtitle={t("parent.packages.subtitle")} />
       <div className="p-6 space-y-4">
         <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
           <div className="mb-4 flex items-center gap-2 font-semibold text-slate-900">
             <PackagePlus className="h-4 w-4 text-cyan-600" />
-            Comprar paquete
+            {t("parent.packages.buyPackage")}
           </div>
 
           <div className="grid gap-3 md:grid-cols-3">
@@ -93,7 +95,7 @@ export default function ParentPackagesPage() {
               onChange={(event) => setStudentId(event.target.value)}
               className="h-10 rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm"
             >
-              <option value="">Selecciona estudiante</option>
+              <option value="">{t("parent.packages.selectStudent")}</option>
               {students.map((student) => (
                 <option key={student.id} value={student.id}>
                   {student.name} · {student.level}
@@ -106,7 +108,7 @@ export default function ParentPackagesPage() {
               onChange={(event) => setPackageId(event.target.value)}
               className="h-10 rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm"
             >
-              <option value="">Selecciona paquete</option>
+              <option value="">{t("parent.packages.selectPackage")}</option>
               {packageOptions
                 .filter((pkg) => pkg.status === "ACTIVE")
                 .map((pkg) => (
@@ -129,7 +131,7 @@ export default function ParentPackagesPage() {
               onClick={() => {
                 if (!studentId || !packageId) {
                   setFeedback("");
-                  setError("Selecciona estudiante y paquete");
+                  setError(t("parent.packages.selectBothError"));
                   return;
                 }
 
@@ -145,7 +147,7 @@ export default function ParentPackagesPage() {
               ) : (
                 <CheckCircle2 className="h-4 w-4" />
               )}
-              {purchaseMutation.isPending ? "Procesando..." : "Comprar paquete"}
+              {purchaseMutation.isPending ? t("parent.packages.processing") : t("parent.packages.buyPackage")}
             </button>
           </div>
 
@@ -168,12 +170,12 @@ export default function ParentPackagesPage() {
               <div>
                 <div className="font-semibold text-slate-900">{studentPackage.student.name}</div>
                 <div className="text-sm text-slate-500">{studentPackage.package.name}</div>
-                <div className="mt-1 text-xs text-slate-500">Restantes: {studentPackage.remaining} · Consumidos: {studentPackage.consumed}</div>
-                <div className="mt-1 text-xs text-slate-500">Desde {formatDate(studentPackage.startDate)}{studentPackage.endDate ? ` · Hasta ${formatDate(studentPackage.endDate)}` : ""}</div>
+                <div className="mt-1 text-xs text-slate-500">{t("parent.packages.remaining")}: {studentPackage.remaining} · {t("parent.packages.consumed")}: {studentPackage.consumed}</div>
+                <div className="mt-1 text-xs text-slate-500">{t("parent.packages.since")} {formatDate(studentPackage.startDate)}{studentPackage.endDate ? ` · ${t("parent.packages.until")} ${formatDate(studentPackage.endDate)}` : ""}</div>
               </div>
               <StatusBadge status={studentPackage.status} />
             </div>
-            <div className="mt-3 text-sm text-slate-600">{formatCurrency(studentPackage.package.price)} · {studentPackage.package.validityDays ?? 0} días</div>
+            <div className="mt-3 text-sm text-slate-600">{formatCurrency(studentPackage.package.price)} · {studentPackage.package.validityDays ?? 0} {t("parent.packages.days")}</div>
           </div>
         ))}
       </div>

@@ -15,11 +15,6 @@ export default function PublicNavbar() {
   const navLinks = [
     { href: "/", label: t("publicNav.home") },
     { href: "/menu", label: t("publicNav.menu") },
-    { href: "/menu#preschool", label: t("publicNav.preschool") },
-    { href: "/menu#elementary", label: t("publicNav.elementary") },
-    { href: "/menu#middle", label: t("publicNav.middle") },
-    { href: "/menu#this-month", label: t("publicNav.monthMenu") },
-    { href: "/nutrition", label: t("publicNav.nutrition") },
   ];
 
   const dashboardHref =

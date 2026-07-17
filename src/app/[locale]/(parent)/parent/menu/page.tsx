@@ -1,16 +1,20 @@
 ﻿import Header from "@/components/dashboard/Header";
+import DietaryTagBadges, { DietaryTagLabels } from "@/components/dashboard/DietaryTagBadges";
 import { prisma } from "@/lib/db";
 import { formatCurrency, PRICE_LEVELS } from "@/lib/utils";
 import Image from "next/image";
 import Link from "@/i18n/Link";
 import { Info, ShoppingCart, UtensilsCrossed } from "lucide-react";
+import { getDictionary } from "@/i18n/dictionaries";
+import { isLocale } from "@/i18n/config";
+import { notFound } from "next/navigation";
 
 type ParentMenuTab = "GENERAL" | "DRINKS" | "CASADOS";
 
-const parentMenuTabs: { key: ParentMenuTab; label: string }[] = [
-  { key: "GENERAL", label: "Comida general" },
-  { key: "DRINKS", label: "Bebidas" },
-  { key: "CASADOS", label: "Casados" },
+const parentMenuTabs: { key: ParentMenuTab; labelKey: "general" | "drinks" | "casados" }[] = [
+  { key: "GENERAL", labelKey: "general" },
+  { key: "DRINKS", labelKey: "drinks" },
+  { key: "CASADOS", labelKey: "casados" },
 ];
 
 const levelLabelByValue = Object.fromEntries(
@@ -73,11 +77,21 @@ async function getMenuData() {
 }
 
 type ParentMenuPageProps = {
+  params: Promise<{ locale: string }>;
   searchParams?: Promise<{ tab?: string }>;
 };
 
-export default async function ParentMenuPage({ searchParams }: ParentMenuPageProps) {
-  const items = await getMenuData();
+export default async function ParentMenuPage({ params, searchParams }: ParentMenuPageProps) {
+  const { locale } = await params;
+  if (!isLocale(locale)) notFound();
+
+  const [items, dict] = await Promise.all([getMenuData(), getDictionary(locale)]);
+  const t = dict.parent.menu;
+  const dietaryLabels: DietaryTagLabels = {
+    GLUTEN_FREE: dict.dietaryTags.glutenFree,
+    LACTOSE_FREE: dict.dietaryTags.lactoseFree,
+    VEGETARIAN: dict.dietaryTags.vegetarian,
+  };
   const resolvedSearchParams = searchParams ? await searchParams : undefined;
   const activeTab = resolveActiveTab(resolvedSearchParams?.tab);
 
@@ -98,32 +112,31 @@ export default async function ParentMenuPage({ searchParams }: ParentMenuPagePro
   return (
     <div>
       <Header
-        title="Menu Escolar"
-        subtitle="Explora comidas, usa pestañas y agrega opciones al plan de tus hijos"
+        title={t.title}
+        subtitle={t.subtitle}
       />
 
       <div className="space-y-6 p-6">
         <section className="rounded-3xl bg-gradient-to-br from-slate-900 via-slate-800 to-cyan-900 px-6 py-7 text-white shadow-xl">
           <p className="text-cyan-300 text-xs font-semibold uppercase tracking-[0.2em]">
-            Menu actualizado
+            {t.updatedBadge}
           </p>
           <h2 className="mt-2 text-3xl font-black leading-tight">
-            Opciones nutritivas para toda la semana
+            {t.heroTitle}
           </h2>
           <p className="mt-3 max-w-3xl text-sm leading-relaxed text-slate-300">
-            Visualiza el menu completo por pestañas, revisa precios por nivel
-            y agrega comidas rapidamente al plan familiar.
+            {t.heroSubtitle}
           </p>
           <div className="mt-5 flex flex-wrap items-center gap-3">
             <div className="inline-flex items-center gap-2 rounded-full border border-cyan-300/25 bg-cyan-400/10 px-3 py-1.5 text-xs text-cyan-100">
               <Info className="h-3.5 w-3.5" />
-              Disponible solo para items activos
+              {t.availableActiveOnly}
             </div>
             <Link
               href="/parent/plan"
               className="inline-flex items-center justify-center rounded-xl bg-cyan-500 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-cyan-600"
             >
-              Ir a Planificar
+              {t.goToPlan}
             </Link>
           </div>
         </section>
@@ -131,10 +144,10 @@ export default async function ParentMenuPage({ searchParams }: ParentMenuPagePro
         {!hasAnyItem ? (
           <div className="rounded-3xl border border-dashed border-slate-300 bg-white px-6 py-16 text-center">
             <p className="text-lg font-semibold text-slate-800">
-              No hay comidas disponibles en este momento.
+              {t.noMealsAvailable}
             </p>
             <p className="mt-2 text-sm text-slate-500">
-              Intenta de nuevo mas tarde o consulta con administracion.
+              {t.tryLaterOrContact}
             </p>
           </div>
         ) : (
@@ -158,7 +171,7 @@ export default async function ParentMenuPage({ searchParams }: ParentMenuPagePro
                         : "border-slate-200 bg-white text-slate-600 hover:border-cyan-300 hover:text-cyan-700"
                     }`}
                   >
-                    <span>{tab.label}</span>
+                    <span>{dict.foodTabs[tab.labelKey]}</span>
                     <span
                       className={`rounded-full px-2 py-0.5 text-[11px] font-bold ${
                         isActive
@@ -176,10 +189,10 @@ export default async function ParentMenuPage({ searchParams }: ParentMenuPagePro
             {visibleItems.length === 0 ? (
               <div className="rounded-3xl border border-dashed border-slate-300 bg-white px-6 py-16 text-center">
                 <p className="text-lg font-semibold text-slate-800">
-                  No hay opciones en esta pestaña por ahora.
+                  {t.noOptionsInTab}
                 </p>
                 <p className="mt-2 text-sm text-slate-500">
-                  Prueba otra pestaña o vuelve a intentarlo mas tarde.
+                  {t.tryAnotherTab}
                 </p>
               </div>
             ) : (
@@ -188,7 +201,7 @@ export default async function ParentMenuPage({ searchParams }: ParentMenuPagePro
                   return (
                     <article
                       key={item.id}
-                      className="group overflow-hidden rounded-[1.5rem] border border-slate-200 bg-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg"
+                      className="group flex h-full flex-col overflow-hidden rounded-[1.5rem] border border-slate-200 bg-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg"
                     >
                       <div className="relative h-36 overflow-hidden bg-gradient-to-br from-cyan-50 to-slate-100 text-5xl">
                         {item.image ? (
@@ -210,10 +223,8 @@ export default async function ParentMenuPage({ searchParams }: ParentMenuPagePro
                         </div>
                       </div>
 
-                      <div className="relative -mt-4 rounded-t-[1.25rem] bg-white px-4 pb-4 pt-3">
-                        <span className="inline-flex items-center rounded-full bg-cyan-50 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-cyan-700">
-                          {item.category.name}
-                        </span>
+                      <div className="relative -mt-4 flex flex-1 flex-col rounded-t-[1.25rem] bg-white px-4 pb-4 pt-3">
+                        <DietaryTagBadges rawTags={item.tags} labels={dietaryLabels} />
 
                         <h4 className="mt-2 line-clamp-2 text-lg font-bold leading-tight text-slate-900">
                           {item.name}
@@ -225,35 +236,35 @@ export default async function ParentMenuPage({ searchParams }: ParentMenuPagePro
                           </p>
                         ) : null}
 
-                        {item.prices.length > 0 ? (
-                          <div className="mt-3 space-y-1 border-t border-cyan-100 pt-3">
-                            {item.prices.map((price) => (
-                              <div
-                                key={price.id}
-                                className="flex items-center justify-between text-[11px]"
-                              >
-                                <span className="text-slate-500">
-                                  {levelLabelByValue[price.level] ?? price.level}
-                                </span>
-                                <span className="font-semibold text-slate-900">
-                                  {formatCurrency(price.price)}
-                                </span>
-                              </div>
-                            ))}
-                          </div>
-                        ) : (
-                          <p className="mt-3 border-t border-cyan-100 pt-3 text-xs font-semibold text-slate-500">
-                            Precio segun nivel
-                          </p>
-                        )}
+                        <div className="mt-auto pt-3">
+                          {item.prices.length > 0 ? (
+                            <div className="space-y-1 border-t border-cyan-100 pt-3">
+                              {item.prices.map((price) => (
+                                <div
+                                  key={price.id}
+                                  className="flex items-center justify-between text-[11px]"
+                                >
+                                  <span className="text-slate-500">
+                                    {levelLabelByValue[price.level] ?? price.level}
+                                  </span>
+                                  <span className="font-semibold text-slate-900">
+                                    {formatCurrency(price.price)}
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <p className="border-t border-cyan-100 pt-3 text-xs font-semibold text-slate-500">
+                              {t.priceByLevel}
+                            </p>
+                          )}
 
-                        <div className="mt-3">
                           <Link
                             href="/parent/plan"
-                            className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-cyan-500 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-cyan-600"
+                            className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-cyan-500 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-cyan-600"
                           >
                             <ShoppingCart className="h-4 w-4" />
-                            Ir a planificar comidas
+                            {t.planMeals}
                           </Link>
                         </div>
                       </div>

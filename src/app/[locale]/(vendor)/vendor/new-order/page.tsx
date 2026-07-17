@@ -7,7 +7,10 @@ import axios from "axios";
 import Image from "next/image";
 import Link from "@/i18n/Link";
 import Header from "@/components/dashboard/Header";
+import DietaryTagBadges, { DietaryTagLabels } from "@/components/dashboard/DietaryTagBadges";
 import { formatCurrency, normalizePriceLevel } from "@/lib/utils";
+import { FOOD_TABS } from "@/lib/food-tabs";
+import { useTranslations } from "@/i18n/I18nProvider";
 import {
   CheckCircle2,
   Minus,
@@ -39,18 +42,13 @@ type FoodItem = {
   name: string;
   image?: string | null;
   description?: string | null;
+  tags?: string | null;
   available: boolean;
   category: { id: string; name: string };
   prices: FoodPrice[];
 };
 
 type VendorMenuTab = "GENERAL" | "DRINKS" | "CASADOS";
-
-const vendorMenuTabs: { key: VendorMenuTab; label: string }[] = [
-  { key: "GENERAL", label: "Comida general" },
-  { key: "DRINKS", label: "Bebidas" },
-  { key: "CASADOS", label: "Casados" },
-];
 
 type CartLine = {
   foodItemId: string;
@@ -86,6 +84,10 @@ function getVendorMenuTab(item: Pick<FoodItem, "name" | "category">): VendorMenu
   return "GENERAL";
 }
 
+function isStaffStudent(student: Pick<Student, "level">) {
+  return student.level === "STAFF";
+}
+
 function getPriceForStudentLevel(food: FoodItem, studentLevel: string) {
   const normalizedStudentLevel = normalizePriceLevel(studentLevel);
   const exact = food.prices.find(
@@ -99,6 +101,7 @@ function getPriceForStudentLevel(food: FoodItem, studentLevel: string) {
 }
 
 function VendorNewOrderContent() {
+  const t = useTranslations();
   const queryClient = useQueryClient();
   const searchParams = useSearchParams();
   const preselectedStudentId = searchParams.get("studentId") ?? "";
@@ -113,6 +116,12 @@ function VendorNewOrderContent() {
   const [cart, setCart] = useState<CartLine[]>([]);
   const [feedback, setFeedback] = useState("");
   const [error, setError] = useState("");
+
+  const dietaryLabels: DietaryTagLabels = {
+    GLUTEN_FREE: t("dietaryTags.glutenFree"),
+    LACTOSE_FREE: t("dietaryTags.lactoseFree"),
+    VEGETARIAN: t("dietaryTags.vegetarian"),
+  };
 
   const { data: students = [], isLoading: studentsLoading } = useQuery<Student[]>({
     queryKey: ["vendor-students"],
@@ -174,9 +183,7 @@ function VendorNewOrderContent() {
 
   const changeStudent = () => {
     if (cart.length > 0) {
-      const confirmed = window.confirm(
-        "Cada pedido es para un solo estudiante. Si cambias de estudiante se borrará todo lo agregado. ¿Deseas continuar?"
-      );
+      const confirmed = window.confirm(t("vendor.newOrder.confirmChangeStudent"));
       if (!confirmed) return;
       setCart([]);
     }
@@ -192,7 +199,7 @@ function VendorNewOrderContent() {
 
     const price = getPriceForStudentLevel(food, selectedStudent.level);
     if (!price || price <= 0) {
-      setError("Esta comida no tiene precio configurado para el nivel de este estudiante.");
+      setError(t("vendor.newOrder.errorNoPriceForLevel"));
       return;
     }
 
@@ -240,7 +247,14 @@ function VendorNewOrderContent() {
       setCart([]);
       setError("");
       setFeedback(
-        `Pedido enviado a cocina para ${selectedStudent?.name}. Se cargó a la cuenta de ${selectedStudent?.parent?.name ?? "su padre/madre"}.`
+        t("vendor.newOrder.successSentToKitchen")
+          .replace("{student}", selectedStudent?.name ?? "")
+          .replace(
+            "{parent}",
+            selectedStudent && isStaffStudent(selectedStudent)
+              ? t("common.staffLabel")
+              : selectedStudent?.parent?.name ?? t("vendor.newOrder.fallbackParent")
+          )
       );
       setSelectedStudentId("");
       setIsStudentPickerOpen(true);
@@ -249,7 +263,7 @@ function VendorNewOrderContent() {
       const message =
         axios.isAxiosError(mutationError) && mutationError.response?.data?.error
           ? String(mutationError.response.data.error)
-          : "No se pudo enviar el pedido";
+          : t("vendor.newOrder.errorSendOrder");
       setFeedback("");
       setError(message);
     },
@@ -257,11 +271,11 @@ function VendorNewOrderContent() {
 
   const acceptOrder = () => {
     if (!selectedStudentId) {
-      setError("Selecciona un estudiante antes de aceptar el pedido.");
+      setError(t("vendor.newOrder.errorSelectStudentFirst"));
       return;
     }
     if (cart.length === 0) {
-      setError("Agrega al menos un producto al pedido.");
+      setError(t("vendor.newOrder.errorAddOneProduct"));
       return;
     }
     setError("");
@@ -272,8 +286,8 @@ function VendorNewOrderContent() {
   return (
     <div>
       <Header
-        title="Nueva Orden en Restaurante"
-        subtitle="Pedido directo en el mostrador: busca al estudiante, arma el pedido y envíalo a cocina"
+        title={t("vendor.newOrder.title")}
+        subtitle={t("vendor.newOrder.subtitle")}
       />
 
       <div className="space-y-4 p-6">
@@ -285,10 +299,18 @@ function VendorNewOrderContent() {
                   <UserRound className="h-5 w-5 text-cyan-700" />
                 </div>
                 <div>
-                  <p className="text-lg font-black text-slate-900">{selectedStudent.name}</p>
+                  <p className="flex flex-wrap items-center gap-2 text-lg font-black text-slate-900">
+                    <span>{selectedStudent.name}</span>
+                    {isStaffStudent(selectedStudent) ? (
+                      <span className="rounded-full bg-violet-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-violet-700">
+                        {t("common.staffLabel")}
+                      </span>
+                    ) : null}
+                  </p>
                   <p className="text-xs font-semibold text-slate-600">
-                    {selectedStudent.level}
-                    {selectedStudent.parent?.name ? ` · Padre/Madre: ${selectedStudent.parent.name}` : ""}
+                    {isStaffStudent(selectedStudent)
+                      ? t("common.staffLevelLabel")
+                      : `${selectedStudent.level}${selectedStudent.parent?.name ? ` · ${t("vendor.newOrder.guardianLabel")}: ${selectedStudent.parent.name}` : ""}`}
                   </p>
                 </div>
               </div>
@@ -296,18 +318,18 @@ function VendorNewOrderContent() {
                 onClick={changeStudent}
                 className="rounded-xl border border-cyan-300 bg-white px-3 py-2 text-xs font-semibold text-cyan-700 hover:bg-cyan-100"
               >
-                Cambiar estudiante
+                {t("vendor.newOrder.changeStudent")}
               </button>
             </div>
           ) : (
             <div>
-              <p className="mb-2 text-sm font-semibold text-slate-700">Buscar estudiante por nombre</p>
+              <p className="mb-2 text-sm font-semibold text-slate-700">{t("vendor.newOrder.searchStudentByName")}</p>
               <div className="relative max-w-md">
                 <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                 <input
                   value={studentSearch}
                   onChange={(event) => setStudentSearch(event.target.value)}
-                  placeholder="Nombre del estudiante..."
+                  placeholder={t("vendor.newOrder.studentNamePlaceholder")}
                   autoFocus
                   className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50 pl-9 pr-3 text-sm focus:border-cyan-400 focus:bg-white"
                 />
@@ -315,9 +337,9 @@ function VendorNewOrderContent() {
 
               <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
                 {studentsLoading ? (
-                  <p className="text-sm text-slate-500">Cargando estudiantes...</p>
+                  <p className="text-sm text-slate-500">{t("vendor.newOrder.loadingStudents")}</p>
                 ) : filteredStudents.length === 0 ? (
-                  <p className="text-sm text-slate-500">No se encontraron estudiantes.</p>
+                  <p className="text-sm text-slate-500">{t("vendor.newOrder.noStudentsFound")}</p>
                 ) : (
                   filteredStudents.map((student) => (
                     <button
@@ -325,9 +347,18 @@ function VendorNewOrderContent() {
                       onClick={() => selectStudent(student)}
                       className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-left transition-colors hover:border-cyan-300 hover:bg-cyan-50/40"
                     >
-                      <p className="font-bold text-slate-900">{student.name}</p>
-                      <p className="mt-1 text-xs text-slate-600">{student.level}</p>
-                      {student.parent?.name ? (
+                      <p className="flex flex-wrap items-center gap-2 font-bold text-slate-900">
+                        <span>{student.name}</span>
+                        {isStaffStudent(student) ? (
+                          <span className="rounded-full bg-violet-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-violet-700">
+                            {t("common.staffLabel")}
+                          </span>
+                        ) : null}
+                      </p>
+                      <p className="mt-1 text-xs text-slate-600">
+                        {isStaffStudent(student) ? t("common.staffLevelLabel") : student.level}
+                      </p>
+                      {!isStaffStudent(student) && student.parent?.name ? (
                         <p className="mt-0.5 text-xs text-slate-400">{student.parent.name}</p>
                       ) : null}
                     </button>
@@ -347,13 +378,13 @@ function VendorNewOrderContent() {
                   <input
                     value={menuSearch}
                     onChange={(event) => setMenuSearch(event.target.value)}
-                    placeholder="Buscar comida..."
+                    placeholder={t("vendor.newOrder.searchFoodPlaceholder")}
                     className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50 pl-9 pr-3 text-sm focus:border-cyan-400 focus:bg-white"
                   />
                 </div>
 
                 <div className="mt-4 flex flex-wrap items-center gap-2">
-                  {vendorMenuTabs.map((tab) => {
+                  {FOOD_TABS.map((tab) => {
                     const isActive = tab.key === activeTab;
                     return (
                       <button
@@ -366,7 +397,7 @@ function VendorNewOrderContent() {
                             : "border-slate-200 bg-white text-slate-600 hover:border-cyan-300 hover:text-cyan-700"
                         }`}
                       >
-                        <span>{tab.label}</span>
+                        <span>{t(tab.labelKey)}</span>
                         <span
                           className={`rounded-full px-2 py-0.5 text-[11px] font-bold ${
                             isActive ? "bg-white/20 text-white" : "bg-slate-100 text-slate-600"
@@ -381,12 +412,12 @@ function VendorNewOrderContent() {
 
                 {menuLoading ? (
                   <div className="mt-6 rounded-2xl border border-dashed border-slate-300 bg-white px-6 py-12 text-center text-sm text-slate-500">
-                    Cargando menú...
+                    {t("vendor.newOrder.loadingMenu")}
                   </div>
                 ) : filteredMenu.length === 0 ? (
                   <div className="mt-6 rounded-2xl border border-dashed border-slate-300 bg-white px-6 py-12 text-center">
                     <p className="text-lg font-semibold text-slate-900">
-                      No hay comidas disponibles para esta pestaña.
+                      {t("vendor.newOrder.noFoodInTab")}
                     </p>
                   </div>
                 ) : (
@@ -397,7 +428,7 @@ function VendorNewOrderContent() {
                       return (
                         <article
                           key={item.id}
-                          className="group overflow-hidden rounded-[1.5rem] border border-slate-200 bg-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg"
+                          className="group flex h-full flex-col overflow-hidden rounded-[1.5rem] border border-slate-200 bg-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg"
                         >
                           <div className="relative h-32 overflow-hidden bg-gradient-to-br from-cyan-50 to-slate-100 text-5xl">
                             {item.image ? (
@@ -416,18 +447,16 @@ function VendorNewOrderContent() {
                             </div>
                           </div>
 
-                          <div className="relative -mt-4 rounded-t-[1.25rem] bg-white px-4 pb-4 pt-3">
-                            <span className="inline-flex items-center rounded-full bg-cyan-50 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-cyan-700">
-                              {item.category.name}
-                            </span>
+                          <div className="relative -mt-4 flex flex-1 flex-col rounded-t-[1.25rem] bg-white px-4 pb-4 pt-3">
+                            <DietaryTagBadges rawTags={item.tags} labels={dietaryLabels} />
 
                             <h4 className="mt-2 line-clamp-2 text-base font-bold leading-tight text-slate-900">
                               {item.name}
                             </h4>
 
-                            <div className="mt-3 flex items-center justify-between border-t border-cyan-100 pt-3">
+                            <div className="mt-auto flex items-center justify-between border-t border-cyan-100 pt-3">
                               <span className="text-sm font-black text-slate-900">
-                                {price ? formatCurrency(price) : "Sin precio"}
+                                {price ? formatCurrency(price) : t("vendor.newOrder.noPrice")}
                               </span>
                               <button
                                 onClick={() => addToOrder(item)}
@@ -435,7 +464,7 @@ function VendorNewOrderContent() {
                                 className="inline-flex items-center gap-1.5 rounded-xl bg-cyan-500 px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-cyan-600 disabled:cursor-not-allowed disabled:bg-slate-300"
                               >
                                 <Plus className="h-3.5 w-3.5" />
-                                Agregar a orden
+                                {t("vendor.newOrder.addToOrder")}
                               </button>
                             </div>
                           </div>
@@ -451,15 +480,15 @@ function VendorNewOrderContent() {
               <div className="border-b border-slate-100 px-5 py-4">
                 <div className="flex items-center gap-2">
                   <ShoppingCart className="h-5 w-5 text-slate-700" />
-                  <h3 className="text-2xl font-black text-slate-900">Pedido actual</h3>
+                  <h3 className="text-2xl font-black text-slate-900">{t("vendor.newOrder.currentOrder")}</h3>
                 </div>
-                <p className="mt-1 text-xs text-slate-500">Para {selectedStudent.name}</p>
+                <p className="mt-1 text-xs text-slate-500">{t("vendor.newOrder.forStudent").replace("{name}", selectedStudent.name)}</p>
               </div>
 
               <div className="max-h-[420px] space-y-2 overflow-y-auto p-3">
                 {cart.length === 0 ? (
                   <div className="px-2 py-10 text-center text-sm text-slate-400">
-                    Agrega productos del menú.
+                    {t("vendor.newOrder.addProductsFromMenu")}
                   </div>
                 ) : (
                   cart.map((line) => (
@@ -469,13 +498,13 @@ function VendorNewOrderContent() {
                     >
                       <div className="min-w-0 flex-1">
                         <p className="truncate text-sm font-semibold text-slate-800">{line.foodName}</p>
-                        <p className="text-xs text-slate-500">{formatCurrency(line.price)} c/u</p>
+                        <p className="text-xs text-slate-500">{formatCurrency(line.price)} {t("vendor.newOrder.perUnit")}</p>
                       </div>
                       <div className="flex items-center gap-1">
                         <button
                           onClick={() => changeQuantity(line.foodItemId, -1)}
                           className="rounded-md border border-slate-200 bg-white p-1 text-slate-500 hover:bg-slate-100"
-                          aria-label={`Quitar una unidad de ${line.foodName}`}
+                          aria-label={t("vendor.newOrder.removeUnitLabel").replace("{name}", line.foodName)}
                         >
                           <Minus className="h-3 w-3" />
                         </button>
@@ -485,7 +514,7 @@ function VendorNewOrderContent() {
                         <button
                           onClick={() => changeQuantity(line.foodItemId, 1)}
                           className="rounded-md border border-slate-200 bg-white p-1 text-slate-500 hover:bg-slate-100"
-                          aria-label={`Agregar una unidad de ${line.foodName}`}
+                          aria-label={t("vendor.newOrder.addUnitLabel").replace("{name}", line.foodName)}
                         >
                           <Plus className="h-3 w-3" />
                         </button>
@@ -493,7 +522,7 @@ function VendorNewOrderContent() {
                       <button
                         onClick={() => removeLine(line.foodItemId)}
                         className="rounded-md p-1 text-red-500 hover:bg-red-50"
-                        aria-label={`Quitar ${line.foodName}`}
+                        aria-label={t("vendor.newOrder.removeItemLabel").replace("{name}", line.foodName)}
                       >
                         <Trash2 className="h-4 w-4" />
                       </button>
@@ -504,10 +533,10 @@ function VendorNewOrderContent() {
 
               <div className="border-t border-slate-100 px-5 py-4">
                 <div className="mb-3 flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5">
-                  <span className="text-lg font-black text-slate-800">Total</span>
+                  <span className="text-lg font-black text-slate-800">{t("vendor.newOrder.total")}</span>
                   <div className="text-right">
                     <p className="text-2xl font-black text-slate-900">{formatCurrency(cartTotal)}</p>
-                    <p className="text-[11px] font-semibold text-slate-500">{cartUnits} unidad(es)</p>
+                    <p className="text-[11px] font-semibold text-slate-500">{cartUnits} {t("vendor.newOrder.units")}</p>
                   </div>
                 </div>
 
@@ -527,11 +556,11 @@ function VendorNewOrderContent() {
                   ) : (
                     <CheckCircle2 className="h-4 w-4" />
                   )}
-                  {acceptMutation.isPending ? "Enviando..." : "Aceptar y enviar a cocina"}
+                  {acceptMutation.isPending ? t("vendor.newOrder.sendingEllipsis") : t("vendor.newOrder.acceptAndSend")}
                 </button>
 
                 <p className="mt-3 text-xs text-slate-500">
-                  Al aceptar, el pedido pasa directo a cocina y el monto se carga al saldo del padre/madre.
+                  {t("vendor.newOrder.chargeNote")}
                 </p>
               </div>
             </aside>
@@ -546,12 +575,12 @@ function VendorNewOrderContent() {
                 href="/vendor/orders"
                 className="inline-flex h-8 items-center gap-1.5 rounded-lg bg-emerald-600 px-3 text-xs font-semibold text-white hover:bg-emerald-700"
               >
-                Ver en Pedidos del Día
+                {t("vendor.newOrder.viewInTodayOrders")}
               </Link>
               <button
                 onClick={() => setFeedback("")}
                 className="rounded-md p-1 text-emerald-600 hover:bg-emerald-100"
-                aria-label="Cerrar aviso"
+                aria-label={t("vendor.newOrder.closeNotice")}
               >
                 <X className="h-4 w-4" />
               </button>
@@ -564,15 +593,16 @@ function VendorNewOrderContent() {
 }
 
 function VendorNewOrderLoading() {
+  const t = useTranslations();
   return (
     <div>
       <Header
-        title="Nueva Orden en Restaurante"
-        subtitle="Pedido directo en el mostrador: busca al estudiante, arma el pedido y envíalo a cocina"
+        title={t("vendor.newOrder.title")}
+        subtitle={t("vendor.newOrder.subtitle")}
       />
       <div className="p-6">
         <div className="rounded-2xl border border-slate-200 bg-white p-6 text-sm text-slate-500 shadow-sm">
-          Cargando...
+          {t("vendor.newOrder.loadingEllipsis")}
         </div>
       </div>
     </div>

@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "@/i18n/Link";
 import { Search, ShoppingCart, UtensilsCrossed } from "lucide-react";
 import { FOOD_TABS, getFoodTab, parseFoodTags, type FoodTab } from "@/lib/food-tabs";
+import DietaryTagBadges, { DietaryTagLabels } from "@/components/dashboard/DietaryTagBadges";
 import { useTranslations } from "@/i18n/I18nProvider";
 
 export type PublicFoodItem = {
@@ -28,6 +29,12 @@ export default function PublicMenuBrowser({ items }: PublicMenuBrowserProps) {
   const [search, setSearch] = useState("");
   const [activeTab, setActiveTab] = useState<FoodTab>("GENERAL");
   const t = useTranslations();
+
+  const dietaryLabels: DietaryTagLabels = {
+    GLUTEN_FREE: t("dietaryTags.glutenFree"),
+    LACTOSE_FREE: t("dietaryTags.lactoseFree"),
+    VEGETARIAN: t("dietaryTags.vegetarian"),
+  };
 
   const filteredMenu = useMemo(() => {
     const normalizedSearch = search.trim().toLowerCase();
@@ -113,7 +120,7 @@ export default function PublicMenuBrowser({ items }: PublicMenuBrowserProps) {
           {filteredMenu.map((item) => (
             <article
               key={item.id}
-              className="group overflow-hidden rounded-[1.5rem] border border-slate-200 bg-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg"
+              className="group flex h-full flex-col overflow-hidden rounded-[1.5rem] border border-slate-200 bg-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg"
             >
               <div className="relative h-36 overflow-hidden bg-gradient-to-br from-cyan-50 to-slate-100 text-5xl">
                 {item.image ? (
@@ -135,10 +142,8 @@ export default function PublicMenuBrowser({ items }: PublicMenuBrowserProps) {
                 </div>
               </div>
 
-              <div className="relative -mt-4 rounded-t-[1.25rem] bg-white px-4 pb-4 pt-3">
-                <span className="inline-flex items-center rounded-full bg-cyan-50 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-cyan-700">
-                  {item.category.name}
-                </span>
+              <div className="relative -mt-4 flex flex-1 flex-col rounded-t-[1.25rem] bg-white px-4 pb-4 pt-3">
+                <DietaryTagBadges rawTags={item.tags} labels={dietaryLabels} />
 
                 <h4 className="mt-2 line-clamp-2 text-lg font-bold leading-tight text-slate-900">
                   {item.name}
@@ -149,13 +154,15 @@ export default function PublicMenuBrowser({ items }: PublicMenuBrowserProps) {
                   </p>
                 ) : null}
 
-                <Link
-                  href="/login"
-                  className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-cyan-500 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-cyan-600"
-                >
-                  <ShoppingCart className="h-4 w-4" />
-                  {t("publicMenu.order")}
-                </Link>
+                <div className="mt-auto pt-3">
+                  <Link
+                    href="/login"
+                    className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-cyan-500 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-cyan-600"
+                  >
+                    <ShoppingCart className="h-4 w-4" />
+                    {t("publicMenu.order")}
+                  </Link>
+                </div>
               </div>
             </article>
           ))}

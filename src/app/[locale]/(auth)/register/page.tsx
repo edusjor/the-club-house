@@ -4,8 +4,10 @@ import Link from "@/i18n/Link";
 import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
 import axios from "axios";
-import { AlertCircle, Eye, EyeOff, UserPlus } from "lucide-react";
+import { AlertCircle, Baby, BriefcaseBusiness, Eye, EyeOff, UserPlus, Users } from "lucide-react";
 import { useLocale, useTranslations } from "@/i18n/I18nProvider";
+
+type AccountType = "PARENT" | "PARENT_STAFF" | "STAFF";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -16,13 +18,48 @@ export default function RegisterPage() {
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [isStaff, setIsStaff] = useState(false);
+  const [accountType, setAccountType] = useState<AccountType>("PARENT");
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
 
-  const submitRegister = async (event: FormEvent<HTMLFormElement>) => {
+  const accountTypeOptions: {
+    value: AccountType;
+    labelKey: string;
+    descKey: string;
+    confirmHintKey: string;
+    icon: React.ElementType;
+  }[] = [
+    {
+      value: "PARENT",
+      labelKey: "auth.register.typeParent",
+      descKey: "auth.register.typeParentDesc",
+      confirmHintKey: "auth.register.confirmHintParent",
+      icon: Baby,
+    },
+    {
+      value: "PARENT_STAFF",
+      labelKey: "auth.register.typeParentStaff",
+      descKey: "auth.register.typeParentStaffDesc",
+      confirmHintKey: "auth.register.confirmHintParentStaff",
+      icon: Users,
+    },
+    {
+      value: "STAFF",
+      labelKey: "auth.register.typeStaff",
+      descKey: "auth.register.typeStaffDesc",
+      confirmHintKey: "auth.register.confirmHintStaff",
+      icon: BriefcaseBusiness,
+    },
+  ];
+
+  const selectedAccountType = accountTypeOptions.find(
+    (option) => option.value === accountType
+  ) ?? accountTypeOptions[0];
+
+  const submitRegister = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setError("");
 
@@ -44,6 +81,14 @@ export default function RegisterPage() {
       return;
     }
 
+    setShowConfirmModal(true);
+  };
+
+  const confirmAndCreate = async () => {
+    const normalizedName = name.trim();
+    const normalizedEmail = email.trim().toLowerCase();
+
+    setShowConfirmModal(false);
     setSubmitting(true);
 
     try {
@@ -52,7 +97,7 @@ export default function RegisterPage() {
         email: normalizedEmail,
         phone,
         password,
-        isStaff,
+        isStaff: accountType !== "PARENT",
       });
 
       router.push(
@@ -175,20 +220,42 @@ export default function RegisterPage() {
           </div>
         </div>
 
-        <label className="flex items-start gap-2.5 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
-          <input
-            type="checkbox"
-            checked={isStaff}
-            onChange={(event) => setIsStaff(event.target.checked)}
-            className="mt-0.5 h-4 w-4 accent-cyan-500"
-          />
-          <span>
-            {t("auth.register.staffLabel")}
-            <span className="block text-xs text-slate-500">
-              {t("auth.register.staffHint")}
-            </span>
-          </span>
-        </label>
+        <div>
+          <p className="block text-xs font-semibold text-slate-700 mb-1.5 uppercase tracking-wide">
+            {t("auth.register.accountTypeLabel")}
+          </p>
+          <div className="space-y-2">
+            {accountTypeOptions.map((option) => {
+              const Icon = option.icon;
+              const isActive = accountType === option.value;
+
+              return (
+                <button
+                  key={option.value}
+                  type="button"
+                  onClick={() => setAccountType(option.value)}
+                  className={`flex w-full items-start gap-3 rounded-xl border px-4 py-3 text-left text-sm transition-colors ${
+                    isActive
+                      ? "border-cyan-400 bg-cyan-50 text-slate-900"
+                      : "border-slate-200 bg-slate-50 text-slate-700 hover:border-cyan-300"
+                  }`}
+                >
+                  <span
+                    className={`mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${
+                      isActive ? "bg-cyan-500 text-white" : "bg-slate-200 text-slate-500"
+                    }`}
+                  >
+                    <Icon className="h-4 w-4" />
+                  </span>
+                  <span>
+                    <span className="block font-semibold">{t(option.labelKey)}</span>
+                    <span className="block text-xs text-slate-500">{t(option.descKey)}</span>
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
 
         <button
           type="submit"
@@ -210,6 +277,50 @@ export default function RegisterPage() {
           {t("auth.register.signIn")}
         </Link>
       </div>
+
+      {showConfirmModal ? (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-slate-950/40 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-sm rounded-2xl border border-slate-200 bg-white p-5 shadow-2xl">
+            <h3 className="text-lg font-black text-slate-900">
+              {t("auth.register.confirmTitle")}
+            </h3>
+            <p className="mt-1 text-sm text-slate-600">
+              {t("auth.register.confirmQuestion")}
+            </p>
+
+            <div className="mt-4 flex items-start gap-3 rounded-xl border border-cyan-200 bg-cyan-50 px-4 py-3">
+              <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-cyan-500 text-white">
+                <selectedAccountType.icon className="h-4 w-4" />
+              </span>
+              <span>
+                <span className="block text-sm font-bold text-slate-900">
+                  {t(selectedAccountType.labelKey)}
+                </span>
+                <span className="block text-xs text-slate-600">
+                  {t(selectedAccountType.confirmHintKey)}
+                </span>
+              </span>
+            </div>
+
+            <div className="mt-5 flex gap-2">
+              <button
+                type="button"
+                onClick={() => setShowConfirmModal(false)}
+                className="flex-1 rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+              >
+                {t("auth.register.confirmBack")}
+              </button>
+              <button
+                type="button"
+                onClick={confirmAndCreate}
+                className="flex-1 rounded-xl bg-cyan-500 px-4 py-2.5 text-sm font-bold text-white hover:bg-cyan-600"
+              >
+                {t("auth.register.confirmCreate")}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

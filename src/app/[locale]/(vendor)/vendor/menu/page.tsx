@@ -2,17 +2,27 @@ import { prisma } from "@/lib/db";
 import Header from "@/components/dashboard/Header";
 import StatusBadge from "@/components/dashboard/StatusBadge";
 import { formatCurrency } from "@/lib/utils";
+import { getDictionary } from "@/i18n/dictionaries";
+import { isLocale } from "@/i18n/config";
+import { notFound } from "next/navigation";
 
 async function getMenu() {
   return prisma.foodItem.findMany({ include: { category: true, prices: true }, orderBy: { createdAt: "desc" } });
 }
 
-export default async function VendorMenuPage() {
-  const items = await getMenu();
+export default async function VendorMenuPage({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}) {
+  const { locale } = await params;
+  if (!isLocale(locale)) notFound();
+  const [items, dict] = await Promise.all([getMenu(), getDictionary(locale)]);
+  const t = dict.vendor.menu;
 
   return (
     <div>
-      <Header title="Menu Disponible" subtitle="Vista rapida de comidas listas para entregar" />
+      <Header title={t.title} subtitle={t.subtitle} />
       <div className="p-6 grid gap-4 lg:grid-cols-2 xl:grid-cols-3">
         {items.map((item) => (
           <div key={item.id} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">

@@ -11,6 +11,7 @@ interface DashboardShellProps {
   role: ShellRole;
   userName?: string;
   userEmail?: string;
+  titleKey?: string;
   children: React.ReactNode;
 }
 
@@ -18,6 +19,7 @@ export default function DashboardShell({
   role,
   userName,
   userEmail,
+  titleKey,
   children,
 }: DashboardShellProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -29,6 +31,7 @@ export default function DashboardShell({
         role={role}
         userName={userName}
         userEmail={userEmail}
+        titleKey={titleKey}
         className="hidden xl:flex"
       />
 
@@ -44,6 +47,7 @@ export default function DashboardShell({
         role={role}
         userName={userName}
         userEmail={userEmail}
+        titleKey={titleKey}
         onNavigate={() => setMobileOpen(false)}
         className={`xl:hidden transition-transform duration-300 ease-out ${
           mobileOpen ? "translate-x-0" : "-translate-x-full"

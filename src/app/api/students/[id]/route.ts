@@ -51,6 +51,15 @@ export async function PUT(
     );
   }
 
+  // Staff self-records mirror the staff user's own account (userId === parentId);
+  // they are managed from the profile, not as a child.
+  if (existing.userId === existing.parentId) {
+    return NextResponse.json(
+      { error: "Este perfil de staff se administra desde la cuenta del usuario" },
+      { status: 403 }
+    );
+  }
+
   if (parentId) {
     if (sessionRole === "PARENT" && parentId !== existing.parentId) {
       return NextResponse.json(

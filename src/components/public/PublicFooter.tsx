@@ -20,7 +20,6 @@ export default function PublicFooter() {
     { href: "/login", label: t("publicFooter.portalSignIn") },
     { href: "/parent/dashboard", label: t("publicFooter.portalParent") },
     { href: "/admin/dashboard", label: t("publicFooter.portalAdmin") },
-    { href: "/nutrition", label: t("publicFooter.portalNutrition") },
   ];
 
   return (

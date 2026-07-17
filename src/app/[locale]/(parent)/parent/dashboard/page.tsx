@@ -6,7 +6,7 @@ import StatsCard from "@/components/dashboard/StatsCard";
 import StatusBadge from "@/components/dashboard/StatusBadge";
 import MealCalendar from "@/components/dashboard/MealCalendar";
 import { formatCurrency, formatDateTime, formatOrderNumber, formatPaymentNumber } from "@/lib/utils";
-import { Baby, CreditCard, Package, ShoppingCart, TrendingUp, XCircle } from "lucide-react";
+import { CreditCard, Package, ShoppingCart, TrendingUp, XCircle } from "lucide-react";
 import { getDictionary } from "@/i18n/dictionaries";
 import { isLocale } from "@/i18n/config";
 import { notFound } from "next/navigation";
@@ -26,7 +26,7 @@ async function getParentDashboardData() {
       activePackages: [],
       calendarItems: [],
       recentActivity: [] as ActivityEvent[],
-      summary: { childrenCount: 0, activePackages: 0, pendingBalance: 0 },
+      summary: { activePackages: 0, pendingBalance: 0 },
     };
   }
 
@@ -107,7 +107,6 @@ async function getParentDashboardData() {
     })),
     recentActivity: events.slice(0, 8),
     summary: {
-      childrenCount: children.length,
       activePackages: activePackages.length,
       pendingBalance: balance?.pendingBalance ?? 0,
     },
@@ -130,8 +129,7 @@ export default async function ParentDashboard({
       <Header title={t.title} subtitle={t.subtitle} />
 
       <div className="p-6 space-y-6">
-        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
-          <StatsCard title={t.linkedChildren} value={data.summary.childrenCount} icon={Baby} iconColor="text-cyan-600" iconBg="bg-cyan-100" subtitle={t.inYourAccount} />
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
           <StatsCard title={t.activePackages} value={data.summary.activePackages} icon={Package} iconColor="text-emerald-600" iconBg="bg-emerald-100" subtitle={t.current} />
           <Link href="/parent/balance" className="bg-white rounded-2xl shadow-sm border border-slate-100 hover:border-cyan-200 transition-colors">
             <div className="p-5">
@@ -157,30 +155,7 @@ export default async function ParentDashboard({
           items={data.calendarItems}
         />
 
-        <div className="grid lg:grid-cols-2 gap-6">
-          <div className="bg-white rounded-2xl shadow-sm border border-slate-100">
-            <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
-              <h2 className="font-bold text-slate-900">{t.myChildren}</h2>
-              <Link href="/parent/children" className="text-xs text-cyan-600 font-semibold">{t.viewAll}</Link>
-            </div>
-            <div className="divide-y divide-slate-50">
-              {data.children.length === 0 ? (
-                <p className="text-center py-8 text-slate-400 text-sm">{t.noChildrenYet}</p>
-              ) : data.children.map((child) => (
-                <div key={child.id} className="px-5 py-4 flex items-center justify-between gap-4">
-                  <div>
-                    <p className="font-semibold text-slate-900">{child.name}</p>
-                    <p className="text-xs text-slate-500">{child.level}</p>
-                  </div>
-                  <div className="text-right">
-                    <StatusBadge status={child.active ? "ACTIVE" : "INACTIVE"} />
-                    <p className="mt-1 text-xs text-slate-500">{child.studentPackages[0]?.package.name ?? t.noActivePackage}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
+        <div className="grid gap-6">
           <div className="bg-white rounded-2xl shadow-sm border border-slate-100">
             <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
               <h2 className="font-bold text-slate-900">{t.recentActivity}</h2>

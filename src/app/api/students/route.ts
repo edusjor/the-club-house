@@ -16,7 +16,7 @@ export async function GET() {
 
   const currentUser = await prisma.user.findUnique({
     where: { id: userId },
-    select: { id: true, role: true, active: true },
+    select: { id: true, role: true, active: true, isStaff: true, name: true },
   });
 
   if (!currentUser || !currentUser.active) {
@@ -38,8 +38,33 @@ export async function GET() {
   }
 
   if (role === "PARENT") {
+    // Staff members get a self "student" record (level STAFF, own parent)
+    // so they can schedule meals for themselves like any other child.
+    if (currentUser.isStaff) {
+      const selfStudent = await prisma.student.findUnique({ where: { userId } });
+      if (!selfStudent) {
+        await prisma.student.create({
+          data: {
+            userId,
+            parentId: userId,
+            name: currentUser.name,
+            level: "STAFF",
+            active: true,
+          },
+        });
+      } else if (selfStudent.name !== currentUser.name) {
+        await prisma.student.update({
+          where: { id: selfStudent.id },
+          data: { name: currentUser.name },
+        });
+      }
+    }
+
     const students = await prisma.student.findMany({
-      where: { parentId: userId, user: { role: "STUDENT" } },
+      where: {
+        parentId: userId,
+        OR: [{ user: { role: "STUDENT" } }, { userId, user: { isStaff: true } }],
+      },
       include: {
         user: { select: { id: true, name: true, email: true, phone: true, active: true, role: true } },
         studentPackages: {
@@ -52,9 +77,12 @@ export async function GET() {
     return NextResponse.json(students);
   }
 
-  // VENDOR: active students
+  // VENDOR: active students, plus staff self-records so walk-in orders work for staff
   const students = await prisma.student.findMany({
-    where: { active: true, user: { role: "STUDENT" } },
+    where: {
+      active: true,
+      OR: [{ user: { role: "STUDENT" } }, { user: { role: "PARENT", isStaff: true } }],
+    },
     include: {
       parent: { select: { name: true, phone: true } },
       user: { select: { id: true, name: true, email: true, phone: true, active: true, role: true } },

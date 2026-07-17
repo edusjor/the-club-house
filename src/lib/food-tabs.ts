@@ -43,3 +43,37 @@ export function parseFoodTags(rawTags: string | null | undefined): string[] {
     return [];
   }
 }
+
+export const DIETARY_TAGS = ["GLUTEN_FREE", "LACTOSE_FREE", "VEGETARIAN"] as const;
+export type DietaryTag = (typeof DIETARY_TAGS)[number];
+
+const DIETARY_TAG_ALIASES: Record<string, DietaryTag> = {
+  GLUTEN_FREE: "GLUTEN_FREE",
+  GLUTENFREE: "GLUTEN_FREE",
+  SIN_GLUTEN: "GLUTEN_FREE",
+  LACTOSE_FREE: "LACTOSE_FREE",
+  LACTOSEFREE: "LACTOSE_FREE",
+  SIN_LACTOSA: "LACTOSE_FREE",
+  DAIRY_FREE: "LACTOSE_FREE",
+  VEGETARIAN: "VEGETARIAN",
+  VEGETARIANO: "VEGETARIAN",
+  VEGETARIANA: "VEGETARIAN",
+  VEGGIE: "VEGETARIAN",
+};
+
+export function normalizeDietaryTag(tag: string): DietaryTag | null {
+  const normalized = normalizeFoodToken(tag)
+    .toUpperCase()
+    .replace(/[^A-Z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "");
+  return DIETARY_TAG_ALIASES[normalized] ?? null;
+}
+
+export function getDietaryTags(rawTags: string | null | undefined): DietaryTag[] {
+  const found = new Set<DietaryTag>();
+  for (const tag of parseFoodTags(rawTags)) {
+    const canonical = normalizeDietaryTag(tag);
+    if (canonical) found.add(canonical);
+  }
+  return DIETARY_TAGS.filter((tag) => found.has(tag));
+}

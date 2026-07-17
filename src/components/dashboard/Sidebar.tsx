@@ -77,14 +77,15 @@ interface SidebarProps {
   userEmail?: string;
   className?: string;
   onNavigate?: () => void;
+  titleKey?: string;
 }
 
-export default function Sidebar({ role, userName, userEmail, className, onNavigate }: SidebarProps) {
+export default function Sidebar({ role, userName, userEmail, className, onNavigate, titleKey }: SidebarProps) {
   const pathname = usePathname();
   const locale = useLocale();
   const t = useTranslations();
   const navItems = navByRole[role];
-  const title = t(titleKeyByRole[role]);
+  const title = t(titleKey ?? titleKeyByRole[role]);
 
   return (
     <aside className={cn("fixed inset-y-0 left-0 z-50 w-64 bg-slate-900 text-white flex flex-col shadow-2xl", className)}>

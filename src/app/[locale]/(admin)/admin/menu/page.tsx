@@ -7,7 +7,9 @@ import Header from "@/components/dashboard/Header";
 import StatusBadge from "@/components/dashboard/StatusBadge";
 import { formatCurrency, PRICE_LEVELS } from "@/lib/utils";
 import Image from "next/image";
-import { Plus, Search, Edit2, Trash2, X } from "lucide-react";
+import { Leaf, MilkOff, Plus, Search, Edit2, Trash2, WheatOff, X } from "lucide-react";
+import DietaryTagBadges, { DietaryTagLabels } from "@/components/dashboard/DietaryTagBadges";
+import { DIETARY_TAGS, getDietaryTags, type DietaryTag } from "@/lib/food-tabs";
 
 type Category = { id: string; name: string };
 type PriceRow = { level: string; price: number };
@@ -58,6 +60,18 @@ const levelLabelByValue = Object.fromEntries(
   PRICE_LEVELS.map((level) => [level.value, level.label])
 ) as Record<string, string>;
 
+const DIETARY_LABELS: DietaryTagLabels = {
+  GLUTEN_FREE: "Sin gluten",
+  LACTOSE_FREE: "Sin lactosa",
+  VEGETARIAN: "Vegetariano",
+};
+
+const DIETARY_ICONS: Record<DietaryTag, React.ElementType> = {
+  GLUTEN_FREE: WheatOff,
+  LACTOSE_FREE: MilkOff,
+  VEGETARIAN: Leaf,
+};
+
 function parseArrayValue(rawValue?: string | null): string[] {
   if (!rawValue) return [];
   try {
@@ -87,7 +101,7 @@ function MenuModal({ item, categories, onClose, onSave }: MenuModalProps) {
     description: item?.description ?? "",
     categoryId: item?.category?.id ?? categories[0]?.id ?? "",
     ingredients: item?.ingredients ?? "",
-    tags: parseArrayValue(item?.tags).length > 0 ? parseArrayValue(item?.tags) : ["healthy"],
+    tags: getDietaryTags(item?.tags) as string[],
     available: item?.available ?? true,
     availableDays: parseArrayValue(item?.availableDays),
     stockQuantity: item?.stockQuantity ?? null,
@@ -213,7 +227,42 @@ function MenuModal({ item, categories, onClose, onSave }: MenuModalProps) {
             </div>
 
             <textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="Descripción" rows={3} className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm md:col-span-2" />
-            <input value={form.tags.join(", ")} onChange={(e) => setForm({ ...form, tags: e.target.value.split(",").map((tag) => tag.trim()).filter(Boolean) })} placeholder="Etiquetas separadas por coma" className="h-10 rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm md:col-span-2" />
+            <div className="md:col-span-2">
+              <p className="mb-1.5 text-xs font-semibold text-slate-600">Etiquetas dietéticas</p>
+              <div className="flex flex-wrap gap-2">
+                {DIETARY_TAGS.map((tag) => {
+                  const Icon = DIETARY_ICONS[tag];
+                  const checked = form.tags.includes(tag);
+
+                  return (
+                    <label
+                      key={tag}
+                      className={`flex cursor-pointer items-center gap-2 rounded-xl border px-3 py-2 text-sm transition-colors ${
+                        checked
+                          ? "border-cyan-400 bg-cyan-50 text-slate-900"
+                          : "border-slate-200 bg-slate-50 text-slate-600 hover:border-cyan-300"
+                      }`}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        onChange={(e) =>
+                          setForm({
+                            ...form,
+                            tags: e.target.checked
+                              ? [...form.tags, tag]
+                              : form.tags.filter((current) => current !== tag),
+                          })
+                        }
+                        className="h-4 w-4 accent-cyan-500"
+                      />
+                      <Icon className="h-4 w-4" />
+                      {DIETARY_LABELS[tag]}
+                    </label>
+                  );
+                })}
+              </div>
+            </div>
 
             <div className="grid gap-3 md:col-span-2 md:grid-cols-2">
               <label className="flex h-10 items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm text-slate-700"><input type="checkbox" checked={form.available} onChange={(e) => setForm({ ...form, available: e.target.checked })} className="h-4 w-4 accent-cyan-500" />Disponible</label>
@@ -344,8 +393,6 @@ export default function AdminMenuPage() {
           ) : null}
 
           {filtered.map((item) => {
-            const tags = parseArrayValue(item.tags);
-
             return (
               <article
                 key={item.id}
@@ -380,18 +427,7 @@ export default function AdminMenuPage() {
                     {item.description ?? "Sin descripcion"}
                   </p>
 
-                  {tags.length > 0 ? (
-                    <div className="mt-4 flex flex-wrap gap-1.5 text-xs text-slate-600">
-                      {tags.map((tag) => (
-                        <span
-                          key={tag}
-                          className="rounded-full bg-slate-100 px-2.5 py-1 font-semibold"
-                        >
-                          {tag}
-                        </span>
-                      ))}
-                    </div>
-                  ) : null}
+                  <DietaryTagBadges rawTags={item.tags} labels={DIETARY_LABELS} className="mt-4" />
 
                   <div className="mt-4 space-y-1.5 text-sm">
                     {item.prices.map((price) => (

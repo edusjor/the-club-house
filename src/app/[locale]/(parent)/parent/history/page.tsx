@@ -9,6 +9,7 @@ import axios from "axios";
 import Header from "@/components/dashboard/Header";
 import StatusBadge from "@/components/dashboard/StatusBadge";
 import { formatCurrency, formatDate, formatDateTime, formatOrderNumber } from "@/lib/utils";
+import { useTranslations } from "@/i18n/I18nProvider";
 import {
   AlertTriangle,
   CalendarDays,
@@ -24,6 +25,22 @@ function formatWeekdayTime(date: Date) {
   const weekday = new Intl.DateTimeFormat("es-CR", { weekday: "long" }).format(date);
   const time = new Intl.DateTimeFormat("es-CR", { hour: "2-digit", minute: "2-digit" }).format(date);
   return `${weekday.charAt(0).toUpperCase()}${weekday.slice(1)}, ${time}`;
+}
+
+function RequestStatusPill({ status, t }: { status: string; t: (key: string) => string }) {
+  if (status === "PREPARING") {
+    return (
+      <span className="inline-flex items-center rounded-full bg-blue-100 px-2 py-0.5 text-[10px] font-bold text-blue-700">
+        {t("parent.history.statusAccepted")}
+      </span>
+    );
+  }
+
+  return (
+    <span className="inline-flex items-center rounded-full bg-yellow-100 px-2 py-0.5 text-[10px] font-bold text-yellow-700">
+      {t("parent.history.statusPending")}
+    </span>
+  );
 }
 
 type OrderItem = {
@@ -74,12 +91,13 @@ const TWO_HOURS_MS = 2 * 60 * 60 * 1000;
 const HISTORY_STATUSES = new Set(["PAID", "PREPARING"]);
 const DISPATCHED_STATUSES = new Set(["DELIVERED", "NOT_PICKED_UP"]);
 const SOURCE_FILTERS = [
-  { value: "all", label: "Todos" },
-  { value: "PARENT", label: "Hecho por el padre" },
-  { value: "VENDOR", label: "Hecho en el restaurante" },
+  { value: "all", labelKey: "sourceAll" },
+  { value: "PARENT", labelKey: "sourceParent" },
+  { value: "VENDOR", labelKey: "sourceVendor" },
 ] as const;
 
 function ParentHistoryContent() {
+  const t = useTranslations();
   const queryClient = useQueryClient();
   const searchParams = useSearchParams();
   const [feedback, setFeedback] = useState("");
@@ -165,13 +183,13 @@ function ParentHistoryContent() {
       queryClient.invalidateQueries({ queryKey: ["parent-orders"] });
       queryClient.invalidateQueries({ queryKey: ["parent-payments"] });
       setError("");
-      setFeedback("Pedido cancelado correctamente.");
+      setFeedback(t("parent.history.cancelSuccess"));
     },
     onError: (mutationError: unknown) => {
       const message =
         axios.isAxiosError(mutationError) && mutationError.response?.data?.error
           ? String(mutationError.response.data.error)
-          : "No se pudo cancelar el pedido";
+          : t("parent.history.cancelError");
       setFeedback("");
       setError(message);
     },
@@ -180,12 +198,12 @@ function ParentHistoryContent() {
   const handleCancelOrder = (order: NonDispatchedOrder) => {
     if (!order.canCancel) {
       setFeedback("");
-      setError("Este pedido ya está dentro de la ventana de 2 horas y no puede cancelarse.");
+      setError(t("parent.history.cancelWindowError"));
       return;
     }
 
     const accepted = window.confirm(
-      `¿Cancelar el pedido #${formatOrderNumber(order.id)}? Esta acción no se puede deshacer.`
+      t("parent.history.confirmCancel").replace("{id}", formatOrderNumber(order.id))
     );
 
     if (!accepted) return;
@@ -198,8 +216,8 @@ function ParentHistoryContent() {
   return (
     <div>
       <Header
-        title="Historial y Seguimiento"
-        subtitle="Separa tus pedidos no despachados de los despachados"
+        title={t("parent.history.title")}
+        subtitle={t("parent.history.subtitle")}
       />
 
       <div className="space-y-6 p-6">
@@ -207,26 +225,26 @@ function ParentHistoryContent() {
           <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3">
             <div className="flex items-center gap-2 text-sm font-semibold text-emerald-700">
               <CheckCircle2 className="h-5 w-5" />
-              Orden creada — se sumaron {formatCurrency(createdTotal)} a tu saldo
+              {t("parent.history.orderCreatedBanner").replace("{amount}", formatCurrency(createdTotal))}
             </div>
             <div className="flex items-center gap-2">
               <Link
                 href="/parent/plan"
                 className="inline-flex h-9 items-center rounded-lg border border-emerald-300 bg-white px-3 text-xs font-semibold text-emerald-700 hover:bg-emerald-100"
               >
-                Pedir otra comida
+                {t("parent.history.orderAnotherMeal")}
               </Link>
               <Link
                 href="/parent/balance"
                 className="inline-flex h-9 items-center rounded-lg bg-emerald-600 px-3 text-xs font-semibold text-white hover:bg-emerald-700"
               >
-                Ver saldo
+                {t("parent.history.viewBalance")}
               </Link>
               <button
                 type="button"
                 onClick={() => setDismissedBanner(true)}
                 className="text-xs font-semibold text-emerald-700 hover:text-emerald-900"
-                aria-label="Cerrar aviso"
+                aria-label={t("parent.history.closeNotice")}
               >
                 ✕
               </button>
@@ -248,7 +266,7 @@ function ParentHistoryContent() {
 
         <div className="flex items-center gap-1.5 px-1 text-xs text-slate-400">
           <AlertTriangle className="h-3 w-3 shrink-0" />
-          Puedes cancelar un pedido hasta 2 horas antes de la hora programada.
+          {t("parent.history.cancelWindowNotice")}
         </div>
 
         {/* Tabs */}
@@ -262,7 +280,7 @@ function ParentHistoryContent() {
             }`}
           >
             <Clock3 className="mr-2 inline h-4 w-4" />
-            No despachados
+            {t("parent.history.requestedTab")}
           </button>
           <button
             onClick={() => setActiveTab("dispatched")}
@@ -273,39 +291,36 @@ function ParentHistoryContent() {
             }`}
           >
             <History className="mr-2 inline h-4 w-4" />
-            Despachados
+            {t("parent.history.dispatchedTab")}
           </button>
         </div>
 
         {/* Tab Content */}
         {activeTab === "dispatched" ? (
-          <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-            <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-              <p className="text-xs font-semibold text-slate-500">Filtrar por origen</p>
-              <div className="flex items-center gap-1 rounded-lg border border-slate-200 bg-slate-50 p-1">
+          <div className="space-y-3">
+            <div className="flex flex-wrap items-center justify-between gap-2 px-1">
+              <p className="text-xs font-semibold text-slate-400">{t("parent.history.filterBySource")}</p>
+              <select
+                value={dispatchedSourceFilter}
+                onChange={(event) => setDispatchedSourceFilter(event.target.value as typeof dispatchedSourceFilter)}
+                className="h-8 rounded-lg border border-slate-200 bg-white px-2 text-xs font-semibold text-slate-600"
+              >
                 {SOURCE_FILTERS.map((filter) => (
-                  <button
-                    key={filter.value}
-                    type="button"
-                    onClick={() => setDispatchedSourceFilter(filter.value)}
-                    className={`rounded-md px-2.5 py-1 text-xs font-semibold transition-colors ${
-                      dispatchedSourceFilter === filter.value ? "bg-white text-cyan-700 shadow-sm" : "text-slate-500"
-                    }`}
-                  >
-                    {filter.label}
-                  </button>
+                  <option key={filter.value} value={filter.value}>
+                    {t(`parent.history.${filter.labelKey}`)}
+                  </option>
                 ))}
-              </div>
+              </select>
             </div>
 
             {ordersLoading ? (
-              <div className="text-sm text-slate-500">Cargando pedidos...</div>
+              <div className="py-8 text-center text-sm text-slate-500">{t("parent.history.loadingOrders")}</div>
             ) : dispatchedOrders.length === 0 ? (
-              <p className="text-sm text-slate-500">Aún no hay pedidos despachados.</p>
+              <p className="py-8 text-center text-sm text-slate-500">{t("parent.history.noDispatchedOrders")}</p>
             ) : (
               <div className="space-y-3">
                 {dispatchedOrders.map((order) => {
-                  const studentName = order.items[0]?.student.name ?? "Sin estudiante asignado";
+                  const studentName = order.items[0]?.student.name ?? t("parent.history.noStudentAssigned");
 
                   return (
                     <div key={order.id} className="rounded-xl border border-slate-200 bg-white pl-5 pr-4 py-4">
@@ -313,14 +328,14 @@ function ParentHistoryContent() {
                         <div>
                           <div className="flex flex-wrap items-center gap-2">
                             <span className="text-sm font-semibold text-slate-900">
-                              Pedido #{formatOrderNumber(order.id)}
+                              {t("parent.history.orderNumber")} #{formatOrderNumber(order.id)}
                             </span>
                             <span className="text-xs text-slate-400">·</span>
                             <span className="text-xs font-semibold text-slate-500">{studentName}</span>
                             {order.source === "VENDOR" ? (
                               <span className="inline-flex items-center gap-1 rounded-full bg-violet-100 px-2 py-0.5 text-[10px] font-bold text-violet-700">
                                 <Store className="h-3 w-3" />
-                                Hecho en el restaurante
+                                {t("parent.history.madeAtRestaurant")}
                               </span>
                             ) : null}
                           </div>
@@ -337,7 +352,7 @@ function ParentHistoryContent() {
 
                         <div className="text-right">
                           <span className="inline-block rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-semibold text-blue-700">
-                            Total del pedido
+                            {t("parent.history.totalOrder")}
                           </span>
                           <p className="mt-1 text-2xl font-black text-blue-600">{formatCurrency(order.total)}</p>
                         </div>
@@ -372,7 +387,7 @@ function ParentHistoryContent() {
                       <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 pt-3">
                         <span className="inline-flex items-center gap-1 text-xs text-slate-400">
                           <Clock3 className="h-3.5 w-3.5" />
-                          Creado el: {formatDateTime(order.createdAt)}
+                          {t("parent.history.createdOn")}: {formatDateTime(order.createdAt)}
                         </span>
 
                         <StatusBadge status={order.status} />
@@ -382,42 +397,30 @@ function ParentHistoryContent() {
                 })}
               </div>
             )}
-          </section>
+          </div>
         ) : (
-          <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-            <div className="mb-4 flex flex-wrap items-center gap-2">
-              <p className="text-xs font-semibold text-slate-500">Ordenar por</p>
-              <div className="flex items-center gap-1 rounded-lg border border-slate-200 bg-slate-50 p-1">
-                <button
-                  type="button"
-                  onClick={() => setSortMode("created")}
-                  className={`rounded-md px-2.5 py-1 text-xs font-semibold transition-colors ${
-                    sortMode === "created" ? "bg-white text-cyan-700 shadow-sm" : "text-slate-500"
-                  }`}
-                >
-                  Pedidos recientes
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setSortMode("scheduled")}
-                  className={`rounded-md px-2.5 py-1 text-xs font-semibold transition-colors ${
-                    sortMode === "scheduled" ? "bg-white text-cyan-700 shadow-sm" : "text-slate-500"
-                  }`}
-                >
-                  Próximos a despachar
-                </button>
-              </div>
+          <div className="space-y-3">
+            <div className="flex flex-wrap items-center justify-between gap-2 px-1">
+              <p className="text-xs font-semibold text-slate-400">{t("parent.history.sortBy")}</p>
+              <select
+                value={sortMode}
+                onChange={(event) => setSortMode(event.target.value as typeof sortMode)}
+                className="h-8 rounded-lg border border-slate-200 bg-white px-2 text-xs font-semibold text-slate-600"
+              >
+                <option value="created">{t("parent.history.sortRecent")}</option>
+                <option value="scheduled">{t("parent.history.sortUpcoming")}</option>
+              </select>
             </div>
 
             {ordersLoading ? (
-              <div className="text-sm text-slate-500">Cargando pedidos...</div>
+              <div className="py-8 text-center text-sm text-slate-500">{t("parent.history.loadingOrders")}</div>
             ) : nonDispatchedOrders.length === 0 ? (
-              <p className="text-sm text-slate-500">No tienes pedidos en espera de despacho.</p>
+              <p className="py-8 text-center text-sm text-slate-500">{t("parent.history.noRequestedOrders")}</p>
             ) : (
               <div className="space-y-3">
                 {nonDispatchedOrders.map((order) => {
                   const isNew = highlightedOrderIds.has(order.id);
-                  const studentName = order.items[0]?.student.name ?? "Sin estudiante asignado";
+                  const studentName = order.items[0]?.student.name ?? t("parent.history.noStudentAssigned");
 
                   return (
                   <div
@@ -432,20 +435,21 @@ function ParentHistoryContent() {
                       <div>
                         <div className="flex flex-wrap items-center gap-2">
                           <span className="text-sm font-semibold text-slate-900">
-                            Pedido #{formatOrderNumber(order.id)}
+                            {t("parent.history.orderNumber")} #{formatOrderNumber(order.id)}
                           </span>
                           <span className="text-xs text-slate-400">·</span>
                           <span className="text-xs font-semibold text-slate-500">{studentName}</span>
+                          <RequestStatusPill status={order.status} t={t} />
                           {isNew ? (
                             <span className="inline-flex items-center gap-1 rounded-full bg-cyan-500 px-2 py-0.5 text-[10px] font-bold text-white">
                               <Sparkles className="h-3 w-3" />
-                              Nuevo
+                              {t("parent.history.new")}
                             </span>
                           ) : null}
                           {order.source === "VENDOR" ? (
                             <span className="inline-flex items-center gap-1 rounded-full bg-violet-100 px-2 py-0.5 text-[10px] font-bold text-violet-700">
                               <Store className="h-3 w-3" />
-                              Hecho en el restaurante
+                              {t("parent.history.madeAtRestaurant")}
                             </span>
                           ) : null}
                         </div>
@@ -462,7 +466,7 @@ function ParentHistoryContent() {
 
                       <div className="text-right">
                         <span className="inline-block rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-semibold text-blue-700">
-                          Total del pedido
+                          {t("parent.history.totalOrder")}
                         </span>
                         <p className="mt-1 text-2xl font-black text-blue-600">{formatCurrency(order.total)}</p>
                       </div>
@@ -497,7 +501,7 @@ function ParentHistoryContent() {
                     <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 pt-3">
                       <span className="inline-flex items-center gap-1 text-xs text-slate-400">
                         <Clock3 className="h-3.5 w-3.5" />
-                        Creado el: {formatDateTime(order.createdAt)}
+                        {t("parent.history.createdOn")}: {formatDateTime(order.createdAt)}
                       </span>
 
                       <button
@@ -506,12 +510,12 @@ function ParentHistoryContent() {
                         title={
                           order.canCancel
                             ? undefined
-                            : "Ya no se puede cancelar: está dentro de la ventana de 2 horas."
+                            : t("parent.history.cancelDisabledTitle")
                         }
                         className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-red-200 px-2.5 text-xs font-semibold text-red-700 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
                       >
                         <XCircle className="h-3.5 w-3.5" />
-                        Cancelar pedido
+                        {t("parent.history.cancelOrder")}
                       </button>
                     </div>
                   </div>
@@ -519,7 +523,7 @@ function ParentHistoryContent() {
                 })}
               </div>
             )}
-          </section>
+          </div>
         )}
       </div>
     </div>
@@ -527,15 +531,16 @@ function ParentHistoryContent() {
 }
 
 function ParentHistoryLoading() {
+  const t = useTranslations();
   return (
     <div>
       <Header
-        title="Historial y Seguimiento"
-        subtitle="Separa tus pedidos no despachados de los despachados"
+        title={t("parent.history.title")}
+        subtitle={t("parent.history.subtitle")}
       />
       <div className="p-6">
         <div className="rounded-2xl border border-slate-200 bg-white p-6 text-sm text-slate-500 shadow-sm">
-          Cargando historial...
+          {t("parent.history.loadingHistory")}
         </div>
       </div>
     </div>

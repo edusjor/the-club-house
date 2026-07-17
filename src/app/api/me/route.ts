@@ -1,4 +1,5 @@
 import { auth } from "@/auth";
+import { prisma } from "@/lib/db";
 import { NextResponse } from "next/server";
 
 export async function GET() {
@@ -6,8 +7,23 @@ export async function GET() {
   if (!session?.user) {
     return NextResponse.json({ role: null }, { status: 401 });
   }
+
+  const id = (session.user as { id?: string }).id;
+  const role = (session.user as { role?: string }).role;
+
+  if (!id) {
+    return NextResponse.json({ role: null }, { status: 401 });
+  }
+
+  const user = await prisma.user.findUnique({
+    where: { id },
+    select: { name: true, isStaff: true },
+  });
+
   return NextResponse.json({
-    role: (session.user as { role?: string }).role,
-    id: (session.user as { id?: string }).id,
+    role,
+    id,
+    name: user?.name ?? null,
+    isStaff: user?.isStaff ?? false,
   });
 }

@@ -7,6 +7,7 @@ import Header from "@/components/dashboard/Header";
 import ReceiptFileLink from "@/components/ReceiptFileLink";
 import { formatCurrency, formatDateTime, formatOrderNumber, formatPaymentNumber } from "@/lib/utils";
 import { formatReceiptSummary, parsePaymentReceipt, serializePaymentReceipt } from "@/lib/payment-receipt";
+import { useTranslations } from "@/i18n/I18nProvider";
 import { CheckCircle2, CreditCard, UploadCloud } from "lucide-react";
 
 const MAX_RECEIPT_FILE_SIZE = 4 * 1024 * 1024;
@@ -30,9 +31,9 @@ type Payment = {
 const EMPTY_PAYMENTS: Payment[] = [];
 
 const PAYMENT_TABS = [
-  { key: "PENDING", label: "Pendientes de aprobación" },
-  { key: "APPROVED", label: "Aprobados" },
-  { key: "REJECTED", label: "Rechazados" },
+  { key: "PENDING", labelKey: "tabPending" },
+  { key: "APPROVED", labelKey: "tabApproved" },
+  { key: "REJECTED", labelKey: "tabRejected" },
 ] as const;
 
 type PaymentTabKey = (typeof PAYMENT_TABS)[number]["key"];
@@ -47,6 +48,7 @@ function normalizeAmountInput(value: string, max?: number) {
 }
 
 export default function ParentBalancePage() {
+  const t = useTranslations();
   const queryClient = useQueryClient();
   const [amountInput, setAmountInput] = useState("");
   const [receiptReference, setReceiptReference] = useState("");
@@ -96,13 +98,13 @@ export default function ParentBalancePage() {
       setReceiptDataUrl("");
       setAmountInput("");
       setError("");
-      setFeedback("Pago enviado correctamente. Está en revisión por el administrador.");
+      setFeedback(t("parent.balance.successPayment"));
     },
     onError: (mutationError: unknown) => {
       const message =
         axios.isAxiosError(mutationError) && mutationError.response?.data?.error
           ? String(mutationError.response.data.error)
-          : "No se pudo enviar el pago";
+          : t("parent.balance.errorSendPayment");
       setFeedback("");
       setError(message);
     },
@@ -118,7 +120,7 @@ export default function ParentBalancePage() {
     }
 
     if (file.size > MAX_RECEIPT_FILE_SIZE) {
-      setError("El archivo supera 4MB. Sube una imagen o PDF más liviano.");
+      setError(t("parent.balance.errorFileTooBig"));
       event.target.value = "";
       return;
     }
@@ -126,7 +128,7 @@ export default function ParentBalancePage() {
     const reader = new FileReader();
     reader.onload = () => {
       if (typeof reader.result !== "string") {
-        setError("No se pudo leer el comprobante seleccionado.");
+        setError(t("parent.balance.errorReceiptRead"));
         return;
       }
 
@@ -136,7 +138,7 @@ export default function ParentBalancePage() {
     };
 
     reader.onerror = () => {
-      setError("No se pudo procesar el comprobante. Intenta nuevamente.");
+      setError(t("parent.balance.errorReceiptProcess"));
     };
 
     reader.readAsDataURL(file);
@@ -145,19 +147,19 @@ export default function ParentBalancePage() {
   const submitPayment = () => {
     if (!balance) {
       setFeedback("");
-      setError("No hay saldo disponible.");
+      setError(t("parent.balance.errorNoBalance"));
       return;
     }
 
     if (amount <= 0) {
       setFeedback("");
-      setError("Debes indicar un monto mayor a 0.");
+      setError(t("parent.balance.errorAmountRequired"));
       return;
     }
 
     if (amountExceedsBalance) {
       setFeedback("");
-      setError(`El monto supera el saldo pendiente (${formatCurrency(balance.pendingBalance)}).`);
+      setError(t("parent.balance.errorAmountExceeds").replace("{amount}", formatCurrency(balance.pendingBalance)));
       return;
     }
 
@@ -169,7 +171,7 @@ export default function ParentBalancePage() {
 
     if (!receipt) {
       setFeedback("");
-      setError("Debes subir comprobante o ingresar referencia SINPE.");
+      setError(t("parent.balance.errorReceiptRequired"));
       return;
     }
 
@@ -181,11 +183,11 @@ export default function ParentBalancePage() {
 
   return (
     <div>
-      <Header title="Saldo y Pagos" subtitle="Tu saldo pendiente y el historial de tus comprobantes" />
+      <Header title={t("parent.balance.title")} subtitle={t("parent.balance.subtitle")} />
       <div className="p-6 space-y-6">
         {isLoading ? (
           <div className="rounded-2xl border border-slate-200 bg-white p-6 text-sm text-slate-500 shadow-sm">
-            Cargando saldo...
+            {t("parent.balance.loadingBalance")}
           </div>
         ) : (
           <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
@@ -193,34 +195,34 @@ export default function ParentBalancePage() {
               <div className="border-b border-slate-100 px-5 py-4">
                 <div className="flex items-center gap-2">
                   <CreditCard className="h-5 w-5 text-cyan-700" />
-                  <h3 className="text-2xl font-black text-slate-900">Resumen de saldo</h3>
+                  <h3 className="text-2xl font-black text-slate-900">{t("parent.balance.balanceSummary")}</h3>
                 </div>
               </div>
 
               <div className="space-y-3 px-5 py-4">
                 <div className="grid grid-cols-2 gap-3">
                   <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-                    <p className="text-xs font-semibold text-slate-500">Saldo</p>
+                    <p className="text-xs font-semibold text-slate-500">{t("parent.balance.balanceLabel")}</p>
                     <p className="mt-1 text-2xl font-black text-slate-900">
                       {formatCurrency(balance?.pendingBalance || 0)}
                     </p>
-                    <p className="mt-1 text-xs text-slate-500">Total que debes pagar</p>
+                    <p className="mt-1 text-xs text-slate-500">{t("parent.balance.totalToPay")}</p>
                   </div>
                   <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
-                    <p className="text-xs font-semibold text-amber-700">Pagos por aprobar</p>
+                    <p className="text-xs font-semibold text-amber-700">{t("parent.balance.pendingApproval")}</p>
                     <p className="mt-1 text-2xl font-black text-amber-700">
                       {formatCurrency(pendingReviewTotal)}
                     </p>
-                    <p className="mt-1 text-xs text-amber-700">Ya enviados, en revisión</p>
+                    <p className="mt-1 text-xs text-amber-700">{t("parent.balance.alreadySentInReview")}</p>
                   </div>
                 </div>
 
                 <div className="rounded-xl border border-cyan-200 bg-cyan-50 px-4 py-3 text-sm text-cyan-700">
-                  <p className="font-semibold">Información importante:</p>
+                  <p className="font-semibold">{t("parent.balance.importantInfo")}</p>
                   <ul className="mt-2 space-y-1 text-xs">
-                    <li>• Puedes pagar el saldo total o una parte</li>
-                    <li>• Los pagos se aplican a tu saldo acumulado</li>
-                    <li>• El administrador revisará y aprobará tu pago</li>
+                    <li>• {t("parent.balance.infoBullet1")}</li>
+                    <li>• {t("parent.balance.infoBullet2")}</li>
+                    <li>• {t("parent.balance.infoBullet3")}</li>
                   </ul>
                 </div>
               </div>
@@ -230,14 +232,14 @@ export default function ParentBalancePage() {
               <div className="border-b border-slate-100 px-5 py-4">
                 <div className="flex items-center gap-2">
                   <CreditCard className="h-5 w-5 text-cyan-700" />
-                  <h3 className="text-xl font-black text-slate-900">Realizar pago</h3>
+                  <h3 className="text-xl font-black text-slate-900">{t("parent.balance.makePayment")}</h3>
                 </div>
               </div>
 
               <div className="space-y-3 px-5 py-4">
                 <label>
                   <span className="mb-1 block text-[11px] font-semibold text-slate-700">
-                    Monto a pagar
+                    {t("parent.balance.amountToPay")}
                   </span>
                   <input
                     type="number"
@@ -255,20 +257,20 @@ export default function ParentBalancePage() {
                 </label>
 
                 {amountExceedsBalance ? (
-                  <p className="text-xs text-amber-700">El monto supera el saldo pendiente.</p>
+                  <p className="text-xs text-amber-700">{t("parent.balance.amountExceedsBalance")}</p>
                 ) : null}
 
                 <input
                   value={receiptReference}
                   onChange={(event) => setReceiptReference(event.target.value)}
                   className="h-10 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm"
-                  placeholder="Referencia SINPE (opcional si subes archivo)"
+                  placeholder={t("parent.balance.sinpeReferencePlaceholder")}
                 />
 
                 <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5">
                   <label className="inline-flex h-9 w-full cursor-pointer items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 hover:bg-slate-100">
                     <UploadCloud className="h-4 w-4" />
-                    Subir comprobante
+                    {t("parent.balance.uploadReceipt")}
                     <input
                       type="file"
                       accept="image/*,.pdf,application/pdf"
@@ -279,17 +281,17 @@ export default function ParentBalancePage() {
 
                   {receiptFileName ? (
                     <p className="mt-2 text-xs text-slate-500">
-                      Archivo: {receiptFileName} ·{" "}
+                      {t("parent.balance.fileLabel")}: {receiptFileName} ·{" "}
                       <ReceiptFileLink
                         dataUrl={receiptDataUrl}
                         className="font-semibold text-cyan-700 hover:text-cyan-800"
                       >
-                        Ver archivo
+                        {t("parent.balance.viewFile")}
                       </ReceiptFileLink>
                     </p>
                   ) : (
                     <p className="mt-2 text-xs text-slate-500">
-                      Puedes subir imagen/PDF o escribir la referencia SINPE.
+                      {t("parent.balance.uploadHint")}
                     </p>
                   )}
                 </div>
@@ -304,7 +306,7 @@ export default function ParentBalancePage() {
                   ) : (
                     <CheckCircle2 className="h-4 w-4" />
                   )}
-                  {paymentMutation.isPending ? "Enviando..." : "Enviar pago"}
+                  {paymentMutation.isPending ? t("parent.balance.sending") : t("parent.balance.sendPayment")}
                 </button>
 
                 {feedback ? (
@@ -325,7 +327,7 @@ export default function ParentBalancePage() {
 
         <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
           <div className="border-b border-slate-100 px-5 py-4">
-            <h3 className="text-xl font-black text-slate-900">Pagos</h3>
+            <h3 className="text-xl font-black text-slate-900">{t("parent.balance.paymentsTitle")}</h3>
           </div>
 
           <div className="flex gap-2 border-b border-slate-200 px-5 pt-3">
@@ -340,17 +342,17 @@ export default function ParentBalancePage() {
                     : "text-slate-500 hover:text-slate-700"
                 }`}
               >
-                {tab.label}
+                {t(`parent.balance.${tab.labelKey}`)}
               </button>
             ))}
           </div>
 
           <div className="space-y-3 p-5">
             {paymentsQuery.isLoading ? (
-              <div className="text-sm text-slate-500">Cargando pagos...</div>
+              <div className="text-sm text-slate-500">{t("parent.balance.loadingPayments")}</div>
             ) : paymentsForActiveTab.length === 0 ? (
               <div className="rounded-xl border border-slate-200 bg-slate-50 p-6 text-center text-sm text-slate-400">
-                No hay pagos en esta categoría.
+                {t("parent.balance.noPaymentsInCategory")}
               </div>
             ) : (
               paymentsForActiveTab.map((payment) => {
@@ -361,29 +363,29 @@ export default function ParentBalancePage() {
                     <div className="flex items-start justify-between gap-4">
                       <div>
                         <div className="text-sm font-semibold text-slate-900">
-                          Pago #{formatPaymentNumber(payment.id)}
+                          {t("parent.balance.payment")} #{formatPaymentNumber(payment.id)}
                         </div>
                         <div className="text-xs text-slate-500">
                           {formatDateTime(payment.createdAt)}
-                          {payment.order?.id ? ` · Orden #${formatOrderNumber(payment.order.id)}` : ""}
+                          {payment.order?.id ? ` · ${t("parent.balance.order")} #${formatOrderNumber(payment.order.id)}` : ""}
                         </div>
                         {receipt?.kind === "UPLOAD" ? (
                           <div className="mt-1 text-xs text-slate-500">
-                            Comprobante: {formatReceiptSummary(payment.receipt)} ·{" "}
+                            {t("parent.balance.receipt")}: {formatReceiptSummary(payment.receipt)} ·{" "}
                             <ReceiptFileLink
                               dataUrl={receipt.dataUrl}
                               className="font-semibold text-cyan-700 hover:text-cyan-800"
                             >
-                              Ver archivo
+                              {t("parent.balance.viewFile")}
                             </ReceiptFileLink>
                           </div>
                         ) : (
                           <div className="mt-1 text-xs text-slate-500">
-                            Comprobante: {receipt?.reference ?? "Sin archivo"}
+                            {t("parent.balance.receipt")}: {receipt?.reference ?? t("parent.balance.noFile")}
                           </div>
                         )}
                         {payment.comment ? (
-                          <div className="mt-1 text-xs text-slate-500">Comentario: {payment.comment}</div>
+                          <div className="mt-1 text-xs text-slate-500">{t("parent.balance.comment")}: {payment.comment}</div>
                         ) : null}
                       </div>
                       <div className="text-sm font-bold text-slate-900">{formatCurrency(payment.amount)}</div>

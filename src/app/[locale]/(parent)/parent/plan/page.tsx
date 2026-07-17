@@ -7,6 +7,7 @@ import axios from "axios";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import Header from "@/components/dashboard/Header";
+import DietaryTagBadges, { DietaryTagLabels } from "@/components/dashboard/DietaryTagBadges";
 import { formatCurrency, formatDateTime, LEVELS, normalizePriceLevel } from "@/lib/utils";
 import { FOOD_TABS, getFoodTab, parseFoodTags, type FoodTab } from "@/lib/food-tabs";
 import { useLocale, useTranslations } from "@/i18n/I18nProvider";
@@ -59,6 +60,10 @@ type CartLine = {
 const studentLevelLabelByValue = Object.fromEntries(
   LEVELS.map((level) => [level.value, level.label])
 ) as Record<string, string>;
+
+function isStaffStudent(student: Pick<Student, "level">) {
+  return student.level === "STAFF";
+}
 
 function getPriceForStudentLevel(food: FoodItem, studentLevel: string) {
   const normalizedStudentLevel = normalizePriceLevel(studentLevel);
@@ -146,6 +151,12 @@ export default function ParentPlanPage() {
   const [cartLines, setCartLines] = useState<CartLine[]>([]);
   const [formError, setFormError] = useState("");
 
+  const dietaryLabels: DietaryTagLabels = {
+    GLUTEN_FREE: t("dietaryTags.glutenFree"),
+    LACTOSE_FREE: t("dietaryTags.lactoseFree"),
+    VEGETARIAN: t("dietaryTags.vegetarian"),
+  };
+
   const { data: students = [], isLoading: studentsLoading } = useQuery<Student[]>({
     queryKey: ["parent-students"],
     queryFn: () => axios.get("/api/students").then((response) => response.data),
@@ -161,7 +172,17 @@ export default function ParentPlanPage() {
     [students]
   );
 
-  const effectiveStudentId = studentId;
+  // Staff accounts see themselves in the list; wording switches from
+  // "child" to the neutral "person" strings for them.
+  const hasStaffSelf = useMemo(() => students.some(isStaffStudent), [students]);
+
+  // A staff member with no children only has their own profile — select it
+  // automatically so the picker never opens for them.
+  const onlyStaffSelf =
+    activeStudents.length === 1 && isStaffStudent(activeStudents[0]);
+
+  const effectiveStudentId =
+    studentId || (onlyStaffSelf ? activeStudents[0].id : "");
 
   const selectedStudent = useMemo(
     () => students.find((student) => student.id === effectiveStudentId),
@@ -211,14 +232,14 @@ export default function ParentPlanPage() {
 
   const addFoodToDraftForStudent = (food: FoodItem, student: Student) => {
     if (!student.active) {
-      setFormError("El estudiante seleccionado no esta activo.");
+      setFormError(t("parent.plan.errorStudentInactive"));
       return;
     }
 
     const selectedPrice = getPriceForStudentLevel(food, student.level);
 
     if (!selectedPrice || selectedPrice <= 0) {
-      setFormError("Esta comida no tiene precio configurado para el nivel de tu hijo.");
+      setFormError(t("parent.plan.errorNoPriceForLevel"));
       return;
     }
 
@@ -254,22 +275,24 @@ export default function ParentPlanPage() {
 
   const saveDraftToCart = () => {
     if (!effectiveStudentId || !selectedStudent) {
-      setFormError("Selecciona un hijo antes de guardar la linea.");
+      setFormError(
+        t(hasStaffSelf ? "parent.plan.errorSelectPersonBeforeSave" : "parent.plan.errorSelectChildBeforeSave")
+      );
       return;
     }
 
     if (draftItems.length === 0) {
-      setFormError("Agrega al menos un producto a la linea.");
+      setFormError(t("parent.plan.errorAddOneProduct"));
       return;
     }
 
     if (!draftDateValue) {
-      setFormError("Selecciona una fecha para esta linea.");
+      setFormError(t("parent.plan.errorSelectDate"));
       return;
     }
 
     if (!draftTime) {
-      setFormError("Selecciona una hora para esta linea.");
+      setFormError(t("parent.plan.errorSelectTime"));
       return;
     }
 
@@ -277,7 +300,7 @@ export default function ParentPlanPage() {
     const parsed = new Date(nextScheduledDate);
 
     if (Number.isNaN(parsed.getTime())) {
-      setFormError("La fecha y hora seleccionadas no son validas.");
+      setFormError(t("parent.plan.errorInvalidDateTime"));
       return;
     }
 
@@ -312,9 +335,7 @@ export default function ParentPlanPage() {
     if (editingLineId === lineId) return;
 
     if (draftItems.length > 0) {
-      setFormError(
-        "Ya estás editando una línea. Agrégala al carrito o límpiala antes de editar otra."
-      );
+      setFormError(t("parent.plan.errorEditingLine"));
       if (typeof window !== "undefined") {
         window.scrollTo({ top: 0, behavior: "smooth" });
       }
@@ -349,7 +370,7 @@ export default function ParentPlanPage() {
 
     if (hasCartContent) {
       const confirmed = window.confirm(
-        "Cada pedido es para un solo hijo. Si cambias de hijo se borrará todo lo que agregaste al carrito. ¿Deseas continuar?"
+        t(hasStaffSelf ? "parent.plan.confirmChangePerson" : "parent.plan.confirmChangeChild")
       );
 
       if (!confirmed) return;
@@ -413,14 +434,14 @@ export default function ParentPlanPage() {
       const message =
         axios.isAxiosError(error) && error.response?.data?.error
           ? String(error.response.data.error)
-          : "No se pudo crear el pedido";
+          : t("parent.plan.errorCreateOrder");
       setFormError(message);
     },
   });
 
   const submitAllOrders = () => {
     if (draftItems.length > 0) {
-      setFormError("Tienes una linea en edicion. Agregala al carrito o limpiala antes de solicitar.");
+      setFormError(t("parent.plan.errorEditingLineSubmit"));
       return;
     }
 
@@ -435,14 +456,14 @@ export default function ParentPlanPage() {
       {draftItems.length > 0 ? (
         <div className="rounded-xl border border-amber-200 bg-amber-50 p-3">
           <p className="text-xs font-semibold text-amber-900">
-            Tienes una linea en edicion sin agregar al carrito.
+            {t("parent.plan.editingLineNotice")}
           </p>
         </div>
       ) : null}
 
       {cartLines.length === 0 ? (
         <div className="px-2 py-10 text-center text-sm text-slate-400">
-          Todavia no has agregado lineas al carrito.
+          {t("parent.plan.noLinesYet")}
         </div>
       ) : (
         cartLines.map((line) => (
@@ -471,7 +492,7 @@ export default function ParentPlanPage() {
                 className="inline-flex items-center gap-1 text-cyan-700 hover:text-cyan-800"
               >
                 <Pencil className="h-3.5 w-3.5" />
-                Editar
+                {t("parent.plan.editLine")}
               </button>
 
               <button
@@ -479,7 +500,7 @@ export default function ParentPlanPage() {
                 className="inline-flex items-center gap-1 text-cyan-700 hover:text-cyan-800"
               >
                 <Plus className="h-3.5 w-3.5" />
-                Agregar producto
+                {t("parent.plan.addProduct")}
               </button>
 
               <button
@@ -487,7 +508,7 @@ export default function ParentPlanPage() {
                 className="inline-flex items-center gap-1 text-red-600 hover:text-red-700"
               >
                 <Trash2 className="h-3.5 w-3.5" />
-                Quitar
+                {t("parent.plan.removeLine")}
               </button>
             </div>
           </div>
@@ -499,10 +520,10 @@ export default function ParentPlanPage() {
   const renderCartSummary = () => (
     <div className="border-t border-slate-100 px-5 py-4">
       <div className="mb-3 flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5">
-        <span className="text-xl font-black text-slate-800">Total general</span>
+        <span className="text-xl font-black text-slate-800">{t("parent.plan.totalGeneral")}</span>
         <div className="text-right">
           <p className="text-2xl font-black text-slate-900">{formatCurrency(savedTotal)}</p>
-          <p className="text-[11px] font-semibold text-slate-500">{savedUnits} unidad(es)</p>
+          <p className="text-[11px] font-semibold text-slate-500">{savedUnits} {t("parent.plan.units")}</p>
         </div>
       </div>
 
@@ -522,11 +543,11 @@ export default function ParentPlanPage() {
         ) : (
           <ShoppingCart className="h-4 w-4" />
         )}
-        {orderMutation.isPending ? "Enviando..." : "Solicitar orden"}
+        {orderMutation.isPending ? t("parent.plan.sending") : t("parent.plan.submitOrder")}
       </button>
 
       <p className="mt-3 text-xs text-slate-500">
-        El monto se suma a tu saldo pendiente. Podrás verlo y cancelarlo (hasta 2 horas antes) en Historial y Seguimiento.
+        {t("parent.plan.balanceNote")}
       </p>
     </div>
   );
@@ -535,8 +556,8 @@ export default function ParentPlanPage() {
     <div>
       <div className="hidden sm:block">
         <Header
-          title="Pedir Comida Para Mi Hijo"
-          subtitle="Primero elige tu hijo. Luego agrega productos y define fecha y hora en una linea de pedido."
+          title={t("parent.plan.headerTitle")}
+          subtitle={t("parent.plan.headerSubtitle")}
         />
       </div>
 
@@ -545,7 +566,7 @@ export default function ParentPlanPage() {
         type="button"
         onClick={() => setIsCartMenuOpen((current) => !current)}
         className="fixed right-3 top-3 z-50 inline-flex h-11 w-11 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-700 shadow-sm hover:bg-slate-50 sm:hidden"
-        aria-label="Ver carrito"
+        aria-label={t("parent.plan.openCart")}
       >
         <ShoppingCart className="h-5 w-5" />
         {savedUnits > 0 ? (
@@ -560,20 +581,20 @@ export default function ParentPlanPage() {
           <button
             type="button"
             onClick={() => setIsCartMenuOpen(false)}
-            aria-label="Cerrar carrito"
+            aria-label={t("parent.plan.closeCart")}
             className="fixed inset-0 z-40 cursor-default sm:hidden"
           />
           <div className="fixed left-3 right-3 top-16 z-50 mx-auto max-w-sm overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl sm:hidden">
             <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
               <div className="flex items-center gap-2">
                 <ShoppingCart className="h-4 w-4 text-slate-700" />
-                <h3 className="text-sm font-black text-slate-900">Carrito</h3>
+                <h3 className="text-sm font-black text-slate-900">{t("parent.plan.cart")}</h3>
               </div>
               <button
                 type="button"
                 onClick={() => setIsCartMenuOpen(false)}
                 className="rounded-lg p-1 text-slate-500 hover:bg-slate-100"
-                aria-label="Cerrar carrito"
+                aria-label={t("parent.plan.closeCart")}
               >
                 <X className="h-4 w-4" />
               </button>
@@ -594,22 +615,37 @@ export default function ParentPlanPage() {
           <div className="rounded-2xl border border-cyan-200 bg-cyan-50 px-4 py-3">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
-                <p className="text-2xl font-black text-slate-900">
-                  {selectedStudent ? selectedStudent.name : "Ningun hijo seleccionado"}
+                <p className="flex flex-wrap items-center gap-2 text-2xl font-black text-slate-900">
+                  <span>
+                    {selectedStudent
+                      ? selectedStudent.name
+                      : t(hasStaffSelf ? "parent.plan.noPersonSelected" : "parent.plan.noChildSelected")}
+                  </span>
+                  {selectedStudent && isStaffStudent(selectedStudent) ? (
+                    <span className="rounded-full bg-violet-100 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-violet-700">
+                      {t("common.staffLabel")}
+                    </span>
+                  ) : null}
                 </p>
                 <p className="text-xs font-semibold text-slate-600">
                   {selectedStudent
-                    ? studentLevelLabelByValue[selectedStudent.level] ?? selectedStudent.level
-                    : "Presiona Agregar en cualquier plato para elegir hijo y agregar de una vez."}
+                    ? isStaffStudent(selectedStudent)
+                      ? t("common.staffLevelLabel")
+                      : studentLevelLabelByValue[selectedStudent.level] ?? selectedStudent.level
+                    : t(hasStaffSelf ? "parent.plan.pressAddHintPerson" : "parent.plan.pressAddHint")}
                 </p>
               </div>
 
-              <button
-                onClick={openStudentPicker}
-                className="rounded-xl border border-cyan-300 bg-white px-3 py-2 text-xs font-semibold text-cyan-700 hover:bg-cyan-100"
-              >
-                {selectedStudent ? "Cambiar hijo" : "Elegir hijo"}
-              </button>
+              {!onlyStaffSelf ? (
+                <button
+                  onClick={openStudentPicker}
+                  className="rounded-xl border border-cyan-300 bg-white px-3 py-2 text-xs font-semibold text-cyan-700 hover:bg-cyan-100"
+                >
+                  {selectedStudent
+                    ? t(hasStaffSelf ? "parent.plan.changePerson" : "parent.plan.changeChild")
+                    : t(hasStaffSelf ? "parent.plan.choosePerson" : "parent.plan.chooseChild")}
+                </button>
+              ) : null}
             </div>
           </div>
         </section>
@@ -622,7 +658,7 @@ export default function ParentPlanPage() {
               onChange={(event) => {
                 setSearch(event.target.value);
               }}
-              placeholder="Buscar comida..."
+              placeholder={t("parent.plan.searchFoodPlaceholder")}
               className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50 pl-9 pr-3 text-sm focus:border-cyan-400 focus:bg-white"
             />
           </div>
@@ -632,7 +668,7 @@ export default function ParentPlanPage() {
           <section className="space-y-4">
             {studentsLoading || menuLoading ? (
               <div className="rounded-3xl border border-slate-200 bg-white px-6 py-16 text-center text-sm text-slate-500">
-                Cargando menu y estudiantes...
+                {t("parent.plan.loadingMenuStudents")}
               </div>
             ) : (
               <div className="space-y-5 rounded-3xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
@@ -670,10 +706,10 @@ export default function ParentPlanPage() {
                 {filteredMenu.length === 0 ? (
                   <div className="rounded-2xl border border-dashed border-slate-300 bg-white px-6 py-12 text-center">
                     <p className="text-lg font-semibold text-slate-900">
-                      No hay comidas disponibles para esta pestaña.
+                      {t("parent.plan.noFoodInTab")}
                     </p>
                     <p className="mt-2 text-sm text-slate-500">
-                      Prueba otra pestaña o cambia el filtro de búsqueda.
+                      {t("parent.plan.tryAnotherTabOrSearch")}
                     </p>
                   </div>
                 ) : (
@@ -686,7 +722,7 @@ export default function ParentPlanPage() {
                         return (
                           <article
                             key={item.id}
-                            className="group overflow-hidden rounded-[1.5rem] border border-slate-200 bg-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg"
+                            className="group flex h-full flex-col overflow-hidden rounded-[1.5rem] border border-slate-200 bg-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg"
                           >
                             <div className="relative h-36 overflow-hidden bg-gradient-to-br from-cyan-50 to-slate-100 text-5xl">
                               {item.image ? (
@@ -708,10 +744,8 @@ export default function ParentPlanPage() {
                               </div>
                             </div>
 
-                            <div className="relative -mt-4 rounded-t-[1.25rem] bg-white px-4 pb-4 pt-3">
-                              <span className="inline-flex items-center rounded-full bg-cyan-50 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-cyan-700">
-                                {item.category.name}
-                              </span>
+                            <div className="relative -mt-4 flex flex-1 flex-col rounded-t-[1.25rem] bg-white px-4 pb-4 pt-3">
+                              <DietaryTagBadges rawTags={item.tags} labels={dietaryLabels} />
 
                               <h4 className="mt-2 line-clamp-2 text-lg font-bold leading-tight text-slate-900">
                                 {item.name}
@@ -720,27 +754,31 @@ export default function ParentPlanPage() {
                                 <p className="mt-1 line-clamp-1 text-xs leading-relaxed text-slate-500">{item.description}</p>
                               ) : null}
 
-                              <div className="mt-3 border-t border-cyan-100 pt-3">
-                                <div className="flex items-center justify-between text-[11px]">
-                                  <span className="text-slate-500">
-                                    {selectedStudent
-                                      ? studentLevelLabelByValue[selectedStudent.level] ?? selectedStudent.level
-                                      : "Elegir hijo"}
-                                  </span>
-                                  <span className="font-semibold text-slate-900">
-                                    {selectedPrice ? formatCurrency(selectedPrice) : "-"}
-                                  </span>
+                              <div className="mt-auto pt-3">
+                                <div className="border-t border-cyan-100 pt-3">
+                                  <div className="flex items-center justify-between text-[11px]">
+                                    <span className="text-slate-500">
+                                      {selectedStudent
+                                        ? isStaffStudent(selectedStudent)
+                                          ? t("common.staffLevelLabel")
+                                          : studentLevelLabelByValue[selectedStudent.level] ?? selectedStudent.level
+                                        : t(hasStaffSelf ? "parent.plan.choosePerson" : "parent.plan.chooseChild")}
+                                    </span>
+                                    <span className="font-semibold text-slate-900">
+                                      {selectedPrice ? formatCurrency(selectedPrice) : "-"}
+                                    </span>
+                                  </div>
                                 </div>
-                              </div>
 
-                              <button
-                                onClick={() => addFoodToDraft(item)}
-                                disabled={Boolean(selectedStudent && !selectedPrice)}
-                                className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-cyan-500 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-cyan-600 disabled:cursor-not-allowed disabled:bg-slate-300"
-                              >
-                                <ShoppingCart className="h-4 w-4" />
-                                Agregar
-                              </button>
+                                <button
+                                  onClick={() => addFoodToDraft(item)}
+                                  disabled={Boolean(selectedStudent && !selectedPrice)}
+                                  className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-cyan-500 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-cyan-600 disabled:cursor-not-allowed disabled:bg-slate-300"
+                                >
+                                  <ShoppingCart className="h-4 w-4" />
+                                  {t("parent.plan.add")}
+                                </button>
+                              </div>
                             </div>
                           </article>
                         );
@@ -755,11 +793,11 @@ export default function ParentPlanPage() {
             <div className="border-b border-slate-100 px-5 py-4">
               <div className="flex items-center gap-2">
                 <ShoppingCart className="h-5 w-5 text-slate-700" />
-                <h3 className="text-3xl font-black text-slate-900">Carrito</h3>
+                <h3 className="text-3xl font-black text-slate-900">{t("parent.plan.cart")}</h3>
               </div>
-              <p className="mt-2 text-sm text-slate-600">Tus pedidos se organizan por dia y hora.</p>
+              <p className="mt-2 text-sm text-slate-600">{t("parent.plan.cartOrganized")}</p>
               <p className="mt-1 text-sm text-slate-500">
-                En el carrito puedes editar fecha, quitar productos o agregar mas a una linea existente.
+                {t("parent.plan.cartHint")}
               </p>
             </div>
 
@@ -799,7 +837,7 @@ export default function ParentPlanPage() {
                         <button
                           onClick={() => removeItemFromDraft(index)}
                           className="rounded-full p-0.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
-                          aria-label={`Quitar ${item.foodName}`}
+                          aria-label={t("parent.plan.removeItemLabel").replace("{item}", item.foodName)}
                         >
                           <X className="h-3 w-3" />
                         </button>
@@ -807,19 +845,19 @@ export default function ParentPlanPage() {
                     ))}
                     {draftItems.length > 4 ? (
                       <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-semibold text-slate-700">
-                        +{draftItems.length - 4} mas
+                        +{draftItems.length - 4} {t("parent.plan.more")}
                       </span>
                     ) : null}
                   </div>
 
                   <p className="mt-2 text-xs font-semibold text-slate-600">
-                    {draftUnits} producto(s) - {formatCurrency(draftTotal)}
+                    {draftUnits} {t("parent.plan.productsUnits")} - {formatCurrency(draftTotal)}
                   </p>
                 </div>
 
                 <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:gap-3 lg:shrink-0">
                   <label className="min-w-0 sm:w-56">
-                    <span className="mb-1 block text-[11px] font-semibold text-slate-700">Fecha y hora</span>
+                    <span className="mb-1 block text-[11px] font-semibold text-slate-700">{t("parent.plan.dateTime")}</span>
                     <button
                       type="button"
                       onClick={() => setIsDateTimePickerOpen(true)}
@@ -837,7 +875,7 @@ export default function ParentPlanPage() {
                     className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-cyan-500 px-4 text-sm font-semibold text-white hover:bg-cyan-600"
                   >
                     <ShoppingCart className="h-4 w-4" />
-                    Agregar linea
+                    {t("parent.plan.addLine")}
                   </button>
                 </div>
               </div>
@@ -847,7 +885,7 @@ export default function ParentPlanPage() {
                   onClick={clearDraftLine}
                   className="font-semibold text-slate-600 hover:text-slate-900"
                 >
-                  Limpiar
+                  {t("parent.plan.clear")}
                 </button>
               </div>
             </div>
@@ -860,11 +898,11 @@ export default function ParentPlanPage() {
           <div className="fixed inset-0 z-[70] flex items-center justify-center bg-slate-950/40 p-4 backdrop-blur-sm">
             <div className="w-full max-w-sm rounded-2xl border border-slate-200 bg-white p-4 shadow-2xl sm:p-5">
               <div className="mb-4 flex items-center justify-between">
-                <h3 className="text-lg font-black text-slate-900">Fecha y hora</h3>
+                <h3 className="text-lg font-black text-slate-900">{t("parent.plan.dateTimeModalTitle")}</h3>
                 <button
                   onClick={() => setIsDateTimePickerOpen(false)}
                   className="rounded-lg p-1.5 text-slate-500 hover:bg-slate-100"
-                  aria-label="Cerrar"
+                  aria-label={t("common.close")}
                 >
                   <X className="h-4 w-4" />
                 </button>
@@ -872,7 +910,7 @@ export default function ParentPlanPage() {
 
               <div className="space-y-4">
                 <label className="block">
-                  <span className="mb-1 block text-xs font-semibold text-slate-700">Fecha</span>
+                  <span className="mb-1 block text-xs font-semibold text-slate-700">{t("parent.plan.date")}</span>
                   <input
                     type="date"
                     min={todayValue}
@@ -883,7 +921,7 @@ export default function ParentPlanPage() {
                 </label>
 
                 <label className="block">
-                  <span className="mb-1 block text-xs font-semibold text-slate-700">Hora</span>
+                  <span className="mb-1 block text-xs font-semibold text-slate-700">{t("parent.plan.time")}</span>
                   <input
                     type="time"
                     step={300}
@@ -898,7 +936,7 @@ export default function ParentPlanPage() {
                 onClick={() => setIsDateTimePickerOpen(false)}
                 className="mt-5 inline-flex w-full items-center justify-center rounded-xl bg-cyan-500 px-4 py-2.5 text-sm font-semibold text-white hover:bg-cyan-600"
               >
-                Listo
+                {t("parent.plan.done")}
               </button>
             </div>
           </div>
@@ -911,11 +949,13 @@ export default function ParentPlanPage() {
             <div className="w-full max-w-2xl rounded-2xl border border-slate-200 bg-white p-4 shadow-2xl sm:p-5">
               <div className="mb-4 flex items-center justify-between">
                 <div>
-                  <h3 className="text-lg font-black text-slate-900">Elegir hijo</h3>
+                  <h3 className="text-lg font-black text-slate-900">
+                    {t(hasStaffSelf ? "parent.plan.choosePersonModalTitle" : "parent.plan.chooseChildModalTitle")}
+                  </h3>
                   <p className="text-sm text-slate-600">
                     {pendingFoodToAdd
-                      ? `Vas a agregar ${pendingFoodToAdd.name}.`
-                      : "Selecciona el hijo para continuar."}
+                      ? t("parent.plan.willAdd").replace("{food}", pendingFoodToAdd.name)
+                      : t(hasStaffSelf ? "parent.plan.selectPersonToContinue" : "parent.plan.selectChildToContinue")}
                   </p>
                 </div>
                 {!mustChooseStudent ? (
@@ -925,7 +965,7 @@ export default function ParentPlanPage() {
                       setPendingFoodToAdd(null);
                     }}
                     className="rounded-lg p-1.5 text-slate-500 hover:bg-slate-100"
-                    aria-label="Cerrar selector de hijo"
+                    aria-label={t("parent.plan.closeChildPicker")}
                   >
                     <X className="h-4 w-4" />
                   </button>
@@ -934,7 +974,7 @@ export default function ParentPlanPage() {
 
               {studentsLoading ? (
                 <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-8 text-center text-sm text-slate-500">
-                  Cargando hijos...
+                  {t("parent.plan.loadingChildren")}
                 </div>
               ) : (
                 <div className="grid gap-3 sm:grid-cols-2">
@@ -951,9 +991,18 @@ export default function ParentPlanPage() {
                       }}
                       className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-left transition-colors hover:border-cyan-300 hover:bg-cyan-50/40"
                     >
-                      <p className="font-bold text-slate-900">{student.name}</p>
+                      <p className="flex flex-wrap items-center gap-2 font-bold text-slate-900">
+                        <span>{student.name}</span>
+                        {isStaffStudent(student) ? (
+                          <span className="rounded-full bg-violet-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-violet-700">
+                            {t("common.staffLabel")}
+                          </span>
+                        ) : null}
+                      </p>
                       <p className="mt-1 text-xs text-slate-600">
-                        {studentLevelLabelByValue[student.level] ?? student.level}
+                        {isStaffStudent(student)
+                          ? t("common.staffSelfHint")
+                          : studentLevelLabelByValue[student.level] ?? student.level}
                       </p>
                     </button>
                   ))}

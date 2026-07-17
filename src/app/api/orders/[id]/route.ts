@@ -1,10 +1,18 @@
 import { auth } from "@/auth";
 import { prisma } from "@/lib/db";
+import { formatOrderNumber } from "@/lib/utils";
 import { NextRequest, NextResponse } from "next/server";
 
 const ORDER_STATUSES = ["PENDING", "PAID", "PREPARING", "DELIVERED", "NOT_PICKED_UP", "CANCELLED"] as const;
 const VENDOR_ALLOWED_STATUSES = ["PREPARING", "DELIVERED", "NOT_PICKED_UP"] as const;
 const PARENT_CANCELLATION_WINDOW_MS = 2 * 60 * 60 * 1000;
+
+const STATUS_NOTIFICATION_MESSAGES: Record<string, string> = {
+  PREPARING: "fue aceptado y está en preparación",
+  DELIVERED: "fue entregado",
+  NOT_PICKED_UP: "no fue recogido",
+  CANCELLED: "fue cancelado",
+};
 
 export async function PUT(
   req: NextRequest,
@@ -146,11 +154,14 @@ export async function PUT(
       }
     }
 
+    const statusMessage =
+      STATUS_NOTIFICATION_MESSAGES[result.status] ?? `cambió a estado ${result.status}`;
+
     await tx.notification.create({
       data: {
         userId: result.parentId,
         title: "Actualización de pedido",
-        message: `Tu pedido ${result.id.slice(0, 8)} cambió a estado ${result.status}.`,
+        message: `Tu pedido #${formatOrderNumber(result.id)} ${statusMessage}.`,
       },
     });
 
