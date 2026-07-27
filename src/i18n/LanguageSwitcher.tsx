@@ -1,7 +1,7 @@
 "use client";
 
 import { usePathname, useRouter } from "next/navigation";
-import { locales, type Locale } from "./config";
+import { defaultLocale, locales, type Locale } from "./config";
 import { useLocale } from "./I18nProvider";
 
 const LOCALE_LABEL: Record<Locale, string> = {
@@ -16,13 +16,14 @@ function setLocaleCookie(nextLocale: Locale): void {
 function swapLocaleInPath(pathname: string, nextLocale: Locale): string {
   const segments = pathname.split("/");
   const currentIsLocale = (locales as readonly string[]).includes(segments[1] ?? "");
+  const rest = currentIsLocale ? `/${segments.slice(2).join("/")}` : pathname;
+  const cleanRest = rest === "/" ? "" : rest;
 
-  if (currentIsLocale) {
-    segments[1] = nextLocale;
-    return segments.join("/") || `/${nextLocale}`;
+  if (nextLocale === defaultLocale) {
+    return cleanRest || "/";
   }
 
-  return `/${nextLocale}${pathname}`;
+  return `/${nextLocale}${cleanRest}`;
 }
 
 interface LanguageSwitcherProps {

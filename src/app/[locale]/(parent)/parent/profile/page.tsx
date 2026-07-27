@@ -2,7 +2,7 @@ import { auth } from "@/auth";
 import Header from "@/components/dashboard/Header";
 import { redirect } from "next/navigation";
 import { getDictionary } from "@/i18n/dictionaries";
-import { isLocale } from "@/i18n/config";
+import { isLocale, localePath } from "@/i18n/config";
 import { notFound } from "next/navigation";
 
 export default async function ParentProfilePage({
@@ -13,7 +13,7 @@ export default async function ParentProfilePage({
   const { locale } = await params;
   if (!isLocale(locale)) notFound();
   const session = await auth();
-  if (!session?.user) redirect(`/${locale}/login`);
+  if (!session?.user) redirect(localePath(locale, "/login"));
 
   const dict = await getDictionary(locale);
   const t = dict.parent.profile;

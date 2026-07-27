@@ -1,6 +1,6 @@
 import { auth } from "@/auth";
 import { NextResponse } from "next/server";
-import { defaultLocale, isLocale, locales, type Locale } from "@/i18n/config";
+import { defaultLocale, isLocale, localePath, locales, type Locale } from "@/i18n/config";
 
 function extractLocalePrefix(pathname: string): Locale | null {
   const match = locales.find(
@@ -13,17 +13,23 @@ export default auth((req) => {
   const { pathname, search } = req.nextUrl;
   const localePrefix = extractLocalePrefix(pathname);
 
-  if (!localePrefix) {
+  // The default locale (English) is served without a URL prefix: "/menu"
+  // resolves internally to "/en/menu" via rewrite, keeping the visible URL
+  // clean. Other locales keep a visible prefix, e.g. "/es/menu".
+  const locale: Locale = localePrefix ?? (() => {
     const cookieLocale = req.cookies.get("NEXT_LOCALE")?.value ?? "";
-    const locale = isLocale(cookieLocale) ? cookieLocale : defaultLocale;
+    return isLocale(cookieLocale) ? cookieLocale : defaultLocale;
+  })();
+
+  if (!localePrefix && locale !== defaultLocale) {
     return NextResponse.redirect(new URL(`/${locale}${pathname}${search}`, req.url));
   }
 
   const session = req.auth;
-  const path = pathname.slice(`/${localePrefix}`.length) || "/";
+  const path = localePrefix ? pathname.slice(`/${localePrefix}`.length) || "/" : pathname;
 
   const redirectWithLocale = (target: "login" | "unauthorized") =>
-    NextResponse.redirect(new URL(`/${localePrefix}/${target}`, req.url));
+    NextResponse.redirect(new URL(localePath(locale, `/${target}`), req.url));
 
   if (path.startsWith("/admin")) {
     if (!session) {
@@ -58,6 +64,10 @@ export default auth((req) => {
     ) {
       return redirectWithLocale("unauthorized");
     }
+  }
+
+  if (!localePrefix) {
+    return NextResponse.rewrite(new URL(`/${locale}${pathname}${search}`, req.url));
   }
 
   return NextResponse.next();

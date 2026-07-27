@@ -11,6 +11,7 @@ import DietaryTagBadges, { DietaryTagLabels } from "@/components/dashboard/Dieta
 import { formatCurrency, formatDateTime, LEVELS, normalizePriceLevel } from "@/lib/utils";
 import { FOOD_TABS, getFoodTab, parseFoodTags, type FoodTab } from "@/lib/food-tabs";
 import { useLocale, useTranslations } from "@/i18n/I18nProvider";
+import { localePath } from "@/i18n/config";
 import { CalendarDays, Pencil, Plus, Search, ShoppingCart, Trash2, UtensilsCrossed, X } from "lucide-react";
 
 type Student = {
@@ -427,7 +428,7 @@ export default function ParentPlanPage() {
       const total = createdOrders.reduce((sum, order) => sum + order.total, 0);
       const ids = createdOrders.map((order) => order.id).join(",");
       router.push(
-        `/${locale}/parent/history?created=1&total=${total}&ids=${encodeURIComponent(ids)}`
+        localePath(locale, `/parent/history?created=1&total=${total}&ids=${encodeURIComponent(ids)}`)
       );
     },
     onError: (error) => {

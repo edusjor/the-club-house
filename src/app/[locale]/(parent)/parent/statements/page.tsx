@@ -4,7 +4,7 @@ import Header from "@/components/dashboard/Header";
 import { formatCurrency } from "@/lib/utils";
 import { redirect } from "next/navigation";
 import { getDictionary } from "@/i18n/dictionaries";
-import { isLocale } from "@/i18n/config";
+import { isLocale, localePath } from "@/i18n/config";
 import { notFound } from "next/navigation";
 
 export default async function ParentStatementsPage({
@@ -16,7 +16,7 @@ export default async function ParentStatementsPage({
   if (!isLocale(locale)) notFound();
   const session = await auth();
   const parentId = (session?.user as { id?: string } | undefined)?.id;
-  if (!parentId) redirect(`/${locale}/login`);
+  if (!parentId) redirect(localePath(locale, "/login"));
 
   const [orders, payments, consumptions, dict] = await Promise.all([
     prisma.order.aggregate({ where: { parentId }, _sum: { total: true }, _count: { _all: true } }),

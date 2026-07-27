@@ -5,7 +5,7 @@ import StatusBadge from "@/components/dashboard/StatusBadge";
 import { formatDateTime } from "@/lib/utils";
 import { redirect } from "next/navigation";
 import { getDictionary } from "@/i18n/dictionaries";
-import { isLocale } from "@/i18n/config";
+import { isLocale, localePath } from "@/i18n/config";
 import { notFound } from "next/navigation";
 
 export default async function ParentNotificationsPage({
@@ -17,7 +17,7 @@ export default async function ParentNotificationsPage({
   if (!isLocale(locale)) notFound();
   const session = await auth();
   const userId = (session?.user as { id?: string } | undefined)?.id;
-  if (!userId) redirect(`/${locale}/login`);
+  if (!userId) redirect(localePath(locale, "/login"));
 
   const [notifications, dict] = await Promise.all([
     prisma.notification.findMany({ where: { userId }, orderBy: { createdAt: "desc" } }),

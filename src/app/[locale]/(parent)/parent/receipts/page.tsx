@@ -5,7 +5,7 @@ import ReceiptFileLink from "@/components/ReceiptFileLink";
 import { formatReceiptSummary, parsePaymentReceipt } from "@/lib/payment-receipt";
 import { redirect } from "next/navigation";
 import { getDictionary } from "@/i18n/dictionaries";
-import { isLocale } from "@/i18n/config";
+import { isLocale, localePath } from "@/i18n/config";
 import { notFound } from "next/navigation";
 
 export default async function ParentReceiptsPage({
@@ -17,7 +17,7 @@ export default async function ParentReceiptsPage({
   if (!isLocale(locale)) notFound();
   const session = await auth();
   const parentId = (session?.user as { id?: string } | undefined)?.id;
-  if (!parentId) redirect(`/${locale}/login`);
+  if (!parentId) redirect(localePath(locale, "/login"));
 
   const [receipts, dict] = await Promise.all([
     prisma.payment.findMany({ where: { parentId, receipt: { not: null } }, orderBy: { createdAt: "desc" } }),

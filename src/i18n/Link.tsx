@@ -2,7 +2,7 @@
 
 import NextLink from "next/link";
 import type { ComponentProps } from "react";
-import { locales } from "./config";
+import { defaultLocale, locales } from "./config";
 import { useLocale } from "./I18nProvider";
 
 type LinkProps = ComponentProps<typeof NextLink>;
@@ -15,6 +15,7 @@ export function localizeHref(locale: string, href: LinkProps["href"]): LinkProps
   if (typeof href !== "string") return href;
   if (!href.startsWith("/") || href.startsWith("//")) return href;
   if (hasLocalePrefix(href)) return href;
+  if (locale === defaultLocale) return href;
 
   return `/${locale}${href}`;
 }

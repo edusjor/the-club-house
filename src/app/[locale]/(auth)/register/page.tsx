@@ -6,6 +6,7 @@ import { FormEvent, useState } from "react";
 import axios from "axios";
 import { AlertCircle, Baby, BriefcaseBusiness, Eye, EyeOff, UserPlus, Users } from "lucide-react";
 import { useLocale, useTranslations } from "@/i18n/I18nProvider";
+import { localePath } from "@/i18n/config";
 
 type AccountType = "PARENT" | "PARENT_STAFF" | "STAFF";
 
@@ -101,7 +102,7 @@ export default function RegisterPage() {
       });
 
       router.push(
-        `/${locale}/login?registered=1&email=${encodeURIComponent(normalizedEmail)}`
+        localePath(locale, `/login?registered=1&email=${encodeURIComponent(normalizedEmail)}`)
       );
     } catch (requestError: unknown) {
       const message =

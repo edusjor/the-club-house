@@ -5,6 +5,7 @@ import { signOut } from "next-auth/react";
 import { cn } from "@/lib/utils";
 import Link from "@/i18n/Link";
 import LanguageSwitcher from "@/i18n/LanguageSwitcher";
+import { localePath } from "@/i18n/config";
 import { useLocale, useTranslations } from "@/i18n/I18nProvider";
 import {
   LayoutDashboard,
@@ -106,7 +107,7 @@ export default function Sidebar({ role, userName, userEmail, className, onNaviga
       <nav className="flex-1 overflow-y-auto py-4 px-3 space-y-0.5">
         {navItems.map((item) => {
           const Icon = item.icon;
-          const fullHref = `/${locale}${item.href}`;
+          const fullHref = localePath(locale, item.href);
           const active = pathname === fullHref || pathname.startsWith(fullHref + "/");
           return (
             <Link
@@ -151,7 +152,7 @@ export default function Sidebar({ role, userName, userEmail, className, onNaviga
         <button
           onClick={() => {
             onNavigate?.();
-            signOut({ callbackUrl: `/${locale}/login` });
+            signOut({ callbackUrl: localePath(locale, "/login") });
           }}
           className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-semibold tracking-[0.01em] text-slate-400 hover:bg-red-500/20 hover:text-red-400 transition-all"
         >

@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/db";
 import { sendMail } from "@/lib/mailer";
 import { generateResetToken, RESET_TOKEN_TTL_MS } from "@/lib/password-reset";
-import { isLocale, defaultLocale } from "@/i18n/config";
+import { isLocale, defaultLocale, localePath } from "@/i18n/config";
 import { getDictionary } from "@/i18n/dictionaries";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -36,7 +36,7 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    const resetUrl = `${req.nextUrl.origin}/${locale}/reset-password?token=${token}`;
+    const resetUrl = `${req.nextUrl.origin}${localePath(locale, `/reset-password?token=${token}`)}`;
 
     try {
       await sendMail({

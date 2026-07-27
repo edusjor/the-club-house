@@ -1,6 +1,7 @@
 import { auth } from "@/auth";
 import Header from "@/components/dashboard/Header";
 import { redirect } from "next/navigation";
+import { localePath } from "@/i18n/config";
 
 export default async function AdminProfilePage({
   params,
@@ -9,7 +10,7 @@ export default async function AdminProfilePage({
 }) {
   const { locale } = await params;
   const session = await auth();
-  if (!session?.user) redirect(`/${locale}/login`);
+  if (!session?.user) redirect(localePath(locale, "/login"));
 
   return (
     <div>

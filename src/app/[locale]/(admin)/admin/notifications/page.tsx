@@ -4,6 +4,7 @@ import Header from "@/components/dashboard/Header";
 import StatusBadge from "@/components/dashboard/StatusBadge";
 import { formatDateTime } from "@/lib/utils";
 import { redirect } from "next/navigation";
+import { localePath } from "@/i18n/config";
 
 export default async function AdminNotificationsPage({
   params,
@@ -13,7 +14,7 @@ export default async function AdminNotificationsPage({
   const { locale } = await params;
   const session = await auth();
   const userId = (session?.user as { id?: string } | undefined)?.id;
-  if (!userId) redirect(`/${locale}/login`);
+  if (!userId) redirect(localePath(locale, "/login"));
 
   const notifications = await prisma.notification.findMany({
     where: { userId },

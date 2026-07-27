@@ -6,6 +6,7 @@ import Link from "@/i18n/Link";
 import axios from "axios";
 import { AlertCircle, Eye, EyeOff, KeyRound } from "lucide-react";
 import { useLocale, useTranslations } from "@/i18n/I18nProvider";
+import { localePath } from "@/i18n/config";
 
 function ResetPasswordForm() {
   const router = useRouter();
@@ -43,7 +44,7 @@ function ResetPasswordForm() {
 
     try {
       await axios.post("/api/auth/reset-password", { token, password });
-      router.push(`/${locale}/login?reset=1`);
+      router.push(localePath(locale, "/login?reset=1"));
     } catch (requestError: unknown) {
       const message =
         axios.isAxiosError(requestError) && requestError.response?.data?.error
