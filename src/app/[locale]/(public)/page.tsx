@@ -82,18 +82,6 @@ export default function HomePage() {
                   {home.hero.ctaLogin}
                 </Link>
               </div>
-
-              {/* Stats bar */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 mt-16">
-                {home.stats.map((s) => (
-                  <div key={s.label}>
-                    <p className="text-2xl sm:text-3xl font-black text-cyan-500">{s.value}</p>
-                    <p className="mt-0.5 text-xs sm:text-sm font-semibold text-cyan-900/70">
-                      {s.label}
-                    </p>
-                  </div>
-                ))}
-              </div>
             </div>
 
             <div className="relative flex items-center justify-center">
