@@ -70,7 +70,43 @@
       "noAccount": "Don't have an account?",
       "createAccount": "Create a parent/guardian account",
       "loadingTitle": "Welcome",
-      "loadingSubtitle": "Loading form..."
+      "loadingSubtitle": "Loading form...",
+      "forgotPassword": "Forgot your password?",
+      "passwordResetSuccess": "Password updated successfully. Now sign in."
+    },
+    "forgotPassword": {
+      "title": "Reset password",
+      "subtitle": "Enter your email and we'll send you a link to reset your password.",
+      "email": "Email",
+      "emailPlaceholder": "you@email.com",
+      "submit": "Send link",
+      "submitting": "Sending...",
+      "errorRequired": "Enter your email address.",
+      "errorGeneric": "Couldn't send the link. Please try again.",
+      "successMessage": "If that email is registered, we sent a link to reset your password. Check your inbox.",
+      "backToLogin": "← Back to sign in",
+      "emailTemplate": {
+        "subject": "Reset your password - The Club House",
+        "greeting": "Hi {name},",
+        "body": "We received a request to reset your password. Click the link below to choose a new one:",
+        "expiry": "This link will expire in 1 hour.",
+        "ignore": "If you didn't request this change, you can ignore this email."
+      }
+    },
+    "resetPassword": {
+      "title": "New password",
+      "subtitle": "Choose a new password for your account.",
+      "password": "New password",
+      "passwordPlaceholder": "At least 8 characters",
+      "confirmPassword": "Confirm password",
+      "confirmPasswordPlaceholder": "Repeat your password",
+      "submit": "Reset password",
+      "submitting": "Saving...",
+      "errorInvalidToken": "The link is invalid or has expired. Request a new one.",
+      "errorPasswordLength": "Password must be at least 8 characters.",
+      "errorPasswordMismatch": "Passwords don't match.",
+      "errorGeneric": "Couldn't reset the password. Please try again.",
+      "backToLogin": "← Back to sign in"
     },
     "register": {
       "title": "Create Account",

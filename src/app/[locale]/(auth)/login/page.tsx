@@ -39,6 +39,7 @@ function LoginForm() {
   const authError = searchParams.get("error");
   const registered = searchParams.get("registered") === "1";
   const registeredEmail = searchParams.get("email");
+  const passwordReset = searchParams.get("reset") === "1";
   const errorMessage = authError ? t("auth.login.errorCredentials") : "";
   const registeredMessage = registeredEmail
     ? t("auth.login.registeredSuccessFor").replace("{email}", registeredEmail)
@@ -67,6 +68,13 @@ function LoginForm() {
         </div>
       ) : null}
 
+      {passwordReset ? (
+        <div className="flex items-start gap-2.5 bg-emerald-50 border border-emerald-200 text-emerald-700 rounded-xl px-4 py-3 mb-5 text-sm">
+          <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+          {t("auth.login.passwordResetSuccess")}
+        </div>
+      ) : null}
+
       <form action={loginWithLocale} className="space-y-4">
         <div>
           <label className="block text-xs font-semibold text-slate-700 mb-1.5 uppercase tracking-wide">
@@ -84,9 +92,17 @@ function LoginForm() {
         </div>
 
         <div>
-          <label className="block text-xs font-semibold text-slate-700 mb-1.5 uppercase tracking-wide">
-            {t("auth.login.password")}
-          </label>
+          <div className="flex items-center justify-between mb-1.5">
+            <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wide">
+              {t("auth.login.password")}
+            </label>
+            <Link
+              href="/forgot-password"
+              className="text-xs font-semibold text-cyan-600 hover:text-cyan-700"
+            >
+              {t("auth.login.forgotPassword")}
+            </Link>
+          </div>
           <div className="relative">
             <input
               name="password"
