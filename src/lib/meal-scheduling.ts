@@ -35,7 +35,21 @@ function getCostaRicaDateParts(reference: Date) {
     year: shifted.getUTCFullYear(),
     month: shifted.getUTCMonth(),
     day: shifted.getUTCDate(),
+    hour: shifted.getUTCHours(),
   };
+}
+
+// The parent no longer picks "today" vs "tomorrow" by hand — it's resolved
+// automatically from the current Costa Rica clock time. Before 4:00pm the
+// order is for today; at/after 4:00pm today's ordering window is considered
+// closed and it's automatically for tomorrow (the vendor will see it the
+// next day and prep/deliver it then). Right after midnight this naturally
+// flips back to "today" for the new calendar day.
+export const TODAY_CUTOFF_HOUR = 16;
+
+export function resolveTargetDay(reference: Date = new Date()): TargetDay {
+  const { hour } = getCostaRicaDateParts(reference);
+  return hour >= TODAY_CUTOFF_HOUR ? "TOMORROW" : "TODAY";
 }
 
 export function buildScheduledDate(
@@ -48,4 +62,8 @@ export function buildScheduledDate(
   const dayOffset = targetDay === "TOMORROW" ? 1 : 0;
 
   return new Date(Date.UTC(year, month, day + dayOffset, hour, minute) + CR_OFFSET_MS);
+}
+
+export function buildScheduledDateForMealPeriod(mealPeriod: MealPeriod, reference: Date = new Date()): Date {
+  return buildScheduledDate(resolveTargetDay(reference), mealPeriod, reference);
 }

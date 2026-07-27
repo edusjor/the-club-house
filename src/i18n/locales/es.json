@@ -531,6 +531,7 @@
       "mealPeriodSectionLabel": "Momento de comida",
       "targetDayToday": "Hoy",
       "targetDayTomorrow": "Mañana",
+      "autoTomorrowNotice": "Ya son más de las 4:00pm, el horario de pedidos de hoy está cerrado — este pedido será para mañana.",
       "done": "Listo",
       "chooseChildModalTitle": "Elegir hijo",
       "choosePersonModalTitle": "¿Para quién es el pedido?",

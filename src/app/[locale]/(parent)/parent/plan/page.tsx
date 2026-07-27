@@ -11,7 +11,7 @@ import DietaryTagBadges, { DietaryTagLabels } from "@/components/dashboard/Dieta
 import { formatCurrency, LEVELS, normalizePriceLevel } from "@/lib/utils";
 import { FOOD_TABS, getFoodTab, parseFoodTags, type FoodTab } from "@/lib/food-tabs";
 import { MEAL_PERIODS } from "@/lib/meal-periods";
-import type { MealPeriod, TargetDay } from "@/lib/meal-scheduling";
+import { resolveTargetDay, type MealPeriod } from "@/lib/meal-scheduling";
 import { useLocale, useTranslations } from "@/i18n/I18nProvider";
 import { localePath } from "@/i18n/config";
 import { CalendarDays, Pencil, Plus, Search, ShoppingCart, Trash2, UtensilsCrossed, X } from "lucide-react";
@@ -56,7 +56,6 @@ type CartLine = {
   id: string;
   studentId: string;
   studentName: string;
-  targetDay: TargetDay;
   mealPeriod: MealPeriod;
   items: DraftLineItem[];
 };
@@ -81,20 +80,21 @@ function getPriceForStudentLevel(food: FoodItem, studentLevel: string) {
   return [...food.prices].sort((a, b) => a.price - b.price)[0].price;
 }
 
-const TARGET_DAY_ORDER: TargetDay[] = ["TODAY", "TOMORROW"];
 const MEAL_PERIOD_ORDER = MEAL_PERIODS.map((period) => period.key);
 
-function formatMealMoment(targetDay: TargetDay, mealPeriod: MealPeriod, t: (key: string) => string) {
-  const dayLabel = t(targetDay === "TODAY" ? "parent.plan.targetDayToday" : "parent.plan.targetDayTomorrow");
+// "Today" vs "tomorrow" is never a manual choice — it's resolved live from
+// the current Costa Rica clock time (see resolveTargetDay), so it's always
+// computed fresh at render time rather than stored on the cart line.
+function formatMealMoment(mealPeriod: MealPeriod, t: (key: string) => string) {
+  const dayLabel = t(
+    resolveTargetDay() === "TODAY" ? "parent.plan.targetDayToday" : "parent.plan.targetDayTomorrow"
+  );
   const mealPeriodLabel = t(MEAL_PERIODS.find((period) => period.key === mealPeriod)?.labelKey ?? "");
   return `${dayLabel} · ${mealPeriodLabel}`;
 }
 
 function sortCartLines(lines: CartLine[]) {
   return [...lines].sort((a, b) => {
-    const byDay = TARGET_DAY_ORDER.indexOf(a.targetDay) - TARGET_DAY_ORDER.indexOf(b.targetDay);
-    if (byDay !== 0) return byDay;
-
     const byMealPeriod = MEAL_PERIOD_ORDER.indexOf(a.mealPeriod) - MEAL_PERIOD_ORDER.indexOf(b.mealPeriod);
     if (byMealPeriod !== 0) return byMealPeriod;
 
@@ -143,7 +143,6 @@ export default function ParentPlanPage() {
   const [isCartMenuOpen, setIsCartMenuOpen] = useState(false);
 
   const [draftItems, setDraftItems] = useState<DraftLineItem[]>([]);
-  const [draftTargetDay, setDraftTargetDay] = useState<TargetDay>("TODAY");
   const [draftMealPeriod, setDraftMealPeriod] = useState<MealPeriod>("LUNCH");
   const [editingLineId, setEditingLineId] = useState<string | null>(null);
 
@@ -284,7 +283,6 @@ export default function ParentPlanPage() {
       id: editingLineId ?? createLineId(),
       studentId: effectiveStudentId,
       studentName: selectedStudent.name,
-      targetDay: draftTargetDay,
       mealPeriod: draftMealPeriod,
       items: draftItems.map((item) => ({ ...item })),
     };
@@ -326,7 +324,6 @@ export default function ParentPlanPage() {
     setEditingLineId(line.id);
     setStudentId(line.studentId);
 
-    setDraftTargetDay(line.targetDay);
     setDraftMealPeriod(line.mealPeriod);
     setDraftItems(line.items.map((item) => ({ ...item })));
     setFormError("");
@@ -383,7 +380,6 @@ export default function ParentPlanPage() {
             studentId: line.studentId,
             foodItemId: item.foodItemId,
             mealPeriod: line.mealPeriod,
-            targetDay: line.targetDay,
             quantity: item.quantity,
           }))
         ),
@@ -445,7 +441,7 @@ export default function ParentPlanPage() {
         cartLines.map((line) => (
           <div key={line.id} className="overflow-hidden rounded-xl border border-slate-200 bg-white">
             <div className="border-b border-slate-200 bg-slate-50 px-3 py-2">
-              <p className="text-sm font-bold text-cyan-700">{formatMealMoment(line.targetDay, line.mealPeriod, t)}</p>
+              <p className="text-sm font-bold text-cyan-700">{formatMealMoment(line.mealPeriod, t)}</p>
             </div>
 
             <div className="space-y-2 px-3 py-3">
@@ -841,7 +837,7 @@ export default function ParentPlanPage() {
                     >
                       <CalendarDays className="h-4 w-4 shrink-0 text-slate-400" />
                       <span className="truncate">
-                        {formatMealMoment(draftTargetDay, draftMealPeriod, t)}
+                        {formatMealMoment(draftMealPeriod, t)}
                       </span>
                     </button>
                   </label>
@@ -914,24 +910,19 @@ export default function ParentPlanPage() {
                   <span className="mb-1.5 block text-xs font-semibold text-slate-700">
                     {t("parent.plan.mealMomentLabel")}
                   </span>
-                  <div className="flex gap-2">
-                    {(["TODAY", "TOMORROW"] as TargetDay[]).map((day) => {
-                      const isActive = day === draftTargetDay;
-                      return (
-                        <button
-                          key={day}
-                          type="button"
-                          onClick={() => setDraftTargetDay(day)}
-                          className={`flex-1 rounded-full border px-4 py-2 text-sm font-semibold transition-colors ${
-                            isActive
-                              ? "border-cyan-500 bg-cyan-500 text-white"
-                              : "border-slate-200 bg-white text-slate-600 hover:border-cyan-300 hover:text-cyan-700"
-                          }`}
-                        >
-                          {t(day === "TODAY" ? "parent.plan.targetDayToday" : "parent.plan.targetDayTomorrow")}
-                        </button>
-                      );
-                    })}
+                  <div className="rounded-xl border border-cyan-200 bg-cyan-50 px-4 py-3">
+                    <p className="text-sm font-bold text-cyan-800">
+                      {t(
+                        resolveTargetDay() === "TODAY"
+                          ? "parent.plan.targetDayToday"
+                          : "parent.plan.targetDayTomorrow"
+                      )}
+                    </p>
+                    {resolveTargetDay() === "TOMORROW" ? (
+                      <p className="mt-1 text-xs text-cyan-700">
+                        {t("parent.plan.autoTomorrowNotice")}
+                      </p>
+                    ) : null}
                   </div>
                 </div>
               </div>

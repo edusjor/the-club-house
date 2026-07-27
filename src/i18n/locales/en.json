@@ -531,6 +531,7 @@
       "mealPeriodSectionLabel": "Meal moment",
       "targetDayToday": "Today",
       "targetDayTomorrow": "Tomorrow",
+      "autoTomorrowNotice": "It's already past 4:00pm, today's ordering window is closed — this order will be for tomorrow.",
       "done": "Done",
       "chooseChildModalTitle": "Choose child",
       "choosePersonModalTitle": "Who is this order for?",

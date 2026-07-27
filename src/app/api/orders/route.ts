@@ -1,7 +1,7 @@
 import { auth } from "@/auth";
 import { prisma } from "@/lib/db";
 import { normalizePriceLevel } from "@/lib/utils";
-import { buildScheduledDate, isMealPeriod, isTargetDay, type MealPeriod } from "@/lib/meal-scheduling";
+import { buildScheduledDateForMealPeriod, isMealPeriod, type MealPeriod } from "@/lib/meal-scheduling";
 import { NextRequest, NextResponse } from "next/server";
 
 type IncomingOrderItem =
@@ -16,7 +16,6 @@ type IncomingOrderItem =
       studentId: string;
       foodItemId: string;
       mealPeriod: MealPeriod;
-      targetDay: string;
       quantity?: number;
       priceLevel?: string;
     };
@@ -336,19 +335,20 @@ export async function POST(req: NextRequest) {
     let scheduledDate: Date;
     let mealPeriod: MealPeriod | null = null;
 
-    if ("mealPeriod" in item && "targetDay" in item) {
-      if (!isMealPeriod(item.mealPeriod) || !isTargetDay(item.targetDay)) {
+    if ("mealPeriod" in item) {
+      if (!isMealPeriod(item.mealPeriod)) {
         return NextResponse.json(
-          { error: "Momento de comida o día inválido" },
+          { error: "Momento de comida inválido" },
           { status: 400 }
         );
       }
 
+      // "Today" vs "tomorrow" is never trusted from the client — it's always
+      // resolved server-side from the current Costa Rica clock time (today
+      // before 4pm, tomorrow at/after 4pm), so a stale tab can't submit a
+      // "today" order past the cutoff.
       mealPeriod = item.mealPeriod;
-      scheduledDate = buildScheduledDate(item.targetDay, item.mealPeriod, now);
-      // No past-time guard here: a "today" order can legitimately resolve to
-      // an internal anchor time that's already clock-past (e.g. ordering
-      // Afterschool at 4pm), which is expected — there is no cutoff rule.
+      scheduledDate = buildScheduledDateForMealPeriod(item.mealPeriod, now);
     } else {
       const parsed = parseScheduledDate(item.scheduledDate);
       if (!parsed) {
