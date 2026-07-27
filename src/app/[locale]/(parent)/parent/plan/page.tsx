@@ -8,8 +8,10 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import Header from "@/components/dashboard/Header";
 import DietaryTagBadges, { DietaryTagLabels } from "@/components/dashboard/DietaryTagBadges";
-import { formatCurrency, formatDateTime, LEVELS, normalizePriceLevel } from "@/lib/utils";
+import { formatCurrency, LEVELS, normalizePriceLevel } from "@/lib/utils";
 import { FOOD_TABS, getFoodTab, parseFoodTags, type FoodTab } from "@/lib/food-tabs";
+import { MEAL_PERIODS } from "@/lib/meal-periods";
+import type { MealPeriod, TargetDay } from "@/lib/meal-scheduling";
 import { useLocale, useTranslations } from "@/i18n/I18nProvider";
 import { localePath } from "@/i18n/config";
 import { CalendarDays, Pencil, Plus, Search, ShoppingCart, Trash2, UtensilsCrossed, X } from "lucide-react";
@@ -54,7 +56,8 @@ type CartLine = {
   id: string;
   studentId: string;
   studentName: string;
-  scheduledDate: string;
+  targetDay: TargetDay;
+  mealPeriod: MealPeriod;
   items: DraftLineItem[];
 };
 
@@ -78,27 +81,22 @@ function getPriceForStudentLevel(food: FoodItem, studentLevel: string) {
   return [...food.prices].sort((a, b) => a.price - b.price)[0].price;
 }
 
-function toDateOnlyValue(date: Date) {
-  const localDate = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
-  return localDate.toISOString().slice(0, 10);
-}
+const TARGET_DAY_ORDER: TargetDay[] = ["TODAY", "TOMORROW"];
+const MEAL_PERIOD_ORDER = MEAL_PERIODS.map((period) => period.key);
 
-function buildScheduledDate(dateValue: string, timeValue: string) {
-  return `${dateValue}T${timeValue}`;
-}
-
-function splitScheduledDate(scheduledDate: string) {
-  const [datePart = "", rawTime = "12:00"] = scheduledDate.split("T");
-  return {
-    datePart,
-    timePart: rawTime.slice(0, 5),
-  };
+function formatMealMoment(targetDay: TargetDay, mealPeriod: MealPeriod, t: (key: string) => string) {
+  const dayLabel = t(targetDay === "TODAY" ? "parent.plan.targetDayToday" : "parent.plan.targetDayTomorrow");
+  const mealPeriodLabel = t(MEAL_PERIODS.find((period) => period.key === mealPeriod)?.labelKey ?? "");
+  return `${dayLabel} · ${mealPeriodLabel}`;
 }
 
 function sortCartLines(lines: CartLine[]) {
   return [...lines].sort((a, b) => {
-    const byDate = a.scheduledDate.localeCompare(b.scheduledDate);
-    if (byDate !== 0) return byDate;
+    const byDay = TARGET_DAY_ORDER.indexOf(a.targetDay) - TARGET_DAY_ORDER.indexOf(b.targetDay);
+    if (byDay !== 0) return byDay;
+
+    const byMealPeriod = MEAL_PERIOD_ORDER.indexOf(a.mealPeriod) - MEAL_PERIOD_ORDER.indexOf(b.mealPeriod);
+    if (byMealPeriod !== 0) return byMealPeriod;
 
     const byStudent = a.studentName.localeCompare(b.studentName, "es");
     if (byStudent !== 0) return byStudent;
@@ -145,8 +143,8 @@ export default function ParentPlanPage() {
   const [isCartMenuOpen, setIsCartMenuOpen] = useState(false);
 
   const [draftItems, setDraftItems] = useState<DraftLineItem[]>([]);
-  const [draftDate, setDraftDate] = useState("");
-  const [draftTime, setDraftTime] = useState("12:00");
+  const [draftTargetDay, setDraftTargetDay] = useState<TargetDay>("TODAY");
+  const [draftMealPeriod, setDraftMealPeriod] = useState<MealPeriod>("LUNCH");
   const [editingLineId, setEditingLineId] = useState<string | null>(null);
 
   const [cartLines, setCartLines] = useState<CartLine[]>([]);
@@ -192,11 +190,6 @@ export default function ParentPlanPage() {
 
   const mustChooseStudent = !selectedStudent;
   const isStudentPickerVisible = isStudentPickerOpen || (!studentsLoading && mustChooseStudent);
-
-  const today = useMemo(() => new Date(), []);
-  const todayValue = useMemo(() => toDateOnlyValue(today), [today]);
-
-  const draftDateValue = draftDate || todayValue;
 
   const filteredMenu = useMemo(() => {
     const normalizedSearch = search.trim().toLowerCase();
@@ -287,29 +280,12 @@ export default function ParentPlanPage() {
       return;
     }
 
-    if (!draftDateValue) {
-      setFormError(t("parent.plan.errorSelectDate"));
-      return;
-    }
-
-    if (!draftTime) {
-      setFormError(t("parent.plan.errorSelectTime"));
-      return;
-    }
-
-    const nextScheduledDate = buildScheduledDate(draftDateValue, draftTime);
-    const parsed = new Date(nextScheduledDate);
-
-    if (Number.isNaN(parsed.getTime())) {
-      setFormError(t("parent.plan.errorInvalidDateTime"));
-      return;
-    }
-
     const lineToSave: CartLine = {
       id: editingLineId ?? createLineId(),
       studentId: effectiveStudentId,
       studentName: selectedStudent.name,
-      scheduledDate: nextScheduledDate,
+      targetDay: draftTargetDay,
+      mealPeriod: draftMealPeriod,
       items: draftItems.map((item) => ({ ...item })),
     };
 
@@ -350,10 +326,8 @@ export default function ParentPlanPage() {
     setEditingLineId(line.id);
     setStudentId(line.studentId);
 
-    const { datePart, timePart } = splitScheduledDate(line.scheduledDate);
-    setDraftDate(datePart);
-
-    setDraftTime(timePart || "12:00");
+    setDraftTargetDay(line.targetDay);
+    setDraftMealPeriod(line.mealPeriod);
     setDraftItems(line.items.map((item) => ({ ...item })));
     setFormError("");
 
@@ -408,7 +382,8 @@ export default function ParentPlanPage() {
           line.items.map((item) => ({
             studentId: line.studentId,
             foodItemId: item.foodItemId,
-            scheduledDate: line.scheduledDate,
+            mealPeriod: line.mealPeriod,
+            targetDay: line.targetDay,
             quantity: item.quantity,
           }))
         ),
@@ -470,7 +445,7 @@ export default function ParentPlanPage() {
         cartLines.map((line) => (
           <div key={line.id} className="overflow-hidden rounded-xl border border-slate-200 bg-white">
             <div className="border-b border-slate-200 bg-slate-50 px-3 py-2">
-              <p className="text-sm font-bold text-cyan-700">{formatDateTime(line.scheduledDate)}</p>
+              <p className="text-sm font-bold text-cyan-700">{formatMealMoment(line.targetDay, line.mealPeriod, t)}</p>
             </div>
 
             <div className="space-y-2 px-3 py-3">
@@ -858,7 +833,7 @@ export default function ParentPlanPage() {
 
                 <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:gap-3 lg:shrink-0">
                   <label className="min-w-0 sm:w-56">
-                    <span className="mb-1 block text-[11px] font-semibold text-slate-700">{t("parent.plan.dateTime")}</span>
+                    <span className="mb-1 block text-[11px] font-semibold text-slate-700">{t("parent.plan.mealMomentLabel")}</span>
                     <button
                       type="button"
                       onClick={() => setIsDateTimePickerOpen(true)}
@@ -866,7 +841,7 @@ export default function ParentPlanPage() {
                     >
                       <CalendarDays className="h-4 w-4 shrink-0 text-slate-400" />
                       <span className="truncate">
-                        {formatDateTime(buildScheduledDate(draftDateValue, draftTime))}
+                        {formatMealMoment(draftTargetDay, draftMealPeriod, t)}
                       </span>
                     </button>
                   </label>
@@ -899,7 +874,7 @@ export default function ParentPlanPage() {
           <div className="fixed inset-0 z-[70] flex items-center justify-center bg-slate-950/40 p-4 backdrop-blur-sm">
             <div className="w-full max-w-sm rounded-2xl border border-slate-200 bg-white p-4 shadow-2xl sm:p-5">
               <div className="mb-4 flex items-center justify-between">
-                <h3 className="text-lg font-black text-slate-900">{t("parent.plan.dateTimeModalTitle")}</h3>
+                <h3 className="text-lg font-black text-slate-900">{t("parent.plan.mealMomentModalTitle")}</h3>
                 <button
                   onClick={() => setIsDateTimePickerOpen(false)}
                   className="rounded-lg p-1.5 text-slate-500 hover:bg-slate-100"
@@ -910,27 +885,55 @@ export default function ParentPlanPage() {
               </div>
 
               <div className="space-y-4">
-                <label className="block">
-                  <span className="mb-1 block text-xs font-semibold text-slate-700">{t("parent.plan.date")}</span>
-                  <input
-                    type="date"
-                    min={todayValue}
-                    value={draftDateValue}
-                    onChange={(event) => setDraftDate(event.target.value)}
-                    className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm"
-                  />
-                </label>
+                <div>
+                  <span className="mb-1.5 block text-xs font-semibold text-slate-700">
+                    {t("parent.plan.mealPeriodSectionLabel")}
+                  </span>
+                  <div className="flex flex-wrap gap-2">
+                    {MEAL_PERIODS.map((period) => {
+                      const isActive = period.key === draftMealPeriod;
+                      return (
+                        <button
+                          key={period.key}
+                          type="button"
+                          onClick={() => setDraftMealPeriod(period.key)}
+                          className={`rounded-full border px-4 py-2 text-sm font-semibold transition-colors ${
+                            isActive
+                              ? "border-cyan-500 bg-cyan-500 text-white"
+                              : "border-slate-200 bg-white text-slate-600 hover:border-cyan-300 hover:text-cyan-700"
+                          }`}
+                        >
+                          {t(period.labelKey)}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
 
-                <label className="block">
-                  <span className="mb-1 block text-xs font-semibold text-slate-700">{t("parent.plan.time")}</span>
-                  <input
-                    type="time"
-                    step={300}
-                    value={draftTime}
-                    onChange={(event) => setDraftTime(event.target.value)}
-                    className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm"
-                  />
-                </label>
+                <div>
+                  <span className="mb-1.5 block text-xs font-semibold text-slate-700">
+                    {t("parent.plan.mealMomentLabel")}
+                  </span>
+                  <div className="flex gap-2">
+                    {(["TODAY", "TOMORROW"] as TargetDay[]).map((day) => {
+                      const isActive = day === draftTargetDay;
+                      return (
+                        <button
+                          key={day}
+                          type="button"
+                          onClick={() => setDraftTargetDay(day)}
+                          className={`flex-1 rounded-full border px-4 py-2 text-sm font-semibold transition-colors ${
+                            isActive
+                              ? "border-cyan-500 bg-cyan-500 text-white"
+                              : "border-slate-200 bg-white text-slate-600 hover:border-cyan-300 hover:text-cyan-700"
+                          }`}
+                        >
+                          {t(day === "TODAY" ? "parent.plan.targetDayToday" : "parent.plan.targetDayTomorrow")}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
               </div>
 
               <button

@@ -1,15 +1,25 @@
 import { auth } from "@/auth";
 import { prisma } from "@/lib/db";
 import { normalizePriceLevel } from "@/lib/utils";
+import { buildScheduledDate, isMealPeriod, isTargetDay, type MealPeriod } from "@/lib/meal-scheduling";
 import { NextRequest, NextResponse } from "next/server";
 
-type IncomingOrderItem = {
-  studentId: string;
-  foodItemId: string;
-  scheduledDate: string;
-  quantity?: number;
-  priceLevel?: string;
-};
+type IncomingOrderItem =
+  | {
+      studentId: string;
+      foodItemId: string;
+      scheduledDate: string;
+      quantity?: number;
+      priceLevel?: string;
+    }
+  | {
+      studentId: string;
+      foodItemId: string;
+      mealPeriod: MealPeriod;
+      targetDay: string;
+      quantity?: number;
+      priceLevel?: string;
+    };
 
 const PARENT_CANCELLATION_WINDOW_MS = 2 * 60 * 60 * 1000;
 
@@ -296,6 +306,7 @@ export async function POST(req: NextRequest) {
     studentId: string;
     foodItemId: string;
     scheduledDate: Date;
+    mealPeriod: MealPeriod | null;
     quantity: number;
     price: number;
   }[] = [];
@@ -322,19 +333,39 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const scheduledDate = parseScheduledDate(item.scheduledDate);
-    if (!scheduledDate) {
-      return NextResponse.json(
-        { error: "Fecha programada inválida" },
-        { status: 400 }
-      );
-    }
+    let scheduledDate: Date;
+    let mealPeriod: MealPeriod | null = null;
 
-    if (scheduledDate.getTime() < minimumAllowedTimestamp) {
-      return NextResponse.json(
-        { error: "No puedes programar pedidos para horas pasadas" },
-        { status: 400 }
-      );
+    if ("mealPeriod" in item && "targetDay" in item) {
+      if (!isMealPeriod(item.mealPeriod) || !isTargetDay(item.targetDay)) {
+        return NextResponse.json(
+          { error: "Momento de comida o día inválido" },
+          { status: 400 }
+        );
+      }
+
+      mealPeriod = item.mealPeriod;
+      scheduledDate = buildScheduledDate(item.targetDay, item.mealPeriod, now);
+      // No past-time guard here: a "today" order can legitimately resolve to
+      // an internal anchor time that's already clock-past (e.g. ordering
+      // Afterschool at 4pm), which is expected — there is no cutoff rule.
+    } else {
+      const parsed = parseScheduledDate(item.scheduledDate);
+      if (!parsed) {
+        return NextResponse.json(
+          { error: "Fecha programada inválida" },
+          { status: 400 }
+        );
+      }
+
+      if (parsed.getTime() < minimumAllowedTimestamp) {
+        return NextResponse.json(
+          { error: "No puedes programar pedidos para horas pasadas" },
+          { status: 400 }
+        );
+      }
+
+      scheduledDate = parsed;
     }
 
     const requestedLevel =
@@ -359,6 +390,7 @@ export async function POST(req: NextRequest) {
         studentId: item.studentId,
         foodItemId: item.foodItemId,
         scheduledDate,
+        mealPeriod,
         quantity: 1,
         price: unitPrice,
       });

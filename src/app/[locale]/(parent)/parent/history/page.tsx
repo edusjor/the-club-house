@@ -9,6 +9,7 @@ import axios from "axios";
 import Header from "@/components/dashboard/Header";
 import StatusBadge from "@/components/dashboard/StatusBadge";
 import { formatCurrency, formatDate, formatDateTime, formatOrderNumber } from "@/lib/utils";
+import { MEAL_PERIODS } from "@/lib/meal-periods";
 import { useTranslations } from "@/i18n/I18nProvider";
 import {
   AlertTriangle,
@@ -25,6 +26,18 @@ function formatWeekdayTime(date: Date) {
   const weekday = new Intl.DateTimeFormat("es-CR", { weekday: "long" }).format(date);
   const time = new Intl.DateTimeFormat("es-CR", { hour: "2-digit", minute: "2-digit" }).format(date);
   return `${weekday.charAt(0).toUpperCase()}${weekday.slice(1)}, ${time}`;
+}
+
+// scheduledDate is only a real clock time for legacy/vendor orders
+// (mealPeriod === null). Meal-moment orders store an internal anchor time
+// that was never promised to the parent, so show the meal period instead.
+function formatOrderMoment(date: Date, mealPeriod: string | null, t: (key: string) => string) {
+  if (!mealPeriod) return formatWeekdayTime(date);
+
+  const weekday = new Intl.DateTimeFormat("es-CR", { weekday: "long" }).format(date);
+  const capitalizedWeekday = `${weekday.charAt(0).toUpperCase()}${weekday.slice(1)}`;
+  const mealPeriodLabel = t(MEAL_PERIODS.find((period) => period.key === mealPeriod)?.labelKey ?? "");
+  return `${capitalizedWeekday} · ${mealPeriodLabel}`;
 }
 
 function RequestStatusPill({ status, t }: { status: string; t: (key: string) => string }) {
@@ -49,6 +62,7 @@ type OrderItem = {
   price: number;
   delivered: boolean;
   scheduledDate: string;
+  mealPeriod: string | null;
   student: { name: string };
   foodItem: { name: string; image?: string | null };
 };
@@ -73,6 +87,7 @@ type NonDispatchedOrder = {
   createdAt: string;
   items: OrderItem[];
   earliestScheduledDate: Date;
+  mealPeriod: string | null;
   cancellationDeadline: Date;
   canCancel: boolean;
 };
@@ -85,6 +100,7 @@ type DispatchedOrder = {
   createdAt: string;
   items: OrderItem[];
   latestScheduledDate: Date;
+  mealPeriod: string | null;
 };
 
 const TWO_HOURS_MS = 2 * 60 * 60 * 1000;
@@ -143,6 +159,7 @@ function ParentHistoryContent() {
           createdAt: order.createdAt,
           items: order.items,
           earliestScheduledDate,
+          mealPeriod: order.items[0]?.mealPeriod ?? null,
           cancellationDeadline,
           canCancel: Boolean(order.parentCanCancel),
         };
@@ -171,6 +188,7 @@ function ParentHistoryContent() {
           createdAt: order.createdAt,
           items: order.items,
           latestScheduledDate,
+          mealPeriod: order.items[0]?.mealPeriod ?? null,
         };
       })
       .sort((a, b) => b.latestScheduledDate.getTime() - a.latestScheduledDate.getTime());
@@ -346,7 +364,7 @@ function ParentHistoryContent() {
                             </span>
                           </div>
                           <p className="ml-[26px] text-xs text-slate-500">
-                            {formatWeekdayTime(order.latestScheduledDate)}
+                            {formatOrderMoment(order.latestScheduledDate, order.mealPeriod, t)}
                           </p>
                         </div>
 
@@ -460,7 +478,7 @@ function ParentHistoryContent() {
                           </span>
                         </div>
                         <p className="ml-[26px] text-xs text-slate-500">
-                          {formatWeekdayTime(order.earliestScheduledDate)}
+                          {formatOrderMoment(order.earliestScheduledDate, order.mealPeriod, t)}
                         </p>
                       </div>
 

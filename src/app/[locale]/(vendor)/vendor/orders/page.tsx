@@ -7,6 +7,7 @@ import Header from "@/components/dashboard/Header";
 import StatusBadge from "@/components/dashboard/StatusBadge";
 import Link from "@/i18n/Link";
 import { cn, formatOrderNumber } from "@/lib/utils";
+import { MEAL_PERIODS } from "@/lib/meal-periods";
 import { useTranslations } from "@/i18n/I18nProvider";
 import {
   BarChart3,
@@ -29,6 +30,7 @@ type OrderItem = {
   price: number;
   delivered: boolean;
   scheduledDate: string;
+  mealPeriod: string | null;
   student: { name: string; level: string };
   foodItem: { name: string };
 };
@@ -570,11 +572,20 @@ function OrderRow({
         <p className="mt-1 text-xs font-medium text-slate-400">{t("vendor.orders.parentLabel")}: {order.parent.name}</p>
       ) : null}
       <div className="mt-1 flex flex-wrap gap-x-3 gap-y-0.5">
-        {order.items.map((item) => (
-          <span key={item.id} className="text-xs font-semibold text-slate-700">
-            • {item.foodItem.name}
-          </span>
-        ))}
+        {order.items.map((item) => {
+          const mealPeriodLabelKey = MEAL_PERIODS.find((period) => period.key === item.mealPeriod)?.labelKey;
+
+          return (
+            <span key={item.id} className="text-xs font-semibold text-slate-700">
+              • {item.foodItem.name}
+              {mealPeriodLabelKey ? (
+                <span className="ml-1 rounded-full bg-cyan-100 px-1.5 py-0.5 text-[10px] font-bold text-cyan-700">
+                  {t(mealPeriodLabelKey)}
+                </span>
+              ) : null}
+            </span>
+          );
+        })}
       </div>
     </div>
   );

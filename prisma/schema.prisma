@@ -177,6 +177,7 @@ model OrderItem {
   foodItemId    String
   foodItem      FoodItem @relation(fields: [foodItemId], references: [id])
   scheduledDate DateTime
+  mealPeriod    String? // BREAK, LUNCH, AFTERSCHOOL, MEAL_OF_THE_DAY (null for legacy/vendor items)
   quantity      Int      @default(1)
   price         Int
   delivered     Boolean  @default(false)
