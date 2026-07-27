@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "@/i18n/Link";
-import { ChefHat, Mail, Phone, MapPin, Globe, AtSign, MessageCircle } from "lucide-react";
+import { Mail, Phone, MapPin, Globe, AtSign, MessageCircle } from "lucide-react";
 import { useTranslations } from "@/i18n/I18nProvider";
 
 export default function PublicFooter() {
@@ -23,22 +23,19 @@ export default function PublicFooter() {
   ];
 
   return (
-    <footer className="bg-slate-900 text-slate-300">
+    <footer className="bg-[var(--cocoa)] text-slate-300">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-12 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-10">
         {/* Brand */}
         <div>
           <div className="flex items-center gap-2.5 mb-4">
-            <div className="w-9 h-9 bg-cyan-500 rounded-xl flex items-center justify-center">
-              <ChefHat className="w-5 h-5 text-white" />
-            </div>
-            <div>
-              <p className="font-black text-white text-sm uppercase tracking-wide">
-                The Club House
-              </p>
-              <p className="text-cyan-400 text-[10px] uppercase tracking-widest">
-                {t("auth.layout.tagline")}
-              </p>
-            </div>
+            <img
+              src="/assets/logo.webp"
+              alt="The Club House"
+              className="h-10 w-10 rounded-xl object-cover"
+            />
+            <p className="text-cyan-400 text-[10px] uppercase tracking-widest">
+              {t("auth.layout.tagline")}
+            </p>
           </div>
           <p className="text-sm text-slate-400 leading-relaxed">
             {t("publicFooter.description")}

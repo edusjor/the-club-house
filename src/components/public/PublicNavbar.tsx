@@ -1,7 +1,7 @@
 "use client";
 
 import { useSession } from "next-auth/react";
-import { ChefHat, Menu, X, LogIn } from "lucide-react";
+import { Menu, X, LogIn } from "lucide-react";
 import { useState } from "react";
 import Link from "@/i18n/Link";
 import LanguageSwitcher from "@/i18n/LanguageSwitcher";
@@ -31,17 +31,14 @@ export default function PublicNavbar() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-6">
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2.5 flex-shrink-0">
-          <div className="w-9 h-9 bg-cyan-500 rounded-xl flex items-center justify-center">
-            <ChefHat className="w-5 h-5 text-white" />
-          </div>
-          <div className="leading-tight">
-            <span className="block font-black text-slate-900 text-sm uppercase tracking-wide">
-              The Club House
-            </span>
-            <span className="block text-cyan-500 text-[10px] font-semibold uppercase tracking-widest">
-              {t("auth.layout.tagline")}
-            </span>
-          </div>
+          <img
+            src="/assets/logo.webp"
+            alt="The Club House"
+            className="h-10 w-10 rounded-xl object-cover"
+          />
+          <span className="block text-cyan-500 text-[10px] font-semibold uppercase tracking-widest leading-tight">
+            {t("auth.layout.tagline")}
+          </span>
         </Link>
 
         {/* Desktop nav */}

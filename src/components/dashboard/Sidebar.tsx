@@ -17,7 +17,6 @@ import {
   ShoppingCart,
   CreditCard,
   LogOut,
-  ChefHat,
   Calendar,
   History,
   Search,
@@ -92,13 +91,12 @@ export default function Sidebar({ role, userName, userEmail, className, onNaviga
     <aside className={cn("fixed inset-y-0 left-0 z-50 w-64 bg-slate-900 text-white flex flex-col shadow-2xl", className)}>
       {/* Logo */}
       <div className="flex items-center gap-3 px-6 py-5 border-b border-slate-700">
-        <div className="w-9 h-9 bg-cyan-500 rounded-lg flex items-center justify-center flex-shrink-0">
-          <ChefHat className="w-5 h-5 text-white" />
-        </div>
+        <img
+          src="/assets/logo.webp"
+          alt="The Club House"
+          className="h-11 w-11 flex-shrink-0 rounded-lg object-cover"
+        />
         <div>
-          <p className="font-bold text-white text-sm leading-tight">
-            The Club House
-          </p>
           <p className="text-cyan-400 text-xs">{title}</p>
         </div>
       </div>

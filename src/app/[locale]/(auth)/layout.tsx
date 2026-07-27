@@ -1,6 +1,5 @@
 "use client";
 
-import { ChefHat } from "lucide-react";
 import Link from "@/i18n/Link";
 import LanguageSwitcher from "@/i18n/LanguageSwitcher";
 import { useTranslations } from "@/i18n/I18nProvider";
@@ -20,18 +19,15 @@ export default function AuthLayout({
         </div>
 
         {/* Brand */}
-        <div className="flex items-center justify-center gap-3 mb-8">
-          <div className="w-12 h-12 bg-cyan-500 rounded-2xl flex items-center justify-center">
-            <ChefHat className="w-7 h-7 text-white" />
-          </div>
-          <div>
-            <p className="font-black text-white text-lg uppercase tracking-wide leading-tight">
-              The Club House
-            </p>
-            <p className="text-cyan-400 text-xs font-semibold uppercase tracking-widest">
-              {t("auth.layout.tagline")}
-            </p>
-          </div>
+        <div className="flex flex-col items-center justify-center gap-3 mb-8">
+          <img
+            src="/assets/logo.webp"
+            alt="The Club House"
+            className="h-20 w-20 rounded-2xl object-cover shadow-lg"
+          />
+          <p className="text-cyan-400 text-xs font-semibold uppercase tracking-widest">
+            {t("auth.layout.tagline")}
+          </p>
         </div>
 
         {children}

@@ -9,6 +9,9 @@
   --card: #ffffff;
   --border: #cfeff7;
   --muted: #64748b;
+  --cream: #fbf0df;
+  --cream-dark: #efe0c4;
+  --cocoa: #241c15;
 }
 
 @theme inline {
@@ -97,4 +100,18 @@ body {
 
 .animate-marquee {
   animation: marquee 25s linear infinite;
+}
+
+@keyframes float-slow {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-16px);
+  }
+}
+
+.animate-float-slow {
+  animation: float-slow 4.5s ease-in-out infinite;
 }

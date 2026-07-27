@@ -177,11 +177,10 @@
   },
   "publicHome": {
     "hero": {
-      "badge": "Healthy School Meals",
-      "titlePart1": "Healthy",
-      "titleHighlight": "food",
-      "titlePart2": "for your kids",
-      "subtitle": "Easily manage your children's meals. Fresh menu, flexible packages and simple payments all in one place.",
+      "titleLine1": "Eat Better.",
+      "titleLine2": "Feel Better.",
+      "titleLine3": "Learn Better.",
+      "subtitle": "Fresh, balanced meals made with premium ingredients. Healthy food your family can trust, served fresh every day.",
       "ctaMenu": "View Menu",
       "ctaLogin": "Sign In"
     },

@@ -48,59 +48,73 @@ export default function HomePage() {
   return (
     <div className="bg-white">
       {/* Hero */}
-      <section className="relative overflow-hidden bg-gradient-to-br from-slate-900 via-slate-800 to-cyan-900 text-white">
-        <div className="absolute inset-0 opacity-10">
-          <div className="absolute top-20 left-20 w-64 h-64 bg-cyan-400 rounded-full blur-3xl" />
-          <div className="absolute bottom-10 right-20 w-80 h-80 bg-cyan-300 rounded-full blur-3xl" />
-        </div>
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 py-20 lg:py-28">
+      <section className="relative overflow-hidden bg-[var(--cream)]">
+        <img
+          src="/assets/logo.webp"
+          alt="The Club House"
+          className="absolute -top-1 right-6 z-10 w-24 rounded-b-2xl shadow-lg sm:right-12 sm:w-32"
+        />
+
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 pt-20 pb-24 lg:pt-24 lg:pb-32">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             <div>
-              <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-cyan-500/25 border border-cyan-300/45 rounded-full text-cyan-100 text-xs font-semibold mb-6">
-                <Leaf className="w-3.5 h-3.5" />
-                {home.hero.badge}
-              </div>
-              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black leading-tight mb-6">
-                {home.hero.titlePart1}{" "}
-                <span className="text-cyan-400">{home.hero.titleHighlight}</span>{" "}
-                {home.hero.titlePart2}
+              <h1 className="text-5xl sm:text-6xl lg:text-7xl font-black leading-[0.95] text-cyan-500">
+                {home.hero.titleLine1}
+                <br />
+                {home.hero.titleLine2}
+                <br />
+                {home.hero.titleLine3}
               </h1>
-              <p className="text-slate-200 text-lg leading-relaxed mb-8 max-w-lg">
+              <p className="mt-6 max-w-md text-cyan-900/70 text-base sm:text-lg leading-relaxed">
                 {home.hero.subtitle}
               </p>
-              <div className="flex flex-wrap gap-4">
+              <div className="mt-8 flex flex-wrap gap-4">
                 <Link
                   href="/menu"
-                  className="inline-flex items-center gap-2 px-6 py-3 bg-cyan-500 hover:bg-cyan-400 text-white font-semibold rounded-xl transition-colors"
+                  className="inline-flex items-center gap-2 rounded-full bg-cyan-500 px-7 py-3.5 text-sm font-extrabold text-white shadow-md transition-colors hover:bg-cyan-600"
                 >
                   {home.hero.ctaMenu}
-                  <ArrowRight className="w-4 h-4" />
                 </Link>
                 <Link
                   href="/login"
-                  className="inline-flex items-center gap-2 px-6 py-3 bg-white/10 hover:bg-white/20 border border-white/20 text-white font-semibold rounded-xl transition-colors backdrop-blur-sm"
+                  className="inline-flex items-center gap-2 rounded-full bg-[var(--cream-dark)] px-7 py-3.5 text-sm font-extrabold text-white/90 transition-colors hover:bg-[#e2cfa9]"
                 >
                   {home.hero.ctaLogin}
                 </Link>
               </div>
 
               {/* Stats bar */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 mt-12 pt-8 border-t border-white/10">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 mt-16">
                 {home.stats.map((s) => (
                   <div key={s.label}>
-                    <p className="text-2xl font-black text-cyan-400">{s.value}</p>
-                    <p className="text-xs text-slate-300 mt-0.5">{s.label}</p>
+                    <p className="text-2xl sm:text-3xl font-black text-cyan-500">{s.value}</p>
+                    <p className="mt-0.5 text-xs sm:text-sm font-semibold text-cyan-900/70">
+                      {s.label}
+                    </p>
                   </div>
                 ))}
               </div>
             </div>
 
+            <div className="relative flex items-center justify-center">
+              <img
+                src="/assets/plato-hero.webp"
+                alt=""
+                className="animate-float-slow w-full max-w-md drop-shadow-2xl lg:max-w-lg"
+              />
+            </div>
           </div>
         </div>
+
+        <img
+          src="/assets/logo-mano-barrabrava.webp"
+          alt=""
+          className="pointer-events-none absolute bottom-6 right-6 w-20 opacity-70 sm:right-10 sm:w-28"
+        />
       </section>
 
       {/* Sponsor marquee */}
-      <section className="py-8 bg-slate-900 overflow-hidden">
+      <section className="py-8 bg-[var(--cocoa)] overflow-hidden">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 mb-4">
           <p className="text-center text-slate-400 text-sm font-semibold uppercase tracking-wider">
             {home.sponsors.title}
@@ -138,7 +152,7 @@ export default function HomePage() {
       </section>
 
       {/* Features */}
-      <section className="py-16 bg-slate-50">
+      <section className="py-16 bg-[var(--cream)]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
           <div className="text-center mb-12">
             <p className="text-cyan-600 font-semibold text-sm uppercase tracking-wider mb-2">
@@ -220,7 +234,7 @@ export default function HomePage() {
               </p>
               <Link
                 href="/login"
-                className="inline-flex items-center gap-2 px-6 py-3 bg-white text-cyan-700 font-bold rounded-xl hover:bg-cyan-50 transition-colors"
+                className="inline-flex items-center gap-2 rounded-full bg-white px-6 py-3 font-extrabold text-cyan-700 hover:bg-cyan-50 transition-colors"
               >
                 {home.portalBenefits.cta}
                 <ArrowRight className="w-4 h-4" />
@@ -242,7 +256,7 @@ export default function HomePage() {
       </section>
 
       {/* Panels overview */}
-      <section className="py-16 bg-slate-50">
+      <section className="py-16 bg-[var(--cream)]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
           <div className="text-center mb-12">
             <h2 className="text-3xl sm:text-4xl font-black text-slate-900 mb-3">
@@ -285,9 +299,9 @@ export default function HomePage() {
       </section>
 
       {/* CTA */}
-      <section className="py-16 bg-slate-900 text-white text-center">
+      <section className="py-16 bg-[var(--cocoa)] text-white text-center">
         <div className="max-w-2xl mx-auto px-4 sm:px-6">
-          <h2 className="text-3xl sm:text-4xl font-black mb-4">
+          <h2 className="text-3xl sm:text-4xl font-black mb-4 text-cyan-400">
             {home.cta.title}
           </h2>
           <p className="text-slate-200 text-lg mb-8">
@@ -295,7 +309,7 @@ export default function HomePage() {
           </p>
           <Link
             href="/login"
-            className="inline-flex items-center gap-2 px-8 py-4 bg-cyan-500 hover:bg-cyan-400 text-white font-bold rounded-xl transition-colors"
+            className="inline-flex items-center gap-2 rounded-full bg-cyan-500 px-8 py-4 font-extrabold text-white transition-colors hover:bg-cyan-400"
           >
             {home.cta.button}
             <ArrowRight className="w-5 h-5" />

@@ -177,11 +177,10 @@
   },
   "publicHome": {
     "hero": {
-      "badge": "Alimentación Escolar Saludable",
-      "titlePart1": "Comida",
-      "titleHighlight": "saludable",
-      "titlePart2": "para tus hijos",
-      "subtitle": "Gestiona las comidas de tus hijos fácilmente. Menú fresco, paquetes flexibles y pagos simples desde un solo lugar.",
+      "titleLine1": "Come mejor.",
+      "titleLine2": "Siéntete mejor.",
+      "titleLine3": "Aprende mejor.",
+      "subtitle": "Comidas frescas y balanceadas hechas con ingredientes de primera calidad. Comida saludable en la que tu familia puede confiar, servida fresca todos los días.",
       "ctaMenu": "Ver Menú",
       "ctaLogin": "Iniciar Sesión"
     },
