@@ -18,12 +18,13 @@ export async function POST(req: NextRequest) {
   const name = typeof body.name === "string" ? body.name.trim() : "";
   const email = typeof body.email === "string" ? body.email.trim().toLowerCase() : "";
   const phone = typeof body.phone === "string" ? body.phone.trim() : "";
+  const cedula = typeof body.cedula === "string" ? body.cedula.trim() : "";
   const password = typeof body.password === "string" ? body.password : "";
   const isStaff = Boolean(body.isStaff);
 
-  if (!name || !email || !password) {
+  if (!name || !email || !phone || !cedula || !password) {
     return NextResponse.json(
-      { error: "Nombre, email y contraseña son requeridos" },
+      { error: "Nombre, email, teléfono, cédula y contraseña son requeridos" },
       { status: 400 }
     );
   }
@@ -56,7 +57,8 @@ export async function POST(req: NextRequest) {
     data: {
       name,
       email,
-      phone: phone || null,
+      phone,
+      cedula,
       password: hashedPassword,
       role: "PARENT",
       isStaff,

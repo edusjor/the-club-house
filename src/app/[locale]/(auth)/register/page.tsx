@@ -17,6 +17,7 @@ export default function RegisterPage() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
+  const [cedula, setCedula] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [accountType, setAccountType] = useState<AccountType>("PARENT");
@@ -66,8 +67,10 @@ export default function RegisterPage() {
 
     const normalizedName = name.trim();
     const normalizedEmail = email.trim().toLowerCase();
+    const normalizedPhone = phone.trim();
+    const normalizedCedula = cedula.trim();
 
-    if (!normalizedName || !normalizedEmail || !password) {
+    if (!normalizedName || !normalizedEmail || !normalizedPhone || !normalizedCedula || !password) {
       setError(t("auth.register.errorRequired"));
       return;
     }
@@ -96,7 +99,8 @@ export default function RegisterPage() {
       await axios.post("/api/register", {
         name: normalizedName,
         email: normalizedEmail,
-        phone,
+        phone: phone.trim(),
+        cedula: cedula.trim(),
         password,
         isStaff: accountType !== "PARENT",
       });
@@ -159,13 +163,27 @@ export default function RegisterPage() {
 
         <div>
           <label className="block text-xs font-semibold text-slate-700 mb-1.5 uppercase tracking-wide">
-            {t("auth.register.phoneOptional")}
+            {t("auth.register.phone")}
           </label>
           <input
             value={phone}
             onChange={(event) => setPhone(event.target.value)}
+            required
             className="w-full h-11 px-4 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition"
             placeholder="8888-8888"
+          />
+        </div>
+
+        <div>
+          <label className="block text-xs font-semibold text-slate-700 mb-1.5 uppercase tracking-wide">
+            {t("auth.register.cedula")}
+          </label>
+          <input
+            value={cedula}
+            onChange={(event) => setCedula(event.target.value)}
+            required
+            className="w-full h-11 px-4 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition"
+            placeholder={t("auth.register.cedulaPlaceholder")}
           />
         </div>
 

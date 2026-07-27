@@ -15,6 +15,7 @@ model User {
   role         String   @default("PARENT") // ADMIN, PARENT, VENDOR, STUDENT
   isStaff      Boolean  @default(false) // tags a PARENT-role account as school staff (still uses the parent portal)
   phone        String?
+  cedula       String?
   avatar       String?
   active       Boolean  @default(true)
   createdAt    DateTime @default(now())
