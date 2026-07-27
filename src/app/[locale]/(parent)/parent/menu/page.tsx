@@ -1,7 +1,8 @@
 ﻿import Header from "@/components/dashboard/Header";
 import DietaryTagBadges, { DietaryTagLabels } from "@/components/dashboard/DietaryTagBadges";
+import { auth } from "@/auth";
 import { prisma } from "@/lib/db";
-import { formatCurrency, PRICE_LEVELS } from "@/lib/utils";
+import { formatCurrency, normalizePriceLevel, PRICE_LEVELS } from "@/lib/utils";
 import Image from "next/image";
 import Link from "@/i18n/Link";
 import { Info, ShoppingCart, UtensilsCrossed } from "lucide-react";
@@ -76,6 +77,26 @@ async function getMenuData() {
   });
 }
 
+// Staff-only accounts (no children yet) see only the Staff price. Regular
+// parents never see the Staff price. Once a staff member adds a child, they
+// become staff+parent and see every tier (Staff plus the child tiers).
+async function getVisiblePriceLevels(userId: string): Promise<Set<string> | null> {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { isStaff: true },
+  });
+
+  if (!user?.isStaff) {
+    return new Set(["ELEMENTARY", "MIDDLE_HIGH", "ATHLETES"]);
+  }
+
+  const childrenCount = await prisma.student.count({
+    where: { parentId: userId, user: { role: "STUDENT" } },
+  });
+
+  return childrenCount > 0 ? null : new Set(["STAFF"]);
+}
+
 type ParentMenuPageProps = {
   params: Promise<{ locale: string }>;
   searchParams?: Promise<{ tab?: string }>;
@@ -85,7 +106,14 @@ export default async function ParentMenuPage({ params, searchParams }: ParentMen
   const { locale } = await params;
   if (!isLocale(locale)) notFound();
 
-  const [items, dict] = await Promise.all([getMenuData(), getDictionary(locale)]);
+  const session = await auth();
+  const userId = (session?.user as { id?: string } | undefined)?.id;
+
+  const [items, dict, visiblePriceLevels] = await Promise.all([
+    getMenuData(),
+    getDictionary(locale),
+    userId ? getVisiblePriceLevels(userId) : Promise.resolve(null),
+  ]);
   const t = dict.parent.menu;
   const dietaryLabels: DietaryTagLabels = {
     GLUTEN_FREE: dict.dietaryTags.glutenFree,
@@ -198,6 +226,12 @@ export default async function ParentMenuPage({ params, searchParams }: ParentMen
             ) : (
               <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
                 {visibleItems.map((item) => {
+                  const visiblePrices = visiblePriceLevels
+                    ? item.prices.filter((price) =>
+                        visiblePriceLevels.has(normalizePriceLevel(price.level))
+                      )
+                    : item.prices;
+
                   return (
                     <article
                       key={item.id}
@@ -237,9 +271,9 @@ export default async function ParentMenuPage({ params, searchParams }: ParentMen
                         ) : null}
 
                         <div className="mt-auto pt-3">
-                          {item.prices.length > 0 ? (
+                          {visiblePrices.length > 0 ? (
                             <div className="space-y-1 border-t border-cyan-100 pt-3">
-                              {item.prices.map((price) => (
+                              {visiblePrices.map((price) => (
                                 <div
                                   key={price.id}
                                   className="flex items-center justify-between text-[11px]"
