@@ -14,4 +14,10 @@ services:
       NEXTAUTH_URL: ${NEXTAUTH_URL:?NEXTAUTH_URL is required}
       AUTH_TRUST_HOST: ${AUTH_TRUST_HOST:-true}
       DATABASE_URL: ${DATABASE_URL:?DATABASE_URL is required}
+      SMTP_HOST: ${SMTP_HOST}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_SECURE: ${SMTP_SECURE:-false}
+      SMTP_USER: ${SMTP_USER}
+      SMTP_PASSWORD: ${SMTP_PASSWORD}
+      SMTP_FROM: ${SMTP_FROM}
     restart: unless-stopped
