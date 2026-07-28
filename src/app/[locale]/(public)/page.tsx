@@ -52,7 +52,7 @@ export default function HomePage() {
         <img
           src="/assets/logo.webp"
           alt="The Club House"
-          className="absolute -top-1 right-6 z-10 w-24 rounded-b-2xl shadow-lg sm:right-12 sm:w-32"
+          className="absolute -top-1 right-6 z-10 w-24 shadow-lg sm:right-12 sm:w-32"
         />
 
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 pt-20 pb-24 lg:pt-24 lg:pb-32">

@@ -27,27 +27,15 @@ export default function PublicNavbar() {
       : "/unauthorized";
 
   return (
-    <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-sm border-b border-slate-200 shadow-sm">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-6">
-        {/* Logo */}
-        <Link href="/" className="flex items-center gap-2.5 flex-shrink-0">
-          <img
-            src="/assets/logo.webp"
-            alt="The Club House"
-            className="h-10 w-10 rounded-xl object-cover"
-          />
-          <span className="block text-cyan-500 text-[10px] font-semibold uppercase tracking-widest leading-tight">
-            {t("auth.layout.tagline")}
-          </span>
-        </Link>
-
+    <header className="absolute inset-x-0 top-0 z-30 bg-transparent">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-6 pr-28 sm:pr-44">
         {/* Desktop nav */}
-        <nav className="hidden lg:flex items-center gap-6">
+        <nav className="hidden lg:flex items-center gap-3">
           {navLinks.map((l) => (
             <Link
               key={l.href}
               href={l.href}
-              className="text-sm font-medium text-slate-600 hover:text-cyan-600 transition-colors"
+              className="rounded-full bg-cyan-500 px-5 py-2.5 text-sm font-bold text-white transition-colors hover:bg-cyan-600"
             >
               {l.label}
             </Link>
@@ -77,7 +65,7 @@ export default function PublicNavbar() {
 
         {/* Mobile menu toggle */}
         <button
-          className="lg:hidden p-2 rounded-lg hover:bg-slate-100 transition-colors"
+          className="lg:hidden p-2 rounded-lg bg-white/80 backdrop-blur-sm hover:bg-white transition-colors"
           onClick={() => setOpen(!open)}
         >
           {open ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
