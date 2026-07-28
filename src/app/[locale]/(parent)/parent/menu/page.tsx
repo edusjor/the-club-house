@@ -1,16 +1,29 @@
 ﻿import Header from "@/components/dashboard/Header";
 import DietaryTagBadges, { DietaryTagLabels } from "@/components/dashboard/DietaryTagBadges";
+import MonthlyMenuPdfButton from "@/components/parent/MonthlyMenuPdfButton";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/db";
 import { formatCurrency, normalizePriceLevel, PRICE_LEVELS } from "@/lib/utils";
 import Image from "next/image";
 import Link from "@/i18n/Link";
 import { Info, ShoppingCart, UtensilsCrossed } from "lucide-react";
-import { getDictionary } from "@/i18n/dictionaries";
+import { getDictionary, type Dictionary } from "@/i18n/dictionaries";
 import { isLocale } from "@/i18n/config";
 import { notFound } from "next/navigation";
+import type { MealPeriod } from "@/lib/meal-scheduling";
 
 type ParentMenuTab = "GENERAL" | "DRINKS" | "CASADOS";
+
+const FIXED_MEAL_PERIOD_LABEL_KEY: Record<MealPeriod, "break" | "lunch" | "afterschool"> = {
+  BREAK: "break",
+  LUNCH: "lunch",
+  AFTERSCHOOL: "afterschool",
+};
+
+function fixedMealPeriodLabel(mealPeriod: string, dict: Dictionary): string {
+  const key = FIXED_MEAL_PERIOD_LABEL_KEY[mealPeriod as MealPeriod];
+  return key ? dict.mealPeriods[key] : "";
+}
 
 const parentMenuTabs: { key: ParentMenuTab; labelKey: "general" | "drinks" | "casados" }[] = [
   { key: "GENERAL", labelKey: "general" },
@@ -214,6 +227,12 @@ export default async function ParentMenuPage({ params, searchParams }: ParentMen
               })}
             </div>
 
+            {activeTab === "CASADOS" ? (
+              <div>
+                <MonthlyMenuPdfButton />
+              </div>
+            ) : null}
+
             {visibleItems.length === 0 ? (
               <div className="rounded-3xl border border-dashed border-slate-300 bg-white px-6 py-16 text-center">
                 <p className="text-lg font-semibold text-slate-800">
@@ -255,6 +274,12 @@ export default async function ParentMenuPage({ params, searchParams }: ParentMen
                         <div className="absolute right-3 top-3 flex h-11 w-11 items-center justify-center rounded-full border border-slate-200/80 bg-white/90 text-slate-800 shadow-sm backdrop-blur-sm">
                           <UtensilsCrossed className="h-5 w-5" />
                         </div>
+
+                        {item.fixedMealPeriod ? (
+                          <span className="absolute left-3 top-3 rounded-full bg-cyan-500/90 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-white shadow-sm backdrop-blur-sm">
+                            {fixedMealPeriodLabel(item.fixedMealPeriod, dict)}
+                          </span>
+                        ) : null}
                       </div>
 
                       <div className="relative -mt-4 flex flex-1 flex-col rounded-t-[1.25rem] bg-white px-4 pb-4 pt-3">

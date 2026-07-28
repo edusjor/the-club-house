@@ -4,5 +4,4 @@ export const MEAL_PERIODS: { key: MealPeriod; labelKey: string }[] = [
   { key: "BREAK", labelKey: "mealPeriods.break" },
   { key: "LUNCH", labelKey: "mealPeriods.lunch" },
   { key: "AFTERSCHOOL", labelKey: "mealPeriods.afterschool" },
-  { key: "MEAL_OF_THE_DAY", labelKey: "mealPeriods.mealOfTheDay" },
 ];

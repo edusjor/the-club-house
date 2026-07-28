@@ -274,6 +274,7 @@ export async function POST(req: NextRequest) {
       },
       select: {
         id: true,
+        fixedMealPeriod: true,
         prices: {
           select: {
             level: true,
@@ -336,7 +337,15 @@ export async function POST(req: NextRequest) {
     let mealPeriod: MealPeriod | null = null;
 
     if ("mealPeriod" in item) {
-      if (!isMealPeriod(item.mealPeriod)) {
+      // A dish-of-the-day food item's period is server-authoritative — the
+      // client's mealPeriod is ignored whenever the food item itself has one
+      // set, so a manipulated request can't relabel "Lunch of the Day" as
+      // "Break", for example.
+      const resolvedMealPeriod = isMealPeriod(foodItem.fixedMealPeriod)
+        ? foodItem.fixedMealPeriod
+        : item.mealPeriod;
+
+      if (!isMealPeriod(resolvedMealPeriod)) {
         return NextResponse.json(
           { error: "Momento de comida inválido" },
           { status: 400 }
@@ -347,8 +356,8 @@ export async function POST(req: NextRequest) {
       // resolved server-side from the current Costa Rica clock time (today
       // before 4pm, tomorrow at/after 4pm), so a stale tab can't submit a
       // "today" order past the cutoff.
-      mealPeriod = item.mealPeriod;
-      scheduledDate = buildScheduledDateForMealPeriod(item.mealPeriod, now);
+      mealPeriod = resolvedMealPeriod;
+      scheduledDate = buildScheduledDateForMealPeriod(resolvedMealPeriod, now);
     } else {
       const parsed = parseScheduledDate(item.scheduledDate);
       if (!parsed) {

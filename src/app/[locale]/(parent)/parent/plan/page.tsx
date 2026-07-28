@@ -1,13 +1,14 @@
 "use client";
 
-import { useMemo, useState, useSyncExternalStore } from "react";
-import { createPortal } from "react-dom";
+import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import Header from "@/components/dashboard/Header";
+import BodyPortal from "@/components/BodyPortal";
 import DietaryTagBadges, { DietaryTagLabels } from "@/components/dashboard/DietaryTagBadges";
+import MonthlyMenuPdfButton from "@/components/parent/MonthlyMenuPdfButton";
 import { formatCurrency, LEVELS, normalizePriceLevel } from "@/lib/utils";
 import { FOOD_TABS, getFoodTab, parseFoodTags, type FoodTab } from "@/lib/food-tabs";
 import { MEAL_PERIODS } from "@/lib/meal-periods";
@@ -36,6 +37,7 @@ type FoodItem = {
   description?: string | null;
   tags?: string | null;
   available: boolean;
+  fixedMealPeriod?: MealPeriod | null;
   category: {
     id: string;
     name: string;
@@ -50,6 +52,7 @@ type DraftLineItem = {
   categoryName: string;
   quantity: number;
   price: number;
+  fixedMealPeriod: MealPeriod | null;
 };
 
 type CartLine = {
@@ -85,12 +88,21 @@ const MEAL_PERIOD_ORDER = MEAL_PERIODS.map((period) => period.key);
 // "Today" vs "tomorrow" is never a manual choice — it's resolved live from
 // the current Costa Rica clock time (see resolveTargetDay), so it's always
 // computed fresh at render time rather than stored on the cart line.
-function formatMealMoment(mealPeriod: MealPeriod, t: (key: string) => string) {
+function formatMealMoment(mealPeriod: MealPeriod | null, t: (key: string) => string) {
+  if (!mealPeriod) return t("parent.plan.selectMealMoment");
+
   const dayLabel = t(
     resolveTargetDay() === "TODAY" ? "parent.plan.targetDayToday" : "parent.plan.targetDayTomorrow"
   );
   const mealPeriodLabel = t(MEAL_PERIODS.find((period) => period.key === mealPeriod)?.labelKey ?? "");
   return `${dayLabel} · ${mealPeriodLabel}`;
+}
+
+// A line is "locked" once it contains a dish-of-the-day item — that item's
+// fixed period is authoritative for the whole line, so the parent can't pick
+// a different time for it.
+function getLockedMealPeriod(items: DraftLineItem[]): MealPeriod | null {
+  return items.find((item) => item.fixedMealPeriod)?.fixedMealPeriod ?? null;
 }
 
 function sortCartLines(lines: CartLine[]) {
@@ -103,22 +115,6 @@ function sortCartLines(lines: CartLine[]) {
 
     return a.id.localeCompare(b.id);
   });
-}
-
-function subscribeNoop() {
-  return () => {};
-}
-
-function BodyPortal({ children }: { children: React.ReactNode }) {
-  const mounted = useSyncExternalStore(
-    subscribeNoop,
-    () => true,
-    () => false
-  );
-
-  if (!mounted) return null;
-
-  return createPortal(children, document.body);
 }
 
 function createLineId() {
@@ -143,7 +139,7 @@ export default function ParentPlanPage() {
   const [isCartMenuOpen, setIsCartMenuOpen] = useState(false);
 
   const [draftItems, setDraftItems] = useState<DraftLineItem[]>([]);
-  const [draftMealPeriod, setDraftMealPeriod] = useState<MealPeriod>("LUNCH");
+  const [draftMealPeriod, setDraftMealPeriod] = useState<MealPeriod | null>(null);
   const [editingLineId, setEditingLineId] = useState<string | null>(null);
 
   const [cartLines, setCartLines] = useState<CartLine[]>([]);
@@ -236,6 +232,16 @@ export default function ParentPlanPage() {
       return;
     }
 
+    const fixedMealPeriod = food.fixedMealPeriod ?? null;
+
+    if (fixedMealPeriod && draftItems.length > 0) {
+      const currentEffectivePeriod = getLockedMealPeriod(draftItems) ?? draftMealPeriod;
+      if (currentEffectivePeriod && currentEffectivePeriod !== fixedMealPeriod) {
+        setFormError(t("parent.plan.errorDishOfDayConflict"));
+        return;
+      }
+    }
+
     setFormError("");
 
     setDraftItems((current) => {
@@ -247,9 +253,14 @@ export default function ParentPlanPage() {
           categoryName: food.category.name,
           quantity: 1,
           price: selectedPrice,
+          fixedMealPeriod,
         },
       ];
     });
+
+    if (fixedMealPeriod) {
+      setDraftMealPeriod(fixedMealPeriod);
+    }
 
     setPendingFoodToAdd(null);
     setIsStudentPickerOpen(false);
@@ -279,6 +290,11 @@ export default function ParentPlanPage() {
       return;
     }
 
+    if (!draftMealPeriod) {
+      setFormError(t("parent.plan.errorSelectMealMoment"));
+      return;
+    }
+
     const lineToSave: CartLine = {
       id: editingLineId ?? createLineId(),
       studentId: effectiveStudentId,
@@ -290,6 +306,7 @@ export default function ParentPlanPage() {
     setCartLines((current) => sortCartLines([...current, lineToSave]));
 
     setDraftItems([]);
+    setDraftMealPeriod(null);
     setEditingLineId(null);
     setPendingFoodToAdd(null);
     setFormError("");
@@ -297,6 +314,7 @@ export default function ParentPlanPage() {
 
   const clearDraftLine = () => {
     setDraftItems([]);
+    setDraftMealPeriod(null);
     setEditingLineId(null);
     setPendingFoodToAdd(null);
     setFormError("");
@@ -359,6 +377,7 @@ export default function ParentPlanPage() {
 
   const draftUnits = draftItems.reduce((sum, item) => sum + item.quantity, 0);
   const draftTotal = draftItems.reduce((sum, item) => sum + item.quantity * item.price, 0);
+  const lockedMealPeriod = getLockedMealPeriod(draftItems);
 
   const savedUnits = cartLines.reduce(
     (sum, line) => sum + line.items.reduce((lineSum, item) => lineSum + item.quantity, 0),
@@ -675,6 +694,12 @@ export default function ParentPlanPage() {
                   })}
                 </div>
 
+                {activeTab === "CASADOS" ? (
+                  <div>
+                    <MonthlyMenuPdfButton />
+                  </div>
+                ) : null}
+
                 {filteredMenu.length === 0 ? (
                   <div className="rounded-2xl border border-dashed border-slate-300 bg-white px-6 py-12 text-center">
                     <p className="text-lg font-semibold text-slate-900">
@@ -714,6 +739,12 @@ export default function ParentPlanPage() {
                               <div className="absolute right-3 top-3 flex h-11 w-11 items-center justify-center rounded-full border border-slate-200/80 bg-white/90 text-slate-800 shadow-sm backdrop-blur-sm">
                                 <UtensilsCrossed className="h-5 w-5" />
                               </div>
+
+                              {item.fixedMealPeriod ? (
+                                <span className="absolute left-3 top-3 rounded-full bg-cyan-500/90 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-white shadow-sm backdrop-blur-sm">
+                                  {t(MEAL_PERIODS.find((period) => period.key === item.fixedMealPeriod)?.labelKey ?? "")}
+                                </span>
+                              ) : null}
                             </div>
 
                             <div className="relative -mt-4 flex flex-1 flex-col rounded-t-[1.25rem] bg-white px-4 pb-4 pt-3">
@@ -830,16 +861,32 @@ export default function ParentPlanPage() {
                 <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:gap-3 lg:shrink-0">
                   <label className="min-w-0 sm:w-56">
                     <span className="mb-1 block text-[11px] font-semibold text-slate-700">{t("parent.plan.mealMomentLabel")}</span>
-                    <button
-                      type="button"
-                      onClick={() => setIsDateTimePickerOpen(true)}
-                      className="flex h-10 w-full items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 hover:border-cyan-300"
-                    >
-                      <CalendarDays className="h-4 w-4 shrink-0 text-slate-400" />
-                      <span className="truncate">
-                        {formatMealMoment(draftMealPeriod, t)}
-                      </span>
-                    </button>
+                    {lockedMealPeriod ? (
+                      <div className="flex h-10 w-full items-center gap-2 rounded-xl border border-cyan-200 bg-cyan-50 px-3 text-xs font-semibold text-cyan-800">
+                        <CalendarDays className="h-4 w-4 shrink-0 text-cyan-500" />
+                        <span className="truncate">{formatMealMoment(draftMealPeriod, t)}</span>
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => setIsDateTimePickerOpen(true)}
+                        className={`flex h-10 w-full items-center gap-2 rounded-xl border px-3 text-xs font-semibold ${
+                          draftMealPeriod
+                            ? "border-slate-200 bg-white text-slate-700 hover:border-cyan-300"
+                            : "border-amber-300 bg-amber-50 text-amber-700 hover:border-amber-400"
+                        }`}
+                      >
+                        <CalendarDays className="h-4 w-4 shrink-0 text-slate-400" />
+                        <span className="truncate">
+                          {formatMealMoment(draftMealPeriod, t)}
+                        </span>
+                      </button>
+                    )}
+                    {lockedMealPeriod ? (
+                      <p className="mt-1 text-[10px] font-semibold text-cyan-700">
+                        {t("parent.plan.mealMomentLockedNotice")}
+                      </p>
+                    ) : null}
                   </label>
 
                   <button

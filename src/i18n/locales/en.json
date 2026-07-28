@@ -525,6 +525,7 @@
       "openCart": "View cart",
       "closeCart": "Close cart",
       "mealMomentLabel": "When",
+      "selectMealMoment": "Select...",
       "addLine": "Add line",
       "clear": "Clear",
       "mealMomentModalTitle": "When is this for?",
@@ -547,6 +548,12 @@
       "errorSelectChildBeforeSave": "Select a child before saving the line.",
       "errorSelectPersonBeforeSave": "Select a person before saving the line.",
       "errorAddOneProduct": "Add at least one product to the line.",
+      "errorSelectMealMoment": "Select when this line is for before adding it.",
+      "errorDishOfDayConflict": "This line already has a different dish of the day — add it in a separate line.",
+      "mealMomentLockedNotice": "Automatically set by this dish of the day.",
+      "viewMonthlyMenu": "View this month's menu",
+      "monthlyMenuModalTitle": "This month's dish of the day",
+      "openInNewTab": "Open in a new tab",
       "errorEditingLine": "You're already editing a line. Add it to the cart or clear it before editing another.",
       "errorEditingLineSubmit": "You have a line being edited. Add it to the cart or clear it before requesting.",
       "confirmChangeChild": "Each order is for a single child. If you change child, everything added to the cart will be cleared. Do you want to continue?",
@@ -601,11 +608,7 @@
       "title": "Today's Orders",
       "subtitle": "Accept orders and mark served or not picked up",
       "searchPlaceholder": "Search by student, parent or order number...",
-      "groupEvery": "Group every",
-      "bucket15": "15 min",
-      "bucket30": "30 min",
-      "bucket60": "1 hour",
-      "bucketAllDay": "All day",
+      "bucketOther": "Other",
       "newOrder": "New Order",
       "loadingOrders": "Loading orders...",
       "noOrdersMatchSearch": "No orders match the search.",
@@ -737,8 +740,7 @@
   "mealPeriods": {
     "break": "Break",
     "lunch": "Lunch",
-    "afterschool": "Afterschool",
-    "mealOfTheDay": "Meal of the Day"
+    "afterschool": "Afterschool"
   },
   "dietaryTags": {
     "glutenFree": "Gluten-free",

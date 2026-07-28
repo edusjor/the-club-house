@@ -525,6 +525,7 @@
       "openCart": "Ver carrito",
       "closeCart": "Cerrar carrito",
       "mealMomentLabel": "Cuándo",
+      "selectMealMoment": "Seleccionar...",
       "addLine": "Agregar línea",
       "clear": "Limpiar",
       "mealMomentModalTitle": "¿Para cuándo es esto?",
@@ -547,6 +548,12 @@
       "errorSelectChildBeforeSave": "Selecciona un hijo antes de guardar la línea.",
       "errorSelectPersonBeforeSave": "Selecciona a la persona antes de guardar la línea.",
       "errorAddOneProduct": "Agrega al menos un producto a la línea.",
+      "errorSelectMealMoment": "Selecciona para cuándo es esta línea antes de agregarla.",
+      "errorDishOfDayConflict": "Esta línea ya tiene un platillo del día distinto — agrégalo en una línea separada.",
+      "mealMomentLockedNotice": "Definido automáticamente por este platillo del día.",
+      "viewMonthlyMenu": "Ver menú del mes",
+      "monthlyMenuModalTitle": "Platillo del día de este mes",
+      "openInNewTab": "Abrir en una pestaña nueva",
       "errorEditingLine": "Ya estás editando una línea. Agrégala al carrito o límpiala antes de editar otra.",
       "errorEditingLineSubmit": "Tienes una línea en edición. Agrégala al carrito o límpiala antes de solicitar.",
       "confirmChangeChild": "Cada pedido es para un solo hijo. Si cambias de hijo se borrará todo lo que agregaste al carrito. ¿Deseas continuar?",
@@ -601,11 +608,7 @@
       "title": "Pedidos del Día",
       "subtitle": "Acepta los pedidos y marca servido o no recogido",
       "searchPlaceholder": "Buscar por estudiante, padre o número de pedido...",
-      "groupEvery": "Agrupar cada",
-      "bucket15": "15 min",
-      "bucket30": "30 min",
-      "bucket60": "1 hora",
-      "bucketAllDay": "Todo el día",
+      "bucketOther": "Otros",
       "newOrder": "Nueva orden",
       "loadingOrders": "Cargando pedidos...",
       "noOrdersMatchSearch": "No hay pedidos que coincidan con la búsqueda.",
@@ -737,8 +740,7 @@
   "mealPeriods": {
     "break": "Break",
     "lunch": "Lunch",
-    "afterschool": "Afterschool",
-    "mealOfTheDay": "Meal of the Day"
+    "afterschool": "Afterschool"
   },
   "dietaryTags": {
     "glutenFree": "Sin gluten",

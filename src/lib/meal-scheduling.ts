@@ -1,7 +1,7 @@
-export type MealPeriod = "BREAK" | "LUNCH" | "AFTERSCHOOL" | "MEAL_OF_THE_DAY";
+export type MealPeriod = "BREAK" | "LUNCH" | "AFTERSCHOOL";
 export type TargetDay = "TODAY" | "TOMORROW";
 
-export const MEAL_PERIOD_VALUES: MealPeriod[] = ["BREAK", "LUNCH", "AFTERSCHOOL", "MEAL_OF_THE_DAY"];
+export const MEAL_PERIOD_VALUES: MealPeriod[] = ["BREAK", "LUNCH", "AFTERSCHOOL"];
 export const TARGET_DAY_VALUES: TargetDay[] = ["TODAY", "TOMORROW"];
 
 export function isMealPeriod(value: unknown): value is MealPeriod {
@@ -24,7 +24,6 @@ const CR_OFFSET_MS = 6 * 60 * 60 * 1000;
 // shows moments in a sane order (Break before Lunch before Afterschool).
 const MEAL_PERIOD_ANCHOR_TIME: Record<MealPeriod, { hour: number; minute: number }> = {
   BREAK: { hour: 7, minute: 0 },
-  MEAL_OF_THE_DAY: { hour: 11, minute: 0 },
   LUNCH: { hour: 12, minute: 0 },
   AFTERSCHOOL: { hour: 14, minute: 30 },
 };

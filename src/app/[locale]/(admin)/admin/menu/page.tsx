@@ -7,9 +7,11 @@ import Header from "@/components/dashboard/Header";
 import StatusBadge from "@/components/dashboard/StatusBadge";
 import { formatCurrency, PRICE_LEVELS } from "@/lib/utils";
 import Image from "next/image";
-import { Leaf, MilkOff, Plus, Search, Edit2, Trash2, WheatOff, X } from "lucide-react";
+import { FileText, Leaf, MilkOff, Plus, Search, Edit2, Trash2, WheatOff, X } from "lucide-react";
 import DietaryTagBadges, { DietaryTagLabels } from "@/components/dashboard/DietaryTagBadges";
 import { DIETARY_TAGS, getDietaryTags, type DietaryTag } from "@/lib/food-tabs";
+import { MEAL_PERIODS } from "@/lib/meal-periods";
+import type { MealPeriod } from "@/lib/meal-scheduling";
 
 type Category = { id: string; name: string };
 type PriceRow = { level: string; price: number };
@@ -23,6 +25,7 @@ type FoodItem = {
   available: boolean;
   availableDays?: string | null;
   stockQuantity?: number | null;
+  fixedMealPeriod?: MealPeriod | null;
   createdAt: string;
   category: Category;
   prices: PriceRow[];
@@ -43,6 +46,7 @@ type MenuFormPayload = {
   available: boolean;
   availableDays: string[];
   stockQuantity: number | null;
+  fixedMealPeriod: MealPeriod | null;
   prices: PriceRow[];
 };
 
@@ -105,6 +109,7 @@ function MenuModal({ item, categories, onClose, onSave }: MenuModalProps) {
     available: item?.available ?? true,
     availableDays: parseArrayValue(item?.availableDays),
     stockQuantity: item?.stockQuantity ?? null,
+    fixedMealPeriod: item?.fixedMealPeriod ?? null,
     prices: normalizePriceRows(item?.prices ?? []),
   });
   const [uploadError, setUploadError] = useState("");
@@ -270,6 +275,52 @@ function MenuModal({ item, categories, onClose, onSave }: MenuModalProps) {
             </div>
 
             <div className="md:col-span-2">
+              <p className="mb-1.5 text-xs font-semibold text-slate-600">Tipo de comida</p>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => setForm({ ...form, fixedMealPeriod: null })}
+                  className={`rounded-xl border px-3 py-2 text-sm font-semibold transition-colors ${
+                    form.fixedMealPeriod === null
+                      ? "border-cyan-500 bg-cyan-500 text-white"
+                      : "border-slate-200 bg-slate-50 text-slate-600 hover:border-cyan-300"
+                  }`}
+                >
+                  Genérico
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setForm({ ...form, fixedMealPeriod: form.fixedMealPeriod ?? MEAL_PERIODS[0].key })}
+                  className={`rounded-xl border px-3 py-2 text-sm font-semibold transition-colors ${
+                    form.fixedMealPeriod !== null
+                      ? "border-cyan-500 bg-cyan-500 text-white"
+                      : "border-slate-200 bg-slate-50 text-slate-600 hover:border-cyan-300"
+                  }`}
+                >
+                  Platillo del día
+                </button>
+              </div>
+              {form.fixedMealPeriod !== null ? (
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {MEAL_PERIODS.map((period) => (
+                    <button
+                      key={period.key}
+                      type="button"
+                      onClick={() => setForm({ ...form, fixedMealPeriod: period.key })}
+                      className={`rounded-full border px-3.5 py-1.5 text-xs font-semibold transition-colors ${
+                        form.fixedMealPeriod === period.key
+                          ? "border-cyan-500 bg-cyan-50 text-cyan-700"
+                          : "border-slate-200 bg-white text-slate-600 hover:border-cyan-300"
+                      }`}
+                    >
+                      {period.key === "BREAK" ? "Break" : period.key === "LUNCH" ? "Lunch" : "Afterschool"}
+                    </button>
+                  ))}
+                </div>
+              ) : null}
+            </div>
+
+            <div className="md:col-span-2">
               <div className="mb-2 text-sm font-semibold text-slate-900">Precios por tipo</div>
               <div className="space-y-2.5">
                 {form.prices.map((row, index) => (
@@ -298,6 +349,120 @@ function MenuModal({ item, categories, onClose, onSave }: MenuModalProps) {
           </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+function MonthlyMenuPdfCard() {
+  const queryClient = useQueryClient();
+  const [url, setUrl] = useState("");
+  const [uploadError, setUploadError] = useState("");
+  const [isReadingFile, setIsReadingFile] = useState(false);
+
+  const pdfQuery = useQuery<{ url: string | null }>({
+    queryKey: ["monthly-menu-pdf"],
+    queryFn: () => axios.get("/api/monthly-menu").then((response) => response.data),
+  });
+
+  const currentUrl = pdfQuery.data?.url ?? null;
+
+  const saveMutation = useMutation({
+    mutationFn: (nextUrl: string) => axios.put("/api/monthly-menu", { url: nextUrl }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["monthly-menu-pdf"] });
+      setUrl("");
+    },
+  });
+
+  const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (file.type !== "application/pdf") {
+      setUploadError("Selecciona un archivo PDF válido.");
+      return;
+    }
+
+    if (file.size > 8 * 1024 * 1024) {
+      setUploadError("El PDF supera 8MB. Usa un archivo más liviano.");
+      return;
+    }
+
+    setUploadError("");
+    setIsReadingFile(true);
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = reader.result;
+      if (typeof result === "string") {
+        saveMutation.mutate(result);
+      }
+      setIsReadingFile(false);
+    };
+    reader.onerror = () => {
+      setUploadError("No se pudo procesar el archivo. Intenta nuevamente.");
+      setIsReadingFile(false);
+    };
+    reader.readAsDataURL(file);
+
+    event.target.value = "";
+  };
+
+  return (
+    <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <p className="text-sm font-bold text-slate-900">Menú mensual (PDF)</p>
+          <p className="mt-0.5 text-xs text-slate-500">
+            Menú de las 4 semanas con los platillos del día, visible para los padres en la pestaña "Dish of the Day".
+          </p>
+        </div>
+        {currentUrl ? (
+          <a
+            href={currentUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-cyan-700 hover:bg-cyan-50"
+          >
+            <FileText className="h-3.5 w-3.5" />
+            Ver actual
+          </a>
+        ) : null}
+      </div>
+
+      <div className="mt-3 flex flex-wrap items-center gap-2">
+        <input
+          value={url}
+          onChange={(e) => setUrl(e.target.value)}
+          placeholder="https://... link del PDF"
+          className="h-10 min-w-[220px] flex-1 rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm"
+        />
+        <button
+          type="button"
+          onClick={() => url.trim() && saveMutation.mutate(url.trim())}
+          disabled={!url.trim() || saveMutation.isPending}
+          className="inline-flex h-10 items-center justify-center rounded-xl bg-cyan-500 px-4 text-sm font-semibold text-white hover:bg-cyan-600 disabled:cursor-not-allowed disabled:bg-slate-300"
+        >
+          Guardar link
+        </button>
+        <label className="inline-flex h-10 cursor-pointer items-center justify-center rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 hover:bg-slate-50">
+          Subir PDF
+          <input type="file" accept="application/pdf" onChange={handleFileChange} className="hidden" />
+        </label>
+        {currentUrl ? (
+          <button
+            type="button"
+            onClick={() => saveMutation.mutate("")}
+            disabled={saveMutation.isPending}
+            className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 px-3 text-xs font-semibold text-slate-600 hover:bg-slate-50"
+          >
+            Quitar PDF
+          </button>
+        ) : null}
+      </div>
+
+      {isReadingFile ? <p className="mt-2 text-xs font-semibold text-cyan-700">Procesando archivo...</p> : null}
+      {uploadError ? <p className="mt-2 text-xs font-semibold text-red-600">{uploadError}</p> : null}
     </div>
   );
 }
@@ -348,6 +513,8 @@ export default function AdminMenuPage() {
     <div>
       <Header title="Menu de Comidas" subtitle="Alta, edicion y control del catalogo" actions={<button onClick={() => setCreating(true)} className="inline-flex items-center gap-2 rounded-xl bg-cyan-500 px-4 py-2 text-sm font-semibold text-white hover:bg-cyan-600"><Plus className="h-4 w-4" />Nueva comida</button>} />
       <div className="p-6 space-y-5">
+        <MonthlyMenuPdfCard />
+
         <div className="grid gap-3 sm:grid-cols-3">
           <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
             <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Total de items</p>

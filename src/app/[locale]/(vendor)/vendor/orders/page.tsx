@@ -16,7 +16,6 @@ import {
   ChevronLeft,
   ChevronRight,
   ChevronUp,
-  Clock3,
   Play,
   Search,
   Store,
@@ -40,13 +39,14 @@ type Order = {
   status: string;
   total: number;
   source: string;
+  createdAt: string;
   parent: { name: string };
   items: OrderItem[];
 };
 
-type OrderWithTime = Order & { time: Date };
+type OrderWithTime = Order & { time: Date; mealPeriod: string | null };
 type Bucket = {
-  key: number;
+  key: string;
   label: string;
   orders: OrderWithTime[];
   totalPlates: number;
@@ -55,14 +55,8 @@ type Bucket = {
 
 const EMPTY_ORDERS: Order[] = [];
 const FINISHED_STATUSES = new Set(["DELIVERED", "NOT_PICKED_UP", "CANCELLED"]);
-
-// A "bucket" of 0 means don't split the day into time windows at all.
-const BUCKET_OPTIONS = [
-  { minutes: 15, labelKey: "bucket15" },
-  { minutes: 30, labelKey: "bucket30" },
-  { minutes: 60, labelKey: "bucket60" },
-  { minutes: 0, labelKey: "bucketAllDay" },
-] as const;
+const OTHER_BUCKET_KEY = "OTHER";
+const MEAL_PERIOD_ORDER: string[] = MEAL_PERIODS.map((period) => period.key);
 
 const FOOD_DOT_STYLES = [
   { emoji: "🍚", className: "bg-amber-100" },
@@ -84,18 +78,6 @@ function formatTime(date: Date) {
   return new Intl.DateTimeFormat("es-CR", { hour: "2-digit", minute: "2-digit" }).format(date);
 }
 
-function minutesSinceMidnight(date: Date) {
-  return date.getHours() * 60 + date.getMinutes();
-}
-
-function minutesToLabel(minutes: number) {
-  const hours = Math.floor(minutes / 60) % 24;
-  const mins = minutes % 60;
-  const suffix = hours < 12 ? "a.m." : "p.m.";
-  const displayHour = hours % 12 === 0 ? 12 : hours % 12;
-  return `${displayHour}:${`${mins}`.padStart(2, "0")} ${suffix}`;
-}
-
 function normalizeToken(value: string): string {
   return value
     .normalize("NFD")
@@ -115,8 +97,7 @@ export default function VendorOrdersPage() {
   const [dateValue, setDateValue] = useState(() => toDateInputValue(new Date()));
   const [search, setSearch] = useState("");
   const [error, setError] = useState("");
-  const [bucketMinutes, setBucketMinutes] = useState(30);
-  const [selectedBucketKey, setSelectedBucketKey] = useState<number | null>(null);
+  const [selectedBucketKey, setSelectedBucketKey] = useState<string | null>(null);
   const [showFinished, setShowFinished] = useState(false);
   const [showSummary, setShowSummary] = useState(false);
 
@@ -163,9 +144,9 @@ export default function VendorOrdersPage() {
     return orders
       .map((order) => ({
         ...order,
-        time: order.items[0] ? new Date(order.items[0].scheduledDate) : null,
+        time: new Date(order.createdAt),
+        mealPeriod: order.items[0]?.mealPeriod ?? null,
       }))
-      .filter((order): order is OrderWithTime => order.time !== null)
       .sort((a, b) => a.time.getTime() - b.time.getTime());
   }, [orders]);
 
@@ -183,20 +164,22 @@ export default function VendorOrdersPage() {
   }, [ordersWithTime, normalizedQuery, isSearching]);
 
   const buckets = useMemo<Bucket[]>(() => {
-    const groups = new Map<number, OrderWithTime[]>();
+    const groups = new Map<string, OrderWithTime[]>();
 
     for (const order of ordersWithTime) {
-      const orderMinutes = minutesSinceMidnight(order.time);
-      const bucketStart =
-        bucketMinutes > 0 ? Math.floor(orderMinutes / bucketMinutes) * bucketMinutes : 0;
-      const existing = groups.get(bucketStart);
+      const key = order.mealPeriod ?? OTHER_BUCKET_KEY;
+      const existing = groups.get(key);
       if (existing) existing.push(order);
-      else groups.set(bucketStart, [order]);
+      else groups.set(key, [order]);
     }
 
     return [...groups.entries()]
-      .sort(([a], [b]) => a - b)
-      .map(([bucketStart, bucketOrders]) => {
+      .sort(([a], [b]) => {
+        const rankA = a === OTHER_BUCKET_KEY ? MEAL_PERIOD_ORDER.length : MEAL_PERIOD_ORDER.indexOf(a);
+        const rankB = b === OTHER_BUCKET_KEY ? MEAL_PERIOD_ORDER.length : MEAL_PERIOD_ORDER.indexOf(b);
+        return rankA - rankB;
+      })
+      .map(([key, bucketOrders]) => {
         const foodCounts = new Map<string, number>();
         let totalPlates = 0;
 
@@ -207,18 +190,17 @@ export default function VendorOrdersPage() {
           }
         }
 
+        const mealPeriodLabelKey = MEAL_PERIODS.find((period) => period.key === key)?.labelKey;
+
         return {
-          key: bucketStart,
-          label:
-            bucketMinutes > 0
-              ? `${minutesToLabel(bucketStart)} - ${minutesToLabel(bucketStart + bucketMinutes)}`
-              : t("vendor.orders.bucketAllDay"),
+          key,
+          label: mealPeriodLabelKey ? t(mealPeriodLabelKey) : t("vendor.orders.bucketOther"),
           orders: bucketOrders,
           totalPlates,
           topFoods: [...foodCounts.entries()].sort(([, a], [, b]) => b - a),
         };
       });
-  }, [ordersWithTime, bucketMinutes, t]);
+  }, [ordersWithTime, t]);
 
   const activeBucket = buckets.find((bucket) => bucket.key === selectedBucketKey) ?? buckets[0] ?? null;
   const activeBucketOrders = activeBucket?.orders ?? [];
@@ -235,7 +217,7 @@ export default function VendorOrdersPage() {
     });
   }
 
-  function selectBucket(key: number) {
+  function selectBucket(key: string) {
     setSelectedBucketKey(key);
     setShowFinished(false);
   }
@@ -293,23 +275,6 @@ export default function VendorOrdersPage() {
               className="h-10 w-full rounded-xl border border-slate-200 bg-slate-50 pl-9 pr-3 text-sm"
             />
           </div>
-
-          {!isSearching ? (
-            <label className="flex items-center gap-2 text-xs font-semibold text-slate-500">
-              {t("vendor.orders.groupEvery")}
-              <select
-                value={bucketMinutes}
-                onChange={(event) => setBucketMinutes(Number(event.target.value))}
-                className="h-10 rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm font-semibold text-slate-700"
-              >
-                {BUCKET_OPTIONS.map((option) => (
-                  <option key={option.minutes} value={option.minutes}>
-                    {t(`vendor.orders.${option.labelKey}`)}
-                  </option>
-                ))}
-              </select>
-            </label>
-          ) : null}
 
           <Link
             href="/vendor/new-order"
@@ -510,6 +475,7 @@ function OrderRow({
   const isStaffOrder =
     order.items.length > 0 && order.items.every((item) => item.student.level === "STAFF");
   const studentNames = [...new Set(order.items.map((item) => item.student.name))];
+  const mealPeriodLabelKey = MEAL_PERIODS.find((period) => period.key === order.mealPeriod)?.labelKey;
 
   return (
     <div className="rounded-xl border border-slate-200 bg-white px-4 py-3">
@@ -524,6 +490,11 @@ function OrderRow({
           </span>
         ) : null}
         <span className="shrink-0 text-xs text-slate-400">#{formatOrderNumber(order.id)}</span>
+        {mealPeriodLabelKey ? (
+          <span className="inline-flex shrink-0 items-center rounded-full bg-cyan-100 px-2 py-0.5 text-[10px] font-bold text-cyan-700">
+            {t(mealPeriodLabelKey)}
+          </span>
+        ) : null}
         {isVendorOrder ? (
           <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-violet-100 px-2 py-0.5 text-[10px] font-bold text-violet-700">
             <Store className="h-3 w-3" />
@@ -572,20 +543,11 @@ function OrderRow({
         <p className="mt-1 text-xs font-medium text-slate-400">{t("vendor.orders.parentLabel")}: {order.parent.name}</p>
       ) : null}
       <div className="mt-1 flex flex-wrap gap-x-3 gap-y-0.5">
-        {order.items.map((item) => {
-          const mealPeriodLabelKey = MEAL_PERIODS.find((period) => period.key === item.mealPeriod)?.labelKey;
-
-          return (
-            <span key={item.id} className="text-xs font-semibold text-slate-700">
-              • {item.foodItem.name}
-              {mealPeriodLabelKey ? (
-                <span className="ml-1 rounded-full bg-cyan-100 px-1.5 py-0.5 text-[10px] font-bold text-cyan-700">
-                  {t(mealPeriodLabelKey)}
-                </span>
-              ) : null}
-            </span>
-          );
-        })}
+        {order.items.map((item) => (
+          <span key={item.id} className="text-xs font-semibold text-slate-700">
+            • {item.foodItem.name}
+          </span>
+        ))}
       </div>
     </div>
   );
@@ -647,7 +609,7 @@ function BucketNavItem({
       )}
     >
       <div className="flex items-center gap-1.5 text-xs font-bold text-slate-600">
-        <Clock3 className="h-3.5 w-3.5 text-cyan-600" />
+        <UtensilsCrossed className="h-3.5 w-3.5 text-cyan-600" />
         {bucket.label}
       </div>
       <p className="mt-1 text-xs font-semibold text-slate-500">
