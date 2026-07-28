@@ -1,5 +1,6 @@
 "use client";
 
+import { useSession } from "next-auth/react";
 import Link from "@/i18n/Link";
 import {
   ArrowRight,
@@ -16,7 +17,8 @@ import {
   Activity,
   Phone,
 } from "lucide-react";
-import { useDictionary } from "@/i18n/I18nProvider";
+import { useDictionary, useTranslations } from "@/i18n/I18nProvider";
+import { getDashboardPath } from "@/lib/dashboard-path";
 
 const featureIcons = [Leaf, ChefHat, Clock, Shield];
 const featureColors = [
@@ -44,6 +46,11 @@ const panelColors = [
 export default function HomePage() {
   const dict = useDictionary();
   const home = dict.publicHome;
+  const t = useTranslations();
+  const { data: session } = useSession();
+  const dashboardHref = getDashboardPath(
+    (session?.user as { role?: string } | undefined)?.role
+  );
 
   return (
     <div className="bg-white">
@@ -55,7 +62,7 @@ export default function HomePage() {
           className="absolute -top-1 right-6 z-10 w-24 shadow-lg sm:right-12 sm:w-32"
         />
 
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 pt-20 pb-24 lg:pt-24 lg:pb-32">
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 pt-36 pb-24 sm:pt-40 lg:pt-44 lg:pb-36">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             <div>
               <h1 className="text-5xl sm:text-6xl lg:text-7xl font-black leading-[0.95] text-cyan-500">
@@ -76,10 +83,10 @@ export default function HomePage() {
                   {home.hero.ctaMenu}
                 </Link>
                 <Link
-                  href="/login"
-                  className="inline-flex items-center gap-2 rounded-full bg-[var(--cream-dark)] px-7 py-3.5 text-sm font-extrabold text-white/90 transition-colors hover:bg-[#e2cfa9]"
+                  href={session?.user ? dashboardHref : "/login"}
+                  className="inline-flex items-center gap-2 rounded-full bg-[var(--cream-dark)] px-7 py-3.5 text-sm font-extrabold text-[var(--cocoa)] shadow-md transition-colors hover:bg-[#e2cfa9]"
                 >
-                  {home.hero.ctaLogin}
+                  {session?.user ? t("publicNav.myPanel") : home.hero.ctaLogin}
                 </Link>
               </div>
             </div>
@@ -102,9 +109,9 @@ export default function HomePage() {
       </section>
 
       {/* Sponsor marquee */}
-      <section className="py-8 bg-[var(--cocoa)] overflow-hidden">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 mb-4">
-          <p className="text-center text-slate-400 text-sm font-semibold uppercase tracking-wider">
+      <section className="pt-8 pb-8 bg-[var(--cocoa)] overflow-hidden">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 mb-5">
+          <p className="text-center text-cyan-400 text-base font-bold uppercase tracking-wider">
             {home.sponsors.title}
           </p>
         </div>
@@ -221,10 +228,10 @@ export default function HomePage() {
                 {home.portalBenefits.subtitle}
               </p>
               <Link
-                href="/login"
+                href={session?.user ? dashboardHref : "/login"}
                 className="inline-flex items-center gap-2 rounded-full bg-white px-6 py-3 font-extrabold text-cyan-700 hover:bg-cyan-50 transition-colors"
               >
-                {home.portalBenefits.cta}
+                {session?.user ? t("publicNav.myPanel") : home.portalBenefits.cta}
                 <ArrowRight className="w-4 h-4" />
               </Link>
             </div>
@@ -274,7 +281,7 @@ export default function HomePage() {
                     {p.desc}
                   </p>
                   <Link
-                    href="/login"
+                    href={session?.user ? dashboardHref : "/login"}
                     className="inline-flex items-center gap-1.5 text-sm font-semibold text-cyan-600 hover:text-cyan-500 transition-colors"
                   >
                     {home.panels.access} <ArrowRight className="w-3.5 h-3.5" />
@@ -296,10 +303,10 @@ export default function HomePage() {
             {home.cta.subtitle}
           </p>
           <Link
-            href="/login"
+            href={session?.user ? dashboardHref : "/login"}
             className="inline-flex items-center gap-2 rounded-full bg-cyan-500 px-8 py-4 font-extrabold text-white transition-colors hover:bg-cyan-400"
           >
-            {home.cta.button}
+            {session?.user ? t("publicNav.myPanel") : home.cta.button}
             <ArrowRight className="w-5 h-5" />
           </Link>
         </div>

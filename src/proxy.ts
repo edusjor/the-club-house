@@ -1,6 +1,7 @@
 import { auth } from "@/auth";
 import { NextResponse } from "next/server";
 import { defaultLocale, isLocale, localePath, locales, type Locale } from "@/i18n/config";
+import { isComingSoonEnabled } from "@/lib/site-settings";
 
 function extractLocalePrefix(pathname: string): Locale | null {
   const match = locales.find(
@@ -9,7 +10,18 @@ function extractLocalePrefix(pathname: string): Locale | null {
   return match ?? null;
 }
 
-export default auth((req) => {
+// Paths that stay reachable while "coming soon" mode is on, so an admin can
+// still sign in and manage the site. Disabling it is always manual — the
+// target date shown on the coming-soon page is purely informational.
+const COMING_SOON_ALLOWED_PATHS = ["/login", "/post-login", "/admin", "/coming-soon"];
+
+function isAllowedDuringComingSoon(path: string): boolean {
+  return COMING_SOON_ALLOWED_PATHS.some(
+    (allowed) => path === allowed || path.startsWith(`${allowed}/`)
+  );
+}
+
+export default auth(async (req) => {
   const { pathname, search } = req.nextUrl;
   const localePrefix = extractLocalePrefix(pathname);
 
@@ -64,6 +76,10 @@ export default auth((req) => {
     ) {
       return redirectWithLocale("unauthorized");
     }
+  }
+
+  if (!isAllowedDuringComingSoon(path) && (await isComingSoonEnabled())) {
+    return NextResponse.rewrite(new URL(`/${locale}/coming-soon${search}`, req.url));
   }
 
   if (!localePrefix) {

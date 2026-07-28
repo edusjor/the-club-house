@@ -22,6 +22,8 @@ import {
   Search,
   Baby,
   DollarSign,
+  Images,
+  Settings,
 } from "lucide-react";
 
 type NavItem = {
@@ -36,9 +38,11 @@ const adminNav: NavItem[] = [
   { href: "/admin/parents", labelKey: "nav.admin.parents", icon: UserCircle },
   { href: "/admin/students", labelKey: "nav.admin.students", icon: GraduationCap },
   { href: "/admin/menu", labelKey: "nav.admin.menu", icon: UtensilsCrossed },
+  { href: "/admin/monthly-menu", labelKey: "nav.admin.monthlyMenu", icon: Images },
   { href: "/admin/categories", labelKey: "nav.admin.categories", icon: Tag },
   { href: "/admin/orders", labelKey: "nav.admin.orders", icon: ShoppingCart },
   { href: "/admin/payments", labelKey: "nav.admin.payments", icon: CreditCard },
+  { href: "/admin/settings", labelKey: "nav.admin.settings", icon: Settings },
 ];
 
 const parentNav: NavItem[] = [

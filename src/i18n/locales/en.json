@@ -25,9 +25,11 @@
       "parents": "Parents",
       "students": "Students",
       "menu": "Food Menu",
+      "monthlyMenu": "Monthly Menu",
       "categories": "Categories",
       "orders": "Orders",
-      "payments": "Pending Payments"
+      "payments": "Pending Payments",
+      "settings": "Settings"
     },
     "parent": {
       "title": "Parent Portal",
@@ -159,7 +161,8 @@
     "monthMenu": "Monthly Menu",
     "nutrition": "Nutritionist & Tips",
     "myPanel": "My Panel",
-    "signIn": "Sign In"
+    "signIn": "Sign In",
+    "logout": "Log Out"
   },
   "publicFooter": {
     "description": "Healthy and delicious meals for students. Quality nutrition prepared with love.",
@@ -282,6 +285,14 @@
       "subtitle": "Healthy meals, simple payments, and total control in your hands.",
       "button": "Sign In to My Portal"
     }
+  },
+  "publicComingSoon": {
+    "eyebrow": "Something fresh is cooking",
+    "title": "We'll be ready very soon.",
+    "subtitle": "We're putting the finishing touches on The Club House. Thanks for your patience!",
+    "launchLabel": "Expected launch",
+    "noDateFallback": "We'll share the date soon.",
+    "signIn": "Sign In"
   },
   "status": {
     "pending": "Pending",
@@ -552,8 +563,6 @@
       "errorDishOfDayConflict": "This line already has a different dish of the day — add it in a separate line.",
       "mealMomentLockedNotice": "Automatically set by this dish of the day.",
       "viewMonthlyMenu": "View this month's menu",
-      "monthlyMenuModalTitle": "This month's dish of the day",
-      "openInNewTab": "Open in a new tab",
       "errorEditingLine": "You're already editing a line. Add it to the cart or clear it before editing another.",
       "errorEditingLineSubmit": "You have a line being edited. Add it to the cart or clear it before requesting.",
       "confirmChangeChild": "Each order is for a single child. If you change child, everything added to the cart will be cleared. Do you want to continue?",
@@ -776,5 +785,12 @@
     "searchPlaceholder": "Search food...",
     "noResultsTitle": "No food available for this tab.",
     "noResultsSubtitle": "Try another tab or change the search filter."
+  },
+  "publicMonthlyMenu": {
+    "subtitle": "Take a look at what's on the menu this month, week by week.",
+    "loginNotice": "To place an order you need to",
+    "loginLink": "sign in",
+    "emptyTitle": "The monthly menu will be available soon",
+    "emptySubtitle": "Check back later to see this month's menu."
   }
 }

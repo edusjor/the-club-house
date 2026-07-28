@@ -25,9 +25,11 @@
       "parents": "Padres",
       "students": "Estudiantes",
       "menu": "Menú de Comidas",
+      "monthlyMenu": "Menú Mensual",
       "categories": "Categorías",
       "orders": "Pedidos",
-      "payments": "Pagos Pendientes"
+      "payments": "Pagos Pendientes",
+      "settings": "Configuración"
     },
     "parent": {
       "title": "Portal de Padres",
@@ -159,7 +161,8 @@
     "monthMenu": "Menú del Mes",
     "nutrition": "Nutricionista y Tips",
     "myPanel": "Mi Panel",
-    "signIn": "Iniciar Sesión"
+    "signIn": "Iniciar Sesión",
+    "logout": "Cerrar Sesión"
   },
   "publicFooter": {
     "description": "Comidas saludables y deliciosas para estudiantes. Nutrición de calidad preparada con amor.",
@@ -282,6 +285,14 @@
       "subtitle": "Comidas saludables, pagos simples y control total en tus manos.",
       "button": "Iniciar Sesión en mi Portal"
     }
+  },
+  "publicComingSoon": {
+    "eyebrow": "Algo fresco se está cocinando",
+    "title": "Estaremos listos muy pronto.",
+    "subtitle": "Estamos dando los últimos toques a The Club House. ¡Gracias por tu paciencia!",
+    "launchLabel": "Fecha estimada de lanzamiento",
+    "noDateFallback": "Pronto compartiremos la fecha.",
+    "signIn": "Iniciar Sesión"
   },
   "status": {
     "pending": "Pendiente",
@@ -552,8 +563,6 @@
       "errorDishOfDayConflict": "Esta línea ya tiene un platillo del día distinto — agrégalo en una línea separada.",
       "mealMomentLockedNotice": "Definido automáticamente por este platillo del día.",
       "viewMonthlyMenu": "Ver menú del mes",
-      "monthlyMenuModalTitle": "Platillo del día de este mes",
-      "openInNewTab": "Abrir en una pestaña nueva",
       "errorEditingLine": "Ya estás editando una línea. Agrégala al carrito o límpiala antes de editar otra.",
       "errorEditingLineSubmit": "Tienes una línea en edición. Agrégala al carrito o límpiala antes de solicitar.",
       "confirmChangeChild": "Cada pedido es para un solo hijo. Si cambias de hijo se borrará todo lo que agregaste al carrito. ¿Deseas continuar?",
@@ -776,5 +785,12 @@
     "searchPlaceholder": "Buscar comida...",
     "noResultsTitle": "No hay comidas disponibles para esta pestaña.",
     "noResultsSubtitle": "Prueba otra pestaña o cambia el filtro de búsqueda."
+  },
+  "publicMonthlyMenu": {
+    "subtitle": "Mirá lo que hay en el menú este mes, semana a semana.",
+    "loginNotice": "Para hacer un pedido necesitas",
+    "loginLink": "iniciar sesión",
+    "emptyTitle": "El menú mensual estará disponible pronto",
+    "emptySubtitle": "Vuelve más tarde para ver el menú de este mes."
   }
 }

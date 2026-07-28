@@ -92,6 +92,7 @@ model FoodItem {
   availableDays String?
   stockQuantity Int?
   fixedMealPeriod String?    // BREAK | LUNCH | AFTERSCHOOL | null (null = generic, orderable at any time)
+  foodTab       String?      // GENERAL | DRINKS | CASADOS | null (null = guess from name/category)
   createdAt     DateTime     @default(now())
   updatedAt     DateTime     @updatedAt
 
@@ -100,10 +101,11 @@ model FoodItem {
   consumptions Consumption[]
 }
 
-model MonthlyMenuPdf {
-  id        String   @id @default("singleton")
+model MonthlyMenuImage {
+  id        String   @id @default(cuid())
   url       String
-  updatedAt DateTime @updatedAt
+  position  Int      @default(0)
+  createdAt DateTime @default(now())
 }
 
 model FoodItemPrice {
@@ -247,4 +249,11 @@ model Notification {
   message   String
   read      Boolean  @default(false)
   createdAt DateTime @default(now())
+}
+
+model SiteSettings {
+  id                String    @id @default("singleton")
+  comingSoonEnabled Boolean   @default(false)
+  comingSoonAt      DateTime?
+  updatedAt         DateTime  @updatedAt
 }
