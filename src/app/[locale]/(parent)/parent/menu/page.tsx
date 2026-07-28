@@ -1,6 +1,6 @@
 ﻿import Header from "@/components/dashboard/Header";
 import DietaryTagBadges, { DietaryTagLabels } from "@/components/dashboard/DietaryTagBadges";
-import MonthlyMenuPdfButton from "@/components/parent/MonthlyMenuPdfButton";
+import MonthlyMenuLinkButton from "@/components/parent/MonthlyMenuLinkButton";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/db";
 import { formatCurrency, normalizePriceLevel, PRICE_LEVELS } from "@/lib/utils";
@@ -11,8 +11,7 @@ import { getDictionary, type Dictionary } from "@/i18n/dictionaries";
 import { isLocale } from "@/i18n/config";
 import { notFound } from "next/navigation";
 import type { MealPeriod } from "@/lib/meal-scheduling";
-
-type ParentMenuTab = "GENERAL" | "DRINKS" | "CASADOS";
+import { FOOD_TABS, getFoodTab, normalizeFoodToken, type FoodTab } from "@/lib/food-tabs";
 
 const FIXED_MEAL_PERIOD_LABEL_KEY: Record<MealPeriod, "break" | "lunch" | "afterschool"> = {
   BREAK: "break",
@@ -25,47 +24,20 @@ function fixedMealPeriodLabel(mealPeriod: string, dict: Dictionary): string {
   return key ? dict.mealPeriods[key] : "";
 }
 
-const parentMenuTabs: { key: ParentMenuTab; labelKey: "general" | "drinks" | "casados" }[] = [
-  { key: "GENERAL", labelKey: "general" },
-  { key: "DRINKS", labelKey: "drinks" },
-  { key: "CASADOS", labelKey: "casados" },
-];
+const FOOD_TAB_DICT_KEY: Record<FoodTab, "general" | "drinks" | "casados"> = {
+  GENERAL: "general",
+  DRINKS: "drinks",
+  CASADOS: "casados",
+};
 
 const levelLabelByValue = Object.fromEntries(
   PRICE_LEVELS.map((level) => [level.value, level.label])
 ) as Record<string, string>;
 
-function normalizeMenuToken(value: string): string {
-  return value
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase();
-}
-
-function getParentMenuTab(item: { name: string; category: { name: string } }): ParentMenuTab {
-  const normalizedName = normalizeMenuToken(item.name);
-  const normalizedCategory = normalizeMenuToken(item.category.name);
-
-  if (normalizedName.includes("casado") || normalizedCategory.includes("casado")) {
-    return "CASADOS";
-  }
-
-  if (
-    normalizedCategory.includes("bebida") ||
-    normalizedCategory.includes("drink") ||
-    normalizedCategory.includes("jugo") ||
-    normalizedCategory.includes("refresco")
-  ) {
-    return "DRINKS";
-  }
-
-  return "GENERAL";
-}
-
-function resolveActiveTab(rawTab: string | undefined): ParentMenuTab {
+function resolveActiveTab(rawTab: string | undefined): FoodTab {
   if (!rawTab) return "GENERAL";
 
-  const normalized = normalizeMenuToken(rawTab);
+  const normalized = normalizeFoodToken(rawTab);
   if (["general", "comida-general", "comida_general"].includes(normalized)) {
     return "GENERAL";
   }
@@ -136,14 +108,14 @@ export default async function ParentMenuPage({ params, searchParams }: ParentMen
   const resolvedSearchParams = searchParams ? await searchParams : undefined;
   const activeTab = resolveActiveTab(resolvedSearchParams?.tab);
 
-  const categorizedItems: Record<ParentMenuTab, typeof items> = {
+  const categorizedItems: Record<FoodTab, typeof items> = {
     GENERAL: [],
     DRINKS: [],
     CASADOS: [],
   };
 
   for (const item of items) {
-    categorizedItems[getParentMenuTab(item)].push(item);
+    categorizedItems[getFoodTab(item)].push(item);
   }
 
   const visibleItems = categorizedItems[activeTab];
@@ -194,7 +166,7 @@ export default async function ParentMenuPage({ params, searchParams }: ParentMen
         ) : (
           <section className="space-y-4">
             <div className="flex flex-wrap items-center gap-2">
-              {parentMenuTabs.map((tab) => {
+              {FOOD_TABS.map((tab) => {
                 const isActive = tab.key === activeTab;
                 const count = categorizedItems[tab.key].length;
                 const href =
@@ -212,7 +184,7 @@ export default async function ParentMenuPage({ params, searchParams }: ParentMen
                         : "border-slate-200 bg-white text-slate-600 hover:border-cyan-300 hover:text-cyan-700"
                     }`}
                   >
-                    <span>{dict.foodTabs[tab.labelKey]}</span>
+                    <span>{dict.foodTabs[FOOD_TAB_DICT_KEY[tab.key]]}</span>
                     <span
                       className={`rounded-full px-2 py-0.5 text-[11px] font-bold ${
                         isActive
@@ -229,7 +201,7 @@ export default async function ParentMenuPage({ params, searchParams }: ParentMen
 
             {activeTab === "CASADOS" ? (
               <div>
-                <MonthlyMenuPdfButton />
+                <MonthlyMenuLinkButton />
               </div>
             ) : null}
 

@@ -1,10 +1,16 @@
 export type FoodTab = "GENERAL" | "DRINKS" | "CASADOS";
 
+export const FOOD_TAB_VALUES: FoodTab[] = ["GENERAL", "DRINKS", "CASADOS"];
+
 export const FOOD_TABS: { key: FoodTab; labelKey: string }[] = [
   { key: "GENERAL", labelKey: "foodTabs.general" },
   { key: "DRINKS", labelKey: "foodTabs.drinks" },
   { key: "CASADOS", labelKey: "foodTabs.casados" },
 ];
+
+export function isFoodTab(value: unknown): value is FoodTab {
+  return typeof value === "string" && (FOOD_TAB_VALUES as string[]).includes(value);
+}
 
 export function normalizeFoodToken(value: string): string {
   return value
@@ -13,7 +19,7 @@ export function normalizeFoodToken(value: string): string {
     .toLowerCase();
 }
 
-export function getFoodTab(item: { name: string; category: { name: string } }): FoodTab {
+function guessFoodTab(item: { name: string; category: { name: string } }): FoodTab {
   const normalizedName = normalizeFoodToken(item.name);
   const normalizedCategory = normalizeFoodToken(item.category.name);
 
@@ -31,6 +37,19 @@ export function getFoodTab(item: { name: string; category: { name: string } }): 
   }
 
   return "GENERAL";
+}
+
+// An admin-set `foodTab` always wins — it's how an item gets moved in/out of
+// a tab explicitly. Items that have never been assigned one (foodTab is
+// null) fall back to the old name/category guess so nothing already in the
+// menu suddenly "disappears" from its tab after this field was introduced.
+export function getFoodTab(item: {
+  name: string;
+  foodTab?: string | null;
+  category: { name: string };
+}): FoodTab {
+  if (isFoodTab(item.foodTab)) return item.foodTab;
+  return guessFoodTab(item);
 }
 
 export function parseFoodTags(rawTags: string | null | undefined): string[] {

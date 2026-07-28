@@ -9,7 +9,7 @@ import Link from "@/i18n/Link";
 import Header from "@/components/dashboard/Header";
 import DietaryTagBadges, { DietaryTagLabels } from "@/components/dashboard/DietaryTagBadges";
 import { formatCurrency, normalizePriceLevel } from "@/lib/utils";
-import { FOOD_TABS } from "@/lib/food-tabs";
+import { FOOD_TABS, getFoodTab, type FoodTab } from "@/lib/food-tabs";
 import { useTranslations } from "@/i18n/I18nProvider";
 import {
   CheckCircle2,
@@ -44,11 +44,10 @@ type FoodItem = {
   description?: string | null;
   tags?: string | null;
   available: boolean;
+  foodTab?: FoodTab | null;
   category: { id: string; name: string };
   prices: FoodPrice[];
 };
-
-type VendorMenuTab = "GENERAL" | "DRINKS" | "CASADOS";
 
 type CartLine = {
   foodItemId: string;
@@ -62,26 +61,6 @@ function normalizeToken(value: string): string {
     .normalize("NFD")
     .replace(/\p{Diacritic}/gu, "")
     .toLowerCase();
-}
-
-function getVendorMenuTab(item: Pick<FoodItem, "name" | "category">): VendorMenuTab {
-  const normalizedName = normalizeToken(item.name);
-  const normalizedCategory = normalizeToken(item.category.name);
-
-  if (normalizedName.includes("casado") || normalizedCategory.includes("casado")) {
-    return "CASADOS";
-  }
-
-  if (
-    normalizedCategory.includes("bebida") ||
-    normalizedCategory.includes("drink") ||
-    normalizedCategory.includes("jugo") ||
-    normalizedCategory.includes("refresco")
-  ) {
-    return "DRINKS";
-  }
-
-  return "GENERAL";
 }
 
 function isStaffStudent(student: Pick<Student, "level">) {
@@ -111,7 +90,7 @@ function VendorNewOrderContent() {
   const [selectedStudentId, setSelectedStudentId] = useState(preselectedStudentId);
 
   const [menuSearch, setMenuSearch] = useState("");
-  const [activeTab, setActiveTab] = useState<VendorMenuTab>("GENERAL");
+  const [activeTab, setActiveTab] = useState<FoodTab>("GENERAL");
 
   const [cart, setCart] = useState<CartLine[]>([]);
   const [feedback, setFeedback] = useState("");
@@ -159,14 +138,14 @@ function VendorNewOrderContent() {
           normalizeToken(item.category.name).includes(normalizedSearch)
         );
       })
-      .filter((item) => getVendorMenuTab(item) === activeTab);
+      .filter((item) => getFoodTab(item) === activeTab);
   }, [menu, menuSearch, activeTab]);
 
   const tabCounts = useMemo(() => {
-    const counts: Record<VendorMenuTab, number> = { GENERAL: 0, DRINKS: 0, CASADOS: 0 };
+    const counts: Record<FoodTab, number> = { GENERAL: 0, DRINKS: 0, CASADOS: 0 };
     for (const item of menu) {
       if (!item.available) continue;
-      counts[getVendorMenuTab(item)] += 1;
+      counts[getFoodTab(item)] += 1;
     }
     return counts;
   }, [menu]);

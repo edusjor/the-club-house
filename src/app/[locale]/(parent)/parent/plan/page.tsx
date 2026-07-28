@@ -8,7 +8,7 @@ import { useRouter } from "next/navigation";
 import Header from "@/components/dashboard/Header";
 import BodyPortal from "@/components/BodyPortal";
 import DietaryTagBadges, { DietaryTagLabels } from "@/components/dashboard/DietaryTagBadges";
-import MonthlyMenuPdfButton from "@/components/parent/MonthlyMenuPdfButton";
+import MonthlyMenuLinkButton from "@/components/parent/MonthlyMenuLinkButton";
 import { formatCurrency, LEVELS, normalizePriceLevel } from "@/lib/utils";
 import { FOOD_TABS, getFoodTab, parseFoodTags, type FoodTab } from "@/lib/food-tabs";
 import { MEAL_PERIODS } from "@/lib/meal-periods";
@@ -38,6 +38,7 @@ type FoodItem = {
   tags?: string | null;
   available: boolean;
   fixedMealPeriod?: MealPeriod | null;
+  foodTab?: FoodTab | null;
   category: {
     id: string;
     name: string;
@@ -696,7 +697,7 @@ export default function ParentPlanPage() {
 
                 {activeTab === "CASADOS" ? (
                   <div>
-                    <MonthlyMenuPdfButton />
+                    <MonthlyMenuLinkButton />
                   </div>
                 ) : null}
 

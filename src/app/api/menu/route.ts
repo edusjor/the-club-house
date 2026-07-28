@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/db";
 import { auth } from "@/auth";
 import { isMealPeriod } from "@/lib/meal-scheduling";
+import { isFoodTab } from "@/lib/food-tabs";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function GET() {
@@ -18,10 +19,14 @@ export async function POST(req: NextRequest) {
   }
 
   const body = await req.json();
-  const { name, image, description, categoryId, ingredients, tags, available, availableDays, stockQuantity, fixedMealPeriod, prices } = body;
+  const { name, image, description, categoryId, ingredients, tags, available, availableDays, stockQuantity, fixedMealPeriod, foodTab, prices } = body;
 
   if (fixedMealPeriod !== null && fixedMealPeriod !== undefined && !isMealPeriod(fixedMealPeriod)) {
     return NextResponse.json({ error: "Tiempo de comida inválido" }, { status: 400 });
+  }
+
+  if (foodTab !== null && foodTab !== undefined && !isFoodTab(foodTab)) {
+    return NextResponse.json({ error: "Pestaña de menú inválida" }, { status: 400 });
   }
 
   const item = await prisma.foodItem.create({
@@ -36,6 +41,7 @@ export async function POST(req: NextRequest) {
       availableDays: availableDays ? JSON.stringify(availableDays) : null,
       stockQuantity,
       fixedMealPeriod: fixedMealPeriod ?? null,
+      foodTab: foodTab ?? null,
       prices: {
         create: (prices ?? []).map((p: { level: string; price: number }) => ({
           level: p.level,

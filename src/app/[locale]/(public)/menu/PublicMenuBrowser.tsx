@@ -14,6 +14,7 @@ export type PublicFoodItem = {
   image?: string | null;
   description?: string | null;
   tags?: string | null;
+  foodTab?: string | null;
   category: {
     id: string;
     name: string;
