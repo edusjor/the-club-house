@@ -458,7 +458,6 @@ Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/bui
 cd /home/theclubhousecr/htdocs/theclubhousecr.com/the-club-house
 
 git pull
-docker compose down --remove-orphans
 docker compose build --no-cache --pull
 docker compose up -d --force-recreate --remove-orphans
 docker image prune -f

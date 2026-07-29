@@ -91,7 +91,7 @@ export default function PublicNavbar() {
 
         {/* Mobile menu toggle — kept on the left since the logo already anchors the top-right corner on small screens */}
         <button
-          className="lg:hidden p-2 rounded-lg bg-white/80 backdrop-blur-sm hover:bg-white transition-colors"
+          className="lg:hidden p-2 rounded-lg bg-cyan-500 text-white shadow-sm backdrop-blur-sm transition-colors hover:bg-cyan-600"
           onClick={() => setOpen(!open)}
         >
           {open ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}

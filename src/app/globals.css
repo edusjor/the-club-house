@@ -79,6 +79,17 @@ body {
     opacity: 1;
   }
 
+  /* iOS Safari auto-zooms the viewport when focusing a field with font-size
+     under 16px, and that zoom doesn't reset on navigation — forcing 16px on
+     mobile stops it from triggering in the first place. */
+  @media (max-width: 640px) {
+    input,
+    select,
+    textarea {
+      font-size: 16px;
+    }
+  }
+
   input:disabled,
   select:disabled,
   textarea:disabled {
