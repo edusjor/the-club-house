@@ -31,6 +31,7 @@
       "packages": "Paquetes",
       "consumptions": "Consumos",
       "payments": "Pagos Pendientes",
+      "balances": "Saldos",
       "settings": "Configuración"
     },
     "parent": {
@@ -372,6 +373,9 @@
       "balanceSummary": "Resumen de saldo",
       "balanceLabel": "Saldo",
       "totalToPay": "Total que debes pagar",
+      "limitLabel": "Límite de crédito",
+      "availableLabel": "Disponible para pedir",
+      "limitReachedNote": "Alcanzaste tu límite de crédito. Paga tu saldo pendiente o pide al administrador que aumente tu límite para poder ordenar de nuevo.",
       "pendingApproval": "Pagos por aprobar",
       "alreadySentInReview": "Ya enviados, en revisión",
       "importantInfo": "Información importante:",

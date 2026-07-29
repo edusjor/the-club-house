@@ -31,6 +31,7 @@
       "packages": "Packages",
       "consumptions": "Consumption",
       "payments": "Pending Payments",
+      "balances": "Balances",
       "settings": "Settings"
     },
     "parent": {
@@ -372,6 +373,9 @@
       "balanceSummary": "Balance Summary",
       "balanceLabel": "Balance",
       "totalToPay": "Total you owe",
+      "limitLabel": "Credit limit",
+      "availableLabel": "Available to order",
+      "limitReachedNote": "You've reached your credit limit. Pay down your pending balance or ask the administrator to raise your limit to order again.",
       "pendingApproval": "Payments awaiting approval",
       "alreadySentInReview": "Already sent, under review",
       "importantInfo": "Important information:",

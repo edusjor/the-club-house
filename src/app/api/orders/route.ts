@@ -520,60 +520,83 @@ export async function POST(req: NextRequest) {
   // there is no separate "submit for payment" step. The parent pays down the
   // balance later from /parent/balance.
 
-  const orders = await prisma.$transaction(async (tx) => {
-    let balance = await tx.parentBalance.findUnique({ where: { parentId } });
-    if (!balance) {
-      balance = await tx.parentBalance.create({
-        data: { parentId, pendingBalance: 0, approvedBalance: 0 },
-      });
-    }
+  let orders;
+  try {
+    orders = await prisma.$transaction(async (tx) => {
+      let balance = await tx.parentBalance.findUnique({ where: { parentId } });
+      if (!balance) {
+        balance = await tx.parentBalance.create({
+          data: { parentId, pendingBalance: 0, approvedBalance: 0 },
+        });
+      }
 
-    const createdOrders = [];
-    for (const group of groupsByKey.values()) {
-      const order = await tx.order.create({
-        data: {
-          parentId,
-          // A vendor walk-in is handed to the student on the spot — it's
-          // created already DELIVERED, with no separate "mark as served" step.
-          status: isVendorWalkIn ? "DELIVERED" : "PAID",
-          total: group.items.reduce((sum, item) => sum + item.price * item.quantity, 0),
-          notes,
-          source: isVendorWalkIn ? "VENDOR" : "PARENT",
-          createdById: role === "PARENT" ? null : userId,
-          items: {
-            create: group.items,
-          },
-        },
-        include: {
-          parent: { select: { name: true, email: true } },
-          items: {
-            include: {
-              student: true,
-              foodItem: { include: { category: true } },
+      // A parent can't order past their credit limit — this is the amount an
+      // admin sets per parent (100,000 colones by default); it only goes back
+      // up when the parent pays down pendingBalance or an admin raises it.
+      const totalToCharge = [...groupsByKey.values()].reduce(
+        (sum, group) => sum + group.items.reduce((itemSum, item) => itemSum + item.price * item.quantity, 0),
+        0
+      );
+
+      if (balance.pendingBalance + totalToCharge > balance.creditLimit) {
+        throw new Error("CREDIT_LIMIT_EXCEEDED");
+      }
+
+      const createdOrders = [];
+      for (const group of groupsByKey.values()) {
+        const order = await tx.order.create({
+          data: {
+            parentId,
+            // A vendor walk-in is handed to the student on the spot — it's
+            // created already DELIVERED, with no separate "mark as served" step.
+            status: isVendorWalkIn ? "DELIVERED" : "PAID",
+            total: group.items.reduce((sum, item) => sum + item.price * item.quantity, 0),
+            notes,
+            source: isVendorWalkIn ? "VENDOR" : "PARENT",
+            createdById: role === "PARENT" ? null : userId,
+            items: {
+              create: group.items,
             },
           },
-          payments: true,
-        },
-      });
-      createdOrders.push(order);
-    }
+          include: {
+            parent: { select: { name: true, email: true } },
+            items: {
+              include: {
+                student: true,
+                foodItem: { include: { category: true } },
+              },
+            },
+            payments: true,
+          },
+        });
+        createdOrders.push(order);
+      }
 
-    const totalCharged = createdOrders.reduce((sum, order) => sum + order.total, 0);
-    await tx.parentBalance.update({
-      where: { parentId },
-      data: { pendingBalance: balance.pendingBalance + totalCharged },
+      const totalCharged = createdOrders.reduce((sum, order) => sum + order.total, 0);
+      await tx.parentBalance.update({
+        where: { parentId },
+        data: { pendingBalance: balance.pendingBalance + totalCharged },
+      });
+
+      const usedPackageIds = [...claimedPackageIdsInRequest];
+      for (const packageId of usedPackageIds) {
+        await tx.studentPackage.update({
+          where: { id: packageId },
+          data: { consumed: { increment: 1 } },
+        });
+      }
+
+      return createdOrders;
     });
-
-    const usedPackageIds = [...claimedPackageIdsInRequest];
-    for (const packageId of usedPackageIds) {
-      await tx.studentPackage.update({
-        where: { id: packageId },
-        data: { consumed: { increment: 1 } },
-      });
+  } catch (error) {
+    if (error instanceof Error && error.message === "CREDIT_LIMIT_EXCEEDED") {
+      return NextResponse.json(
+        { error: "El saldo pendiente del padre supera el límite disponible. Un administrador debe aumentar el límite para poder pedir de nuevo." },
+        { status: 400 }
+      );
     }
-
-    return createdOrders;
-  });
+    throw error;
+  }
 
   return NextResponse.json(orders, { status: 201 });
 }

@@ -221,6 +221,7 @@ model ParentBalance {
   parent          User     @relation(fields: [parentId], references: [id])
   pendingBalance  Int      @default(0)
   approvedBalance Int      @default(0)
+  creditLimit     Int      @default(100000) // max pendingBalance allowed before new orders are blocked; admin can raise per-parent
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 }

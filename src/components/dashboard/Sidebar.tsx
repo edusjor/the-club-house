@@ -51,6 +51,7 @@ const adminNav: NavItem[] = [
   { href: "/admin/orders", labelKey: "nav.admin.orders", icon: ShoppingCart },
   { href: "/admin/packages", labelKey: "nav.admin.packages", icon: Package },
   { href: "/admin/payments", labelKey: "nav.admin.payments", icon: CreditCard },
+  { href: "/admin/saldos", labelKey: "nav.admin.balances", icon: DollarSign },
   { href: "/admin/settings", labelKey: "nav.admin.settings", icon: Settings },
   { href: "/guide", label: "Guide", icon: HelpCircle },
 ];
