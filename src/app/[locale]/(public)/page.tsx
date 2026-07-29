@@ -6,6 +6,11 @@ import ComingSoonNotice from "@/components/public/ComingSoonNotice";
 import PublicShell from "@/components/public/PublicShell";
 import HomePageContent from "./HomePageContent";
 
+// Reads the coming-soon flag from the DB on every request — without this the
+// homepage gets statically prerendered at build time and toggling the flag
+// in the admin panel has no visible effect until the next deploy.
+export const dynamic = "force-dynamic";
+
 export default async function HomePage({
   params,
 }: {
