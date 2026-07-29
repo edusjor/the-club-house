@@ -15,7 +15,13 @@ export default function ComingSoonNotice({
   const launchDate = launchAt ? formatCostaRicaDateTime(launchAt, locale) : null;
 
   return (
-    <section className="relative flex min-h-[75vh] flex-col items-center justify-center overflow-hidden bg-[var(--cream)] px-4 py-24 text-center">
+    <section className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-[var(--cream)] px-4 py-24 text-center">
+      <img
+        src="/assets/logo.webp"
+        alt="The Club House"
+        className="mb-8 h-20 w-20 rounded-2xl object-cover shadow-lg sm:h-24 sm:w-24"
+      />
+
       <p className="mb-3 inline-flex items-center gap-2 rounded-full bg-white/80 px-4 py-1.5 text-xs font-bold uppercase tracking-wider text-cyan-700 shadow-sm">
         <Sparkles className="h-3.5 w-3.5" />
         {t.eyebrow}

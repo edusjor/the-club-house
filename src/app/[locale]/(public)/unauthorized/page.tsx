@@ -3,11 +3,13 @@
 import Link from "@/i18n/Link";
 import { AlertTriangle, Home } from "lucide-react";
 import { useTranslations } from "@/i18n/I18nProvider";
+import PublicShell from "@/components/public/PublicShell";
 
 export default function UnauthorizedPage() {
   const t = useTranslations();
 
   return (
+    <PublicShell>
     <div className="min-h-screen bg-gradient-to-br from-slate-900 to-cyan-900 flex items-center justify-center p-4">
       <div className="max-w-md w-full">
         <div className="bg-white rounded-3xl shadow-2xl p-8 text-center">
@@ -28,5 +30,6 @@ export default function UnauthorizedPage() {
         </div>
       </div>
     </div>
+    </PublicShell>
   );
 }

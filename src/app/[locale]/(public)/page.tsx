@@ -3,6 +3,7 @@ import { getDictionary } from "@/i18n/dictionaries";
 import { notFound } from "next/navigation";
 import { getSiteSettings } from "@/lib/site-settings";
 import ComingSoonNotice from "@/components/public/ComingSoonNotice";
+import PublicShell from "@/components/public/PublicShell";
 import HomePageContent from "./HomePageContent";
 
 export default async function HomePage({
@@ -15,6 +16,8 @@ export default async function HomePage({
 
   const [dict, settings] = await Promise.all([getDictionary(locale), getSiteSettings()]);
 
+  // While "coming soon" is on, the homepage is just the notice — no nav,
+  // no footer, nothing else. Every other route keeps its normal chrome.
   if (settings.comingSoonEnabled) {
     return (
       <ComingSoonNotice
@@ -25,5 +28,9 @@ export default async function HomePage({
     );
   }
 
-  return <HomePageContent />;
+  return (
+    <PublicShell>
+      <HomePageContent />
+    </PublicShell>
+  );
 }

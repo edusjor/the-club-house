@@ -4,6 +4,7 @@ import { Info } from "lucide-react";
 import { getDictionary } from "@/i18n/dictionaries";
 import { isLocale } from "@/i18n/config";
 import { notFound } from "next/navigation";
+import PublicShell from "@/components/public/PublicShell";
 
 async function getMonthlyMenuImages() {
   return prisma.monthlyMenuImage.findMany({
@@ -23,6 +24,7 @@ export default async function MonthlyMenuPage({
   const t = dict.publicMonthlyMenu;
 
   return (
+    <PublicShell>
     <div className="min-h-screen bg-slate-50">
       {/* Hero */}
       <div className="bg-gradient-to-br from-slate-900 to-cyan-900 text-white py-14 px-4 sm:px-6 text-center">
@@ -59,5 +61,6 @@ export default async function MonthlyMenuPage({
         )}
       </div>
     </div>
+    </PublicShell>
   );
 }
