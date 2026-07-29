@@ -291,8 +291,7 @@
     "title": "Estaremos listos muy pronto.",
     "subtitle": "Estamos dando los últimos toques a The Club House. ¡Gracias por tu paciencia!",
     "launchLabel": "Fecha estimada de lanzamiento",
-    "noDateFallback": "Pronto compartiremos la fecha.",
-    "signIn": "Iniciar Sesión"
+    "noDateFallback": "Pronto compartiremos la fecha."
   },
   "status": {
     "pending": "Pendiente",

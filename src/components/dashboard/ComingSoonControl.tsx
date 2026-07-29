@@ -53,8 +53,9 @@ export default function ComingSoonControl({
           <div>
             <h2 className="font-bold text-slate-900">Modo &quot;Muy pronto&quot;</h2>
             <p className="mt-0.5 text-sm text-slate-500">
-              Muestra una pantalla de &quot;muy pronto&quot; a todos los visitantes. Solo tú, desde
-              este panel, puedes desactivarlo — no se apaga solo al llegar la fecha.
+              Reemplaza el contenido de la página de inicio con un aviso de &quot;muy pronto&quot;.
+              El resto del sitio (menú, inicio de sesión, paneles) sigue funcionando normal. Solo
+              tú, desde aquí, puedes desactivarlo — no se apaga solo al llegar la fecha.
             </p>
           </div>
         </div>
@@ -107,7 +108,7 @@ export default function ComingSoonControl({
       <p className="mt-4 text-xs font-semibold uppercase tracking-wide">
         Estado actual:{" "}
         <span className={enabled ? "text-cyan-600" : "text-slate-400"}>
-          {enabled ? "Activado — el sitio muestra \"muy pronto\"" : "Desactivado — el sitio está visible normalmente"}
+          {enabled ? "Activado — el inicio muestra \"muy pronto\"" : "Desactivado — el inicio está visible normalmente"}
         </span>
       </p>
     </div>

@@ -291,8 +291,7 @@
     "title": "We'll be ready very soon.",
     "subtitle": "We're putting the finishing touches on The Club House. Thanks for your patience!",
     "launchLabel": "Expected launch",
-    "noDateFallback": "We'll share the date soon.",
-    "signIn": "Sign In"
+    "noDateFallback": "We'll share the date soon."
   },
   "status": {
     "pending": "Pending",
