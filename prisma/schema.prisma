@@ -26,7 +26,6 @@ model User {
   payments             Payment[]
   orders               Order[]
   ordersCreated        Order[]         @relation("OrderCreatedBy")
-  consumptionsLogged   Consumption[]   @relation("RegisteredBy")
   activityLogs         ActivityLog[]
   notifications        Notification[]
   paymentsApproved     Payment[]       @relation("ApprovedBy")
@@ -61,7 +60,6 @@ model Student {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
-  consumptions    Consumption[]
   orderItems      OrderItem[]
   studentPackages StudentPackage[]
 }
@@ -92,13 +90,13 @@ model FoodItem {
   availableDays String?
   stockQuantity Int?
   fixedMealPeriod String?    // BREAK | LUNCH | AFTERSCHOOL | null (null = generic, orderable at any time)
-  foodTab       String?      // GENERAL | DRINKS | CASADOS | null (null = guess from name/category)
+  foodTab       String?      // GENERAL | DRINKS | CASADOS | SNACK | null (null = guess from name/category)
+  visibility    String       @default("ALL") // ALL | VENDOR_ONLY (VENDOR_ONLY is hidden from parent/public menus and can't be ordered by parents; only vendor/admin can see and sell it)
   createdAt     DateTime     @default(now())
   updatedAt     DateTime     @updatedAt
 
   prices       FoodItemPrice[]
   orderItems   OrderItem[]
-  consumptions Consumption[]
 }
 
 model MonthlyMenuImage {
@@ -122,8 +120,6 @@ model Package {
   id           String   @id @default(cuid())
   name         String
   description  String?
-  level        String?
-  price        Int
   validityDays Int?
   status       String   @default("ACTIVE")
   rules        String?
@@ -132,6 +128,17 @@ model Package {
 
   packageItems    PackageItem[]
   studentPackages StudentPackage[]
+  prices          PackagePrice[]
+}
+
+model PackagePrice {
+  id        String   @id @default(cuid())
+  packageId String
+  package   Package  @relation(fields: [packageId], references: [id])
+  level     String
+  price     Int
+
+  @@unique([packageId, level])
 }
 
 model PackageItem {
@@ -140,7 +147,6 @@ model PackageItem {
   package    Package      @relation(fields: [packageId], references: [id])
   categoryId String
   category   FoodCategory @relation(fields: [categoryId], references: [id])
-  quantity   Int
 }
 
 model StudentPackage {
@@ -152,12 +158,11 @@ model StudentPackage {
   startDate   DateTime  @default(now())
   endDate     DateTime?
   status      String    @default("ACTIVE")
-  consumed    Int       @default(0)
-  remaining   Int
+  consumed    Int       @default(0) // how many days this package has been used — informational only, doesn't gate eligibility
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 
-  consumptions Consumption[]
+  coveredOrderItems OrderItem[]
 }
 
 model Order {
@@ -178,32 +183,20 @@ model Order {
 }
 
 model OrderItem {
-  id            String   @id @default(cuid())
-  orderId       String
-  order         Order    @relation(fields: [orderId], references: [id])
-  studentId     String
-  student       Student  @relation(fields: [studentId], references: [id])
-  foodItemId    String
-  foodItem      FoodItem @relation(fields: [foodItemId], references: [id])
-  scheduledDate DateTime
-  mealPeriod    String? // BREAK, LUNCH, AFTERSCHOOL (null for legacy/vendor items)
-  quantity      Int      @default(1)
-  price         Int
-  delivered     Boolean  @default(false)
-}
-
-model Consumption {
-  id               String          @id @default(cuid())
-  studentId        String
-  student          Student         @relation(fields: [studentId], references: [id])
-  foodItemId       String
-  foodItem         FoodItem        @relation(fields: [foodItemId], references: [id])
-  studentPackageId String?
-  studentPackage   StudentPackage? @relation(fields: [studentPackageId], references: [id])
-  registeredById   String
-  registeredBy     User            @relation("RegisteredBy", fields: [registeredById], references: [id])
-  consumedAt       DateTime        @default(now())
-  notes            String?
+  id                        String          @id @default(cuid())
+  orderId                   String
+  order                     Order           @relation(fields: [orderId], references: [id])
+  studentId                 String
+  student                   Student         @relation(fields: [studentId], references: [id])
+  foodItemId                String
+  foodItem                  FoodItem        @relation(fields: [foodItemId], references: [id])
+  scheduledDate             DateTime
+  mealPeriod                String? // BREAK, LUNCH, AFTERSCHOOL (null for legacy/vendor items)
+  quantity                  Int             @default(1)
+  price                     Int
+  delivered                 Boolean         @default(false)
+  coveredByStudentPackageId String?         // set when this serving was covered by a monthly package instead of being charged
+  coveredByStudentPackage   StudentPackage? @relation(fields: [coveredByStudentPackageId], references: [id])
 }
 
 model Payment {

@@ -11,6 +11,10 @@ import DietaryTagBadges, { DietaryTagLabels } from "@/components/dashboard/Dieta
 import MonthlyMenuLinkButton from "@/components/parent/MonthlyMenuLinkButton";
 import { formatCurrency, LEVELS, normalizePriceLevel } from "@/lib/utils";
 import { FOOD_TABS, getFoodTab, parseFoodTags, type FoodTab } from "@/lib/food-tabs";
+
+// The Snack tab is vendor-only stock (in-person walk-up sales); /api/menu
+// already excludes those items for a PARENT session, and its pill is hidden here.
+const PARENT_VISIBLE_FOOD_TABS = FOOD_TABS.filter((tab) => tab.key !== "SNACK");
 import { MEAL_PERIODS } from "@/lib/meal-periods";
 import { resolveTargetDay, type MealPeriod } from "@/lib/meal-scheduling";
 import { useLocale, useTranslations } from "@/i18n/I18nProvider";
@@ -210,6 +214,7 @@ export default function ParentPlanPage() {
       GENERAL: 0,
       DRINKS: 0,
       CASADOS: 0,
+      SNACK: 0,
     };
 
     for (const item of menu) {
@@ -665,7 +670,7 @@ export default function ParentPlanPage() {
             ) : (
               <div className="space-y-5 rounded-3xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
                 <div className="flex flex-wrap items-center gap-2">
-                  {FOOD_TABS.map((tab) => {
+                  {PARENT_VISIBLE_FOOD_TABS.map((tab) => {
                     const isActive = tab.key === activeTab;
                     return (
                       <button

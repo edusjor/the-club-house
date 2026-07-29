@@ -2,6 +2,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/db";
 import { normalizePriceLevel } from "@/lib/utils";
 import { buildScheduledDateForMealPeriod, isMealPeriod, type MealPeriod } from "@/lib/meal-scheduling";
+import { canRoleSeeVendorOnlyItems, getFoodVisibility } from "@/lib/food-visibility";
 import { NextRequest, NextResponse } from "next/server";
 
 type IncomingOrderItem =
@@ -11,6 +12,7 @@ type IncomingOrderItem =
       scheduledDate: string;
       quantity?: number;
       priceLevel?: string;
+      studentPackageId?: string;
     }
   | {
       studentId: string;
@@ -18,6 +20,7 @@ type IncomingOrderItem =
       mealPeriod: MealPeriod;
       quantity?: number;
       priceLevel?: string;
+      studentPackageId?: string;
     };
 
 const PARENT_CANCELLATION_WINDOW_MS = 2 * 60 * 60 * 1000;
@@ -131,7 +134,13 @@ export async function GET(req: NextRequest) {
           include: {
             parent: { select: { name: true, email: true } },
             createdBy: { select: { name: true, role: true } },
-            items: { include: { student: true, foodItem: { include: { category: true } } } },
+            items: {
+              include: {
+                student: true,
+                foodItem: { include: { category: true } },
+                coveredByStudentPackage: { include: { package: { select: { name: true } } } },
+              },
+            },
             payments: true,
           },
           orderBy: { createdAt: "desc" },
@@ -142,7 +151,13 @@ export async function GET(req: NextRequest) {
           include: {
             parent: { select: { name: true, email: true } },
             createdBy: { select: { name: true, role: true } },
-            items: { include: { student: true, foodItem: { include: { category: true } } } },
+            items: {
+              include: {
+                student: true,
+                foodItem: { include: { category: true } },
+                coveredByStudentPackage: { include: { package: { select: { name: true } } } },
+              },
+            },
             payments: true,
           },
           orderBy: { createdAt: "desc" },
@@ -170,7 +185,11 @@ export async function GET(req: NextRequest) {
                   lte: end,
                 },
               },
-              include: { student: true, foodItem: true },
+              include: {
+                student: true,
+                foodItem: true,
+                coveredByStudentPackage: { include: { package: { select: { name: true } } } },
+              },
               orderBy: { scheduledDate: "asc" },
             },
           },
@@ -274,7 +293,9 @@ export async function POST(req: NextRequest) {
       },
       select: {
         id: true,
+        categoryId: true,
         fixedMealPeriod: true,
+        visibility: true,
         prices: {
           select: {
             level: true,
@@ -309,10 +330,44 @@ export async function POST(req: NextRequest) {
     mealPeriod: MealPeriod | null;
     quantity: number;
     price: number;
+    coveredByStudentPackageId: string | null;
+    delivered: boolean;
   }[] = [];
 
   const now = new Date();
   const minimumAllowedTimestamp = now.getTime() - 5 * 60 * 1000;
+
+  // A vendor walk-in order means the student is standing at the counter
+  // right now — it's handed over immediately, with no separate "mark as
+  // served" step like advance-ordered meals need.
+  const isVendorWalkIn = role === "VENDOR";
+
+  // Only the vendor walk-in flow can draw down a monthly package — a package
+  // is redeemed live at the counter, never through an advance parent order.
+  const allowPackageCoverage = role === "VENDOR";
+  const requestedPackageIds = allowPackageCoverage
+    ? [...new Set(items.map((item) => item.studentPackageId).filter((id): id is string => Boolean(id)))]
+    : [];
+
+  const { start: todayStart, end: todayEnd } = getDayBounds(now);
+
+  const eligiblePackages =
+    requestedPackageIds.length > 0
+      ? await prisma.studentPackage.findMany({
+          where: {
+            id: { in: requestedPackageIds },
+            status: "ACTIVE",
+            startDate: { lte: now },
+            OR: [{ endDate: null }, { endDate: { gte: now } }],
+            // A package covers one meal per day — once it already has an
+            // OrderItem today, it drops out of eligibility here too.
+            coveredOrderItems: { none: { scheduledDate: { gte: todayStart, lte: todayEnd } } },
+          },
+          include: { package: { include: { packageItems: true } } },
+        })
+      : [];
+  const eligiblePackageById = new Map(eligiblePackages.map((sp) => [sp.id, sp]));
+  const claimedPackageIdsInRequest = new Set<string>();
 
   for (const item of items) {
     const student = studentById.get(item.studentId);
@@ -322,6 +377,13 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         { error: "El pedido contiene datos inválidos" },
         { status: 400 }
+      );
+    }
+
+    if (getFoodVisibility(foodItem) === "VENDOR_ONLY" && !canRoleSeeVendorOnlyItems(role)) {
+      return NextResponse.json(
+        { error: "Este producto solo puede ser pedido por el vendedor en persona" },
+        { status: 403 }
       );
     }
 
@@ -377,21 +439,49 @@ export async function POST(req: NextRequest) {
       scheduledDate = parsed;
     }
 
-    const requestedLevel =
-      typeof item.priceLevel === "string" && item.priceLevel.trim().length > 0
-        ? item.priceLevel.trim()
-        : undefined;
+    let unitPrice: number | null;
+    let coveredByStudentPackageId: string | null = null;
 
-    const unitPrice = resolveUnitPrice(foodItem.prices, student.level, requestedLevel);
-    if (unitPrice === null) {
-      return NextResponse.json(
-        {
-          error: requestedLevel
-            ? "La comida no tiene precio configurado para el nivel seleccionado"
-            : "Una comida no tiene precio configurado para el nivel del estudiante",
-        },
-        { status: 400 }
+    if (allowPackageCoverage && item.studentPackageId) {
+      if (claimedPackageIdsInRequest.has(item.studentPackageId)) {
+        return NextResponse.json(
+          { error: "Ese paquete solo puede cubrir un plato por pedido" },
+          { status: 400 }
+        );
+      }
+
+      const studentPackage = eligiblePackageById.get(item.studentPackageId);
+      const coversCategory = studentPackage?.package.packageItems.some(
+        (packageItem) => packageItem.categoryId === foodItem.categoryId
       );
+
+      if (!studentPackage || studentPackage.studentId !== item.studentId || !coversCategory) {
+        return NextResponse.json(
+          { error: "Ese paquete ya no está disponible para este consumo hoy" },
+          { status: 400 }
+        );
+      }
+
+      claimedPackageIdsInRequest.add(item.studentPackageId);
+      coveredByStudentPackageId = item.studentPackageId;
+      unitPrice = 0;
+    } else {
+      const requestedLevel =
+        typeof item.priceLevel === "string" && item.priceLevel.trim().length > 0
+          ? item.priceLevel.trim()
+          : undefined;
+
+      unitPrice = resolveUnitPrice(foodItem.prices, student.level, requestedLevel);
+      if (unitPrice === null) {
+        return NextResponse.json(
+          {
+            error: requestedLevel
+              ? "La comida no tiene precio configurado para el nivel seleccionado"
+              : "Una comida no tiene precio configurado para el nivel del estudiante",
+          },
+          { status: 400 }
+        );
+      }
     }
 
     for (let index = 0; index < quantity; index += 1) {
@@ -402,6 +492,8 @@ export async function POST(req: NextRequest) {
         mealPeriod,
         quantity: 1,
         price: unitPrice,
+        coveredByStudentPackageId,
+        delivered: isVendorWalkIn,
       });
     }
   }
@@ -427,7 +519,6 @@ export async function POST(req: NextRequest) {
   // Orders are charged to the parent's credit balance immediately on creation —
   // there is no separate "submit for payment" step. The parent pays down the
   // balance later from /parent/balance.
-  const isVendorWalkIn = role === "VENDOR";
 
   const orders = await prisma.$transaction(async (tx) => {
     let balance = await tx.parentBalance.findUnique({ where: { parentId } });
@@ -442,9 +533,9 @@ export async function POST(req: NextRequest) {
       const order = await tx.order.create({
         data: {
           parentId,
-          // A vendor "Aceptar" sends the order straight to the kitchen —
-          // there's no separate PAID-but-not-started step for walk-ins.
-          status: isVendorWalkIn ? "PREPARING" : "PAID",
+          // A vendor walk-in is handed to the student on the spot — it's
+          // created already DELIVERED, with no separate "mark as served" step.
+          status: isVendorWalkIn ? "DELIVERED" : "PAID",
           total: group.items.reduce((sum, item) => sum + item.price * item.quantity, 0),
           notes,
           source: isVendorWalkIn ? "VENDOR" : "PARENT",
@@ -472,6 +563,14 @@ export async function POST(req: NextRequest) {
       where: { parentId },
       data: { pendingBalance: balance.pendingBalance + totalCharged },
     });
+
+    const usedPackageIds = [...claimedPackageIdsInRequest];
+    for (const packageId of usedPackageIds) {
+      await tx.studentPackage.update({
+        where: { id: packageId },
+        data: { consumed: { increment: 1 } },
+      });
+    }
 
     return createdOrders;
   });

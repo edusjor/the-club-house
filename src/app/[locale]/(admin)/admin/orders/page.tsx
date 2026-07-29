@@ -6,7 +6,7 @@ import axios from "axios";
 import Header from "@/components/dashboard/Header";
 import StatusBadge from "@/components/dashboard/StatusBadge";
 import { formatCurrency, formatDateTime } from "@/lib/utils";
-import { Search, CheckCircle, Clock3, PackageOpen } from "lucide-react";
+import { Search, CheckCircle, Clock3, PackageOpen, Ticket } from "lucide-react";
 
 type Order = {
   id: string;
@@ -14,7 +14,14 @@ type Order = {
   total: number;
   createdAt: string;
   parent?: { name: string; email: string };
-  items: { id: string; quantity: number; price: number; student: { name: string }; foodItem: { name: string; category: { name: string } } }[];
+  items: {
+    id: string;
+    quantity: number;
+    price: number;
+    student: { name: string };
+    foodItem: { name: string; category: { name: string } };
+    coveredByStudentPackage?: { package: { name: string } } | null;
+  }[];
 };
 
 export default function AdminOrdersPage() {
@@ -86,8 +93,18 @@ export default function AdminOrdersPage() {
               <div className="mt-4 grid gap-2 text-sm text-slate-700 md:grid-cols-2">
                 {order.items.map((item) => (
                   <div key={item.id} className="rounded-xl bg-slate-50 px-4 py-3">
-                    <div className="font-semibold">{item.foodItem.name}</div>
-                    <div className="text-xs text-slate-500">{item.student.name} · {item.quantity} x {formatCurrency(item.price)}</div>
+                    <div className="flex items-center gap-2 font-semibold">
+                      {item.foodItem.name}
+                      {item.coveredByStudentPackage ? (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-700">
+                          <Ticket className="h-3 w-3" />
+                          {item.coveredByStudentPackage.package.name}
+                        </span>
+                      ) : null}
+                    </div>
+                    <div className="text-xs text-slate-500">
+                      {item.student.name} · {item.quantity} x {item.coveredByStudentPackage ? "Incluido en paquete" : formatCurrency(item.price)}
+                    </div>
                   </div>
                 ))}
               </div>

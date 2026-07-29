@@ -1,34 +1,40 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 import Header from "@/components/dashboard/Header";
 import StatusBadge from "@/components/dashboard/StatusBadge";
-import { formatCurrency, formatDate } from "@/lib/utils";
+import { formatCurrency, formatDate, normalizePriceLevel } from "@/lib/utils";
 import { useTranslations } from "@/i18n/I18nProvider";
 import { CheckCircle2, PackagePlus } from "lucide-react";
 
+type PriceRow = { level: string; price: number };
 type Student = { id: string; name: string; level: string };
 type PackageOption = {
   id: string;
   name: string;
   description?: string | null;
-  level?: string | null;
-  price: number;
   validityDays?: number | null;
   status: string;
+  prices: PriceRow[];
 };
 type StudentPackage = {
   id: string;
   status: string;
   consumed: number;
-  remaining: number;
   startDate: string;
   endDate?: string | null;
   student: { name: string; level: string };
-  package: { name: string; price: number; validityDays?: number | null };
+  package: { name: string; validityDays?: number | null; prices: PriceRow[] };
 };
+
+function priceForLevel(prices: PriceRow[], level: string | undefined): number | null {
+  if (!level) return null;
+  const normalizedLevel = normalizePriceLevel(level);
+  const row = prices.find((p) => normalizePriceLevel(p.level) === normalizedLevel);
+  return row && row.price > 0 ? row.price : null;
+}
 
 export default function ParentPackagesPage() {
   const t = useTranslations();
@@ -53,6 +59,16 @@ export default function ParentPackagesPage() {
     queryKey: ["student-packages"],
     queryFn: () => axios.get("/api/student-packages").then((response) => response.data),
   });
+
+  const selectedStudent = students.find((student) => student.id === studentId);
+
+  const availablePackages = useMemo(() => {
+    if (!selectedStudent) return [];
+    return packageOptions
+      .filter((pkg) => pkg.status === "ACTIVE")
+      .map((pkg) => ({ pkg, price: priceForLevel(pkg.prices, selectedStudent.level) }))
+      .filter((entry): entry is { pkg: PackageOption; price: number } => entry.price !== null);
+  }, [packageOptions, selectedStudent]);
 
   const purchaseMutation = useMutation({
     mutationFn: () =>
@@ -90,40 +106,57 @@ export default function ParentPackagesPage() {
           </div>
 
           <div className="grid gap-3 md:grid-cols-3">
-            <select
-              value={studentId}
-              onChange={(event) => setStudentId(event.target.value)}
-              className="h-10 rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm"
-            >
-              <option value="">{t("parent.packages.selectStudent")}</option>
-              {students.map((student) => (
-                <option key={student.id} value={student.id}>
-                  {student.name} · {student.level}
-                </option>
-              ))}
-            </select>
-
-            <select
-              value={packageId}
-              onChange={(event) => setPackageId(event.target.value)}
-              className="h-10 rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm"
-            >
-              <option value="">{t("parent.packages.selectPackage")}</option>
-              {packageOptions
-                .filter((pkg) => pkg.status === "ACTIVE")
-                .map((pkg) => (
-                  <option key={pkg.id} value={pkg.id}>
-                    {pkg.name} · {formatCurrency(pkg.price)}
+            <div className="flex flex-col gap-1">
+              <span className="text-xs font-semibold text-slate-500">{t("parent.packages.studentLabel")}</span>
+              <select
+                value={studentId}
+                onChange={(event) => {
+                  setStudentId(event.target.value);
+                  setPackageId("");
+                }}
+                className="h-10 rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm"
+              >
+                <option value="">{t("parent.packages.selectStudent")}</option>
+                {students.map((student) => (
+                  <option key={student.id} value={student.id}>
+                    {student.name} · {student.level}
                   </option>
                 ))}
-            </select>
+              </select>
+            </div>
 
-            <input
-              type="date"
-              value={startDate}
-              onChange={(event) => setStartDate(event.target.value)}
-              className="h-10 rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm"
-            />
+            <div className="flex flex-col gap-1">
+              <span className="text-xs font-semibold text-slate-500">{t("parent.packages.packageLabel")}</span>
+              <select
+                value={packageId}
+                onChange={(event) => setPackageId(event.target.value)}
+                disabled={!selectedStudent}
+                className="h-10 rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm disabled:opacity-60"
+              >
+                <option value="">
+                  {!selectedStudent
+                    ? t("parent.packages.selectStudentFirst")
+                    : availablePackages.length === 0
+                    ? t("parent.packages.noPackagesForLevel")
+                    : t("parent.packages.selectPackage")}
+                </option>
+                {availablePackages.map(({ pkg, price }) => (
+                  <option key={pkg.id} value={pkg.id}>
+                    {pkg.name} · {formatCurrency(price)}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="flex flex-col gap-1">
+              <span className="text-xs font-semibold text-slate-500">{t("parent.packages.startDateLabel")}</span>
+              <input
+                type="date"
+                value={startDate}
+                onChange={(event) => setStartDate(event.target.value)}
+                className="h-10 rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm text-slate-900"
+              />
+            </div>
           </div>
 
           <div className="mt-4 flex justify-end">
@@ -164,20 +197,23 @@ export default function ParentPackagesPage() {
           )}
         </div>
 
-        {studentPackages.map((studentPackage) => (
-          <div key={studentPackage.id} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <div className="font-semibold text-slate-900">{studentPackage.student.name}</div>
-                <div className="text-sm text-slate-500">{studentPackage.package.name}</div>
-                <div className="mt-1 text-xs text-slate-500">{t("parent.packages.remaining")}: {studentPackage.remaining} · {t("parent.packages.consumed")}: {studentPackage.consumed}</div>
-                <div className="mt-1 text-xs text-slate-500">{t("parent.packages.since")} {formatDate(studentPackage.startDate)}{studentPackage.endDate ? ` · ${t("parent.packages.until")} ${formatDate(studentPackage.endDate)}` : ""}</div>
+        {studentPackages.map((studentPackage) => {
+          const price = priceForLevel(studentPackage.package.prices, studentPackage.student.level) ?? 0;
+          return (
+            <div key={studentPackage.id} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <div className="font-semibold text-slate-900">{studentPackage.student.name}</div>
+                  <div className="text-sm text-slate-500">{studentPackage.package.name}</div>
+                  <div className="mt-1 text-xs text-slate-500">{t("parent.packages.consumed")}: {studentPackage.consumed}</div>
+                  <div className="mt-1 text-xs text-slate-500">{t("parent.packages.since")} {formatDate(studentPackage.startDate)}{studentPackage.endDate ? ` · ${t("parent.packages.until")} ${formatDate(studentPackage.endDate)}` : ""}</div>
+                </div>
+                <StatusBadge status={studentPackage.status} />
               </div>
-              <StatusBadge status={studentPackage.status} />
+              <div className="mt-3 text-sm text-slate-600">{formatCurrency(price)} · {studentPackage.package.validityDays ?? 0} {t("parent.packages.days")}</div>
             </div>
-            <div className="mt-3 text-sm text-slate-600">{formatCurrency(studentPackage.package.price)} · {studentPackage.package.validityDays ?? 0} {t("parent.packages.days")}</div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

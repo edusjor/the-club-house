@@ -9,7 +9,7 @@ import PublicShell from "@/components/public/PublicShell";
 
 async function getMenuItems() {
   return prisma.foodItem.findMany({
-    where: { available: true },
+    where: { available: true, visibility: { not: "VENDOR_ONLY" } },
     include: { category: true },
     orderBy: { createdAt: "desc" },
   });

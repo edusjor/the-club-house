@@ -5,6 +5,7 @@ import { getDictionary } from "@/i18n/dictionaries";
 import { isLocale } from "@/i18n/config";
 import { notFound } from "next/navigation";
 import PublicShell from "@/components/public/PublicShell";
+import MonthlyMenuGallery from "@/components/public/MonthlyMenuGallery";
 
 async function getMonthlyMenuImages() {
   return prisma.monthlyMenuImage.findMany({
@@ -47,17 +48,7 @@ export default async function MonthlyMenuPage({
             <p className="text-sm mt-2">{t.emptySubtitle}</p>
           </div>
         ) : (
-          <div className="space-y-6">
-            {images.map((image) => (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                key={image.id}
-                src={image.url}
-                alt=""
-                className="w-full rounded-2xl border border-slate-200 shadow-sm"
-              />
-            ))}
-          </div>
+          <MonthlyMenuGallery images={images} />
         )}
       </div>
     </div>

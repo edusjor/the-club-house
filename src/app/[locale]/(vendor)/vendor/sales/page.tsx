@@ -12,7 +12,7 @@ async function getSalesData() {
   today.setHours(0, 0, 0, 0);
   const [orders, consumptions, payments, sales] = await Promise.all([
     prisma.order.count({ where: { createdAt: { gte: today } } }),
-    prisma.consumption.count({ where: { consumedAt: { gte: today } } }),
+    prisma.orderItem.count({ where: { delivered: true, scheduledDate: { gte: today } } }),
     prisma.payment.count({ where: { status: "APPROVED", createdAt: { gte: today } } }),
     prisma.order.aggregate({ where: { createdAt: { gte: today } }, _sum: { total: true } }),
   ]);

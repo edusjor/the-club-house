@@ -24,11 +24,16 @@ import {
   DollarSign,
   Images,
   Settings,
+  Package,
+  HelpCircle,
 } from "lucide-react";
 
 type NavItem = {
   href: string;
-  labelKey: string;
+  labelKey?: string;
+  // Fixed English label, bypassing translation — used for the Guide link,
+  // which is an English-only reference doc regardless of active locale.
+  label?: string;
   icon: React.ElementType;
 };
 
@@ -41,6 +46,7 @@ const adminNav: NavItem[] = [
   { href: "/admin/monthly-menu", labelKey: "nav.admin.monthlyMenu", icon: Images },
   { href: "/admin/categories", labelKey: "nav.admin.categories", icon: Tag },
   { href: "/admin/orders", labelKey: "nav.admin.orders", icon: ShoppingCart },
+  { href: "/admin/packages", labelKey: "nav.admin.packages", icon: Package },
   { href: "/admin/payments", labelKey: "nav.admin.payments", icon: CreditCard },
   { href: "/admin/settings", labelKey: "nav.admin.settings", icon: Settings },
 ];
@@ -50,8 +56,10 @@ const parentNav: NavItem[] = [
   { href: "/parent/children", labelKey: "nav.parent.myChildren", icon: Baby },
   { href: "/parent/menu", labelKey: "nav.parent.menu", icon: UtensilsCrossed },
   { href: "/parent/plan", labelKey: "nav.parent.plan", icon: Calendar },
+  { href: "/parent/packages", labelKey: "nav.parent.packages", icon: Package },
   { href: "/parent/history", labelKey: "nav.parent.history", icon: History },
   { href: "/parent/balance", labelKey: "nav.parent.balance", icon: DollarSign },
+  { href: "/guide", label: "Guide", icon: HelpCircle },
 ];
 
 const vendorNav: NavItem[] = [
@@ -59,6 +67,7 @@ const vendorNav: NavItem[] = [
   { href: "/vendor/new-order", labelKey: "nav.vendor.newOrder", icon: UtensilsCrossed },
   { href: "/vendor/orders", labelKey: "nav.vendor.ordersOfDay", icon: ShoppingCart },
   { href: "/vendor/search", labelKey: "nav.vendor.searchStudent", icon: Search },
+  { href: "/vendor/history", labelKey: "nav.vendor.history", icon: History },
 ];
 
 type SidebarRole = "ADMIN" | "PARENT" | "VENDOR";
@@ -124,7 +133,9 @@ export default function Sidebar({ role, userName, userEmail, className, onNaviga
               )}
             >
               <Icon className="w-4 h-4 flex-shrink-0" />
-              <span className="text-inherit text-outline-subtle">{t(item.labelKey)}</span>
+              <span className="text-inherit text-outline-subtle">
+                {item.label ?? t(item.labelKey ?? "")}
+              </span>
             </Link>
           );
         })}

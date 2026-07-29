@@ -10,7 +10,6 @@ async function main() {
   // Clean previous data
   await prisma.orderItem.deleteMany();
   await prisma.order.deleteMany();
-  await prisma.consumption.deleteMany();
   await prisma.studentPackage.deleteMany();
   await prisma.payment.deleteMany();
   await prisma.activityLog.deleteMany();
@@ -77,16 +76,16 @@ async function main() {
   // Create food categories
   const categories = await Promise.all([
     prisma.foodCategory.create({
-      data: { name: "Desayuno", color: "#f59e0b", description: "Comidas para la mañana" },
+      data: { name: "Breakfast", color: "#f59e0b", description: "Morning meals" },
     }),
     prisma.foodCategory.create({
-      data: { name: "Almuerzo", color: "#3b82f6", description: "Comida principal del mediodía" },
+      data: { name: "Lunch", color: "#3b82f6", description: "Main midday meal" },
     }),
     prisma.foodCategory.create({
-      data: { name: "Merienda", color: "#8b5cf6", description: "Snack de la tarde" },
+      data: { name: "Snack", color: "#8b5cf6", description: "Afternoon snack" },
     }),
     prisma.foodCategory.create({
-      data: { name: "Bebida", color: "#ec4899", description: "Bebidas" },
+      data: { name: "Drinks", color: "#ec4899", description: "Drinks" },
     }),
   ]);
 
@@ -96,8 +95,8 @@ async function main() {
   const items = await Promise.all([
     prisma.foodItem.create({
       data: {
-        name: "Pancakes con Frutas",
-        description: "Deliciosos pancakes acompañados de frutas frescas",
+        name: "Pancakes with Fruit",
+        description: "Delicious pancakes served with fresh fruit",
         categoryId: categories[0].id,
         available: true,
         tags: JSON.stringify(["healthy", "vegetarian"]),
@@ -112,8 +111,8 @@ async function main() {
     }),
     prisma.foodItem.create({
       data: {
-        name: "Pollo a la Plancha con Ensalada",
-        description: "Pechuga de pollo fresca acompañada de ensalada verde",
+        name: "Grilled Chicken with Salad",
+        description: "Fresh chicken breast served with green salad",
         categoryId: categories[1].id,
         available: true,
         tags: JSON.stringify(["healthy", "gluten-free"]),
@@ -128,8 +127,8 @@ async function main() {
     }),
     prisma.foodItem.create({
       data: {
-        name: "Pasta Boloñesa",
-        description: "Pasta fresca con salsa boloñesa casera",
+        name: "Pasta Bolognese",
+        description: "Fresh pasta with homemade bolognese sauce",
         categoryId: categories[1].id,
         available: true,
         tags: JSON.stringify(["healthy"]),
@@ -144,8 +143,8 @@ async function main() {
     }),
     prisma.foodItem.create({
       data: {
-        name: "Smoothie de Mango",
-        description: "Bebida natural de mango sin azúcar añadida",
+        name: "Mango Smoothie",
+        description: "Natural mango drink with no added sugar",
         categoryId: categories[3].id,
         available: true,
         tags: JSON.stringify(["vegetarian", "healthy"]),
@@ -160,8 +159,8 @@ async function main() {
     }),
     prisma.foodItem.create({
       data: {
-        name: "Galletas Integrales",
-        description: "Galletas hechas con harina integral",
+        name: "Whole Wheat Cookies",
+        description: "Cookies made with whole wheat flour",
         categoryId: categories[2].id,
         available: true,
         tags: JSON.stringify(["vegetarian", "healthy"]),
@@ -176,8 +175,8 @@ async function main() {
     }),
     prisma.foodItem.create({
       data: {
-        name: "Omelette de Espinaca",
-        description: "Huevos con espinaca y queso bajo en grasa",
+        name: "Spinach Omelette",
+        description: "Eggs with spinach and low-fat cheese",
         categoryId: categories[0].id,
         available: true,
         tags: JSON.stringify(["healthy", "gluten-free"]),
@@ -192,8 +191,8 @@ async function main() {
     }),
     prisma.foodItem.create({
       data: {
-        name: "Tostadas Francesas",
-        description: "Pan integral dorado con miel y fruta",
+        name: "French Toast",
+        description: "Golden whole wheat bread with honey and fruit",
         categoryId: categories[0].id,
         available: true,
         tags: JSON.stringify(["vegetarian"]),
@@ -208,8 +207,8 @@ async function main() {
     }),
     prisma.foodItem.create({
       data: {
-        name: "Arroz con Pollo",
-        description: "Arroz sazonado con pollo y vegetales mixtos",
+        name: "Rice with Chicken",
+        description: "Seasoned rice with chicken and mixed vegetables",
         categoryId: categories[1].id,
         available: true,
         tags: JSON.stringify(["healthy"]),
@@ -225,8 +224,8 @@ async function main() {
     }),
     prisma.foodItem.create({
       data: {
-        name: "Casado de Carne",
-        description: "Carne en salsa con arroz, frijoles y ensalada",
+        name: "Beef Casado",
+        description: "Beef in sauce with rice, beans and salad",
         categoryId: categories[1].id,
         available: true,
         tags: JSON.stringify(["healthy"]),
@@ -241,8 +240,8 @@ async function main() {
     }),
     prisma.foodItem.create({
       data: {
-        name: "Wrap de Pollo",
-        description: "Wrap integral con pollo, lechuga y aderezo ligero",
+        name: "Chicken Wrap",
+        description: "Whole wheat wrap with chicken, lettuce and light dressing",
         categoryId: categories[1].id,
         available: true,
         tags: JSON.stringify(["healthy"]),
@@ -257,8 +256,8 @@ async function main() {
     }),
     prisma.foodItem.create({
       data: {
-        name: "Sandwich de Pavo",
-        description: "Pan integral con pavo, tomate y queso",
+        name: "Turkey Sandwich",
+        description: "Whole wheat bread with turkey, tomato and cheese",
         categoryId: categories[2].id,
         available: true,
         tags: JSON.stringify(["healthy"]),
@@ -273,8 +272,8 @@ async function main() {
     }),
     prisma.foodItem.create({
       data: {
-        name: "Yogur con Granola",
-        description: "Yogur natural con granola y fruta picada",
+        name: "Yogurt with Granola",
+        description: "Natural yogurt with granola and chopped fruit",
         categoryId: categories[2].id,
         available: true,
         tags: JSON.stringify(["vegetarian", "healthy"]),
@@ -289,8 +288,8 @@ async function main() {
     }),
     prisma.foodItem.create({
       data: {
-        name: "Fruta Picada",
-        description: "Mix de frutas frescas de temporada",
+        name: "Chopped Fruit",
+        description: "Mix of fresh seasonal fruit",
         categoryId: categories[2].id,
         available: true,
         tags: JSON.stringify(["vegetarian", "healthy", "gluten-free"]),
@@ -305,8 +304,8 @@ async function main() {
     }),
     prisma.foodItem.create({
       data: {
-        name: "Jugo de Naranja Natural",
-        description: "Jugo fresco sin azucar añadida",
+        name: "Fresh Orange Juice",
+        description: "Fresh juice with no added sugar",
         categoryId: categories[3].id,
         available: true,
         tags: JSON.stringify(["vegetarian", "healthy"]),
@@ -321,8 +320,8 @@ async function main() {
     }),
     prisma.foodItem.create({
       data: {
-        name: "Chocolate Caliente",
-        description: "Bebida caliente de cacao con leche",
+        name: "Hot Chocolate",
+        description: "Hot cocoa drink with milk",
         categoryId: categories[3].id,
         available: true,
         tags: JSON.stringify(["dairy"]),
@@ -337,8 +336,8 @@ async function main() {
     }),
     prisma.foodItem.create({
       data: {
-        name: "Agua Saborizada",
-        description: "Agua con frutas naturales y hierbabuena",
+        name: "Flavored Water",
+        description: "Water with natural fruit and mint",
         categoryId: categories[3].id,
         available: true,
         tags: JSON.stringify(["vegetarian", "healthy", "gluten-free"]),
@@ -390,12 +389,18 @@ async function main() {
     data: {
       name: "Paquete Mensual Básico",
       description: "1 comida por día durante un mes",
-      level: "ELEMENTARY",
-      price: 25000,
       validityDays: 30,
       status: "ACTIVE",
       packageItems: {
-        create: [{ categoryId: categories[1].id, quantity: 20 }],
+        create: [{ categoryId: categories[1].id }],
+      },
+      prices: {
+        create: [
+          { level: "ELEMENTARY", price: 25000 },
+          { level: "MIDDLE_HIGH", price: 0 },
+          { level: "STAFF", price: 0 },
+          { level: "ATHLETES", price: 0 },
+        ],
       },
     },
   });
@@ -404,14 +409,20 @@ async function main() {
     data: {
       name: "Paquete Semanal Completo",
       description: "5 almuerzos + 5 bebidas",
-      level: "MIDDLE_HIGH",
-      price: 8500,
       validityDays: 7,
       status: "ACTIVE",
       packageItems: {
         create: [
-          { categoryId: categories[1].id, quantity: 5 },
-          { categoryId: categories[3].id, quantity: 5 },
+          { categoryId: categories[1].id },
+          { categoryId: categories[3].id },
+        ],
+      },
+      prices: {
+        create: [
+          { level: "ELEMENTARY", price: 0 },
+          { level: "MIDDLE_HIGH", price: 8500 },
+          { level: "STAFF", price: 0 },
+          { level: "ATHLETES", price: 0 },
         ],
       },
     },
@@ -491,7 +502,6 @@ async function main() {
       studentId: student1.id,
       packageId: pkg1.id,
       startDate: new Date(),
-      remaining: 20,
       consumed: 0,
       status: "ACTIVE",
     },

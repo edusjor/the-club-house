@@ -17,6 +17,7 @@ import {
   Plus,
   Search,
   ShoppingCart,
+  Ticket,
   Trash2,
   UtensilsCrossed,
   UserRound,
@@ -49,11 +50,40 @@ type FoodItem = {
   prices: FoodPrice[];
 };
 
-type CartLine = {
-  foodItemId: string;
-  foodName: string;
-  price: number;
-  quantity: number;
+type StudentPackageVendorView = {
+  id: string;
+  usedToday: boolean;
+  student: { id: string };
+  package: { id: string; name: string; packageItems: { categoryId: string }[] };
+};
+
+type TodayOrder = {
+  items: {
+    id: string;
+    quantity: number;
+    delivered: boolean;
+    student: { id: string };
+    foodItem: { name: string };
+  }[];
+};
+
+type CartLine =
+  | { kind: "CHARGE"; foodItemId: string; foodName: string; price: number; quantity: number }
+  | {
+      kind: "PACKAGE";
+      foodItemId: string;
+      foodName: string;
+      quantity: 1;
+      studentPackageId: string;
+      packageName: string;
+    };
+
+type OrderSummary = {
+  studentName: string;
+  isStaff: boolean;
+  parentLabel: string;
+  lines: { key: string; name: string; quantity: number; price: number; packageName?: string }[];
+  total: number;
 };
 
 function normalizeToken(value: string): string {
@@ -93,8 +123,9 @@ function VendorNewOrderContent() {
   const [activeTab, setActiveTab] = useState<FoodTab>("GENERAL");
 
   const [cart, setCart] = useState<CartLine[]>([]);
-  const [feedback, setFeedback] = useState("");
+  const [lastOrder, setLastOrder] = useState<OrderSummary | null>(null);
   const [error, setError] = useState("");
+  const [packageChoice, setPackageChoice] = useState<{ food: FoodItem; options: StudentPackageVendorView[] } | null>(null);
 
   const dietaryLabels: DietaryTagLabels = {
     GLUTEN_FREE: t("dietaryTags.glutenFree"),
@@ -112,14 +143,48 @@ function VendorNewOrderContent() {
     queryFn: () => axios.get("/api/menu").then((response) => response.data),
   });
 
+  const { data: studentPackages = [] } = useQuery<StudentPackageVendorView[]>({
+    queryKey: ["vendor-student-packages"],
+    queryFn: () => axios.get("/api/student-packages").then((response) => response.data),
+  });
+
+  const { data: todayOrders = [] } = useQuery<TodayOrder[]>({
+    queryKey: ["vendor-orders-today"],
+    queryFn: () => axios.get("/api/orders").then((response) => response.data),
+  });
+
   const selectedStudent = useMemo(
     () => students.find((student) => student.id === selectedStudentId),
     [students, selectedStudentId]
   );
 
+  const packagesForSelectedStudent = useMemo(
+    () => studentPackages.filter((sp) => sp.student.id === selectedStudentId),
+    [studentPackages, selectedStudentId]
+  );
+
+  const alreadyOrderedToday = useMemo(() => {
+    if (!selectedStudentId) return [];
+    return todayOrders
+      .flatMap((order) => order.items)
+      .filter((item) => item.student.id === selectedStudentId && !item.delivered);
+  }, [todayOrders, selectedStudentId]);
+
+  const eligiblePackagesForCategory = (categoryId: string): StudentPackageVendorView[] => {
+    const alreadyPickedInCart = new Set(
+      cart.filter((line): line is Extract<CartLine, { kind: "PACKAGE" }> => line.kind === "PACKAGE").map((line) => line.studentPackageId)
+    );
+    return packagesForSelectedStudent.filter(
+      (sp) =>
+        !sp.usedToday &&
+        !alreadyPickedInCart.has(sp.id) &&
+        sp.package.packageItems.some((pi) => pi.categoryId === categoryId)
+    );
+  };
+
   const filteredStudents = useMemo(() => {
     const normalizedQuery = normalizeToken(studentSearch.trim());
-    if (!normalizedQuery) return students.filter((student) => student.active);
+    if (!normalizedQuery) return [];
 
     return students
       .filter((student) => student.active)
@@ -142,7 +207,7 @@ function VendorNewOrderContent() {
   }, [menu, menuSearch, activeTab]);
 
   const tabCounts = useMemo(() => {
-    const counts: Record<FoodTab, number> = { GENERAL: 0, DRINKS: 0, CASADOS: 0 };
+    const counts: Record<FoodTab, number> = { GENERAL: 0, DRINKS: 0, CASADOS: 0, SNACK: 0 };
     for (const item of menu) {
       if (!item.available) continue;
       counts[getFoodTab(item)] += 1;
@@ -150,13 +215,13 @@ function VendorNewOrderContent() {
     return counts;
   }, [menu]);
 
-  const cartTotal = cart.reduce((sum, line) => sum + line.price * line.quantity, 0);
+  const cartTotal = cart.reduce((sum, line) => (line.kind === "CHARGE" ? sum + line.price * line.quantity : sum), 0);
   const cartUnits = cart.reduce((sum, line) => sum + line.quantity, 0);
 
   const selectStudent = (student: Student) => {
     setSelectedStudentId(student.id);
     setIsStudentPickerOpen(false);
-    setFeedback("");
+    setLastOrder(null);
     setError("");
   };
 
@@ -169,12 +234,38 @@ function VendorNewOrderContent() {
 
     setSelectedStudentId("");
     setIsStudentPickerOpen(true);
-    setFeedback("");
+    setLastOrder(null);
     setError("");
+  };
+
+  const addPackageLine = (food: FoodItem, studentPackage: StudentPackageVendorView) => {
+    setCart((current) => [
+      ...current,
+      {
+        kind: "PACKAGE",
+        foodItemId: food.id,
+        foodName: food.name,
+        quantity: 1,
+        studentPackageId: studentPackage.id,
+        packageName: studentPackage.package.name,
+      },
+    ]);
   };
 
   const addToOrder = (food: FoodItem) => {
     if (!selectedStudent) return;
+
+    const eligiblePackages = eligiblePackagesForCategory(food.category.id);
+    if (eligiblePackages.length === 1) {
+      setError("");
+      addPackageLine(food, eligiblePackages[0]);
+      return;
+    }
+    if (eligiblePackages.length > 1) {
+      setError("");
+      setPackageChoice({ food, options: eligiblePackages });
+      return;
+    }
 
     const price = getPriceForStudentLevel(food, selectedStudent.level);
     if (!price || price <= 0) {
@@ -184,13 +275,15 @@ function VendorNewOrderContent() {
 
     setError("");
     setCart((current) => {
-      const existing = current.find((line) => line.foodItemId === food.id);
+      const existing = current.find((line) => line.kind === "CHARGE" && line.foodItemId === food.id);
       if (existing) {
         return current.map((line) =>
-          line.foodItemId === food.id ? { ...line, quantity: line.quantity + 1 } : line
+          line.kind === "CHARGE" && line.foodItemId === food.id
+            ? { ...line, quantity: line.quantity + 1 }
+            : line
         );
       }
-      return [...current, { foodItemId: food.id, foodName: food.name, price, quantity: 1 }];
+      return [...current, { kind: "CHARGE", foodItemId: food.id, foodName: food.name, price, quantity: 1 }];
     });
   };
 
@@ -198,52 +291,75 @@ function VendorNewOrderContent() {
     setCart((current) =>
       current
         .map((line) =>
-          line.foodItemId === foodItemId ? { ...line, quantity: line.quantity + delta } : line
+          line.kind === "CHARGE" && line.foodItemId === foodItemId
+            ? { ...line, quantity: line.quantity + delta }
+            : line
         )
         .filter((line) => line.quantity > 0)
     );
   };
 
-  const removeLine = (foodItemId: string) => {
-    setCart((current) => current.filter((line) => line.foodItemId !== foodItemId));
+  const removeLine = (index: number) => {
+    setCart((current) => current.filter((_, currentIndex) => currentIndex !== index));
   };
 
   const acceptMutation = useMutation({
     mutationFn: async () => {
       const scheduledDate = new Date().toISOString();
-      const response = await axios.post("/api/orders", {
-        items: cart.map((line) => ({
-          studentId: selectedStudentId,
-          foodItemId: line.foodItemId,
-          scheduledDate,
-          quantity: line.quantity,
-        })),
+
+      await axios.post("/api/orders", {
+        items: cart.map((line) =>
+          line.kind === "PACKAGE"
+            ? {
+                studentId: selectedStudentId,
+                foodItemId: line.foodItemId,
+                scheduledDate,
+                quantity: 1,
+                studentPackageId: line.studentPackageId,
+              }
+            : {
+                studentId: selectedStudentId,
+                foodItemId: line.foodItemId,
+                scheduledDate,
+                quantity: line.quantity,
+              }
+        ),
       });
-      return response.data as { id: string; total: number }[];
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["orders"] });
+      queryClient.invalidateQueries({ queryKey: ["vendor-orders-today"] });
+      queryClient.invalidateQueries({ queryKey: ["vendor-student-packages"] });
+
+      if (selectedStudent) {
+        setLastOrder({
+          studentName: selectedStudent.name,
+          isStaff: isStaffStudent(selectedStudent),
+          parentLabel: isStaffStudent(selectedStudent)
+            ? t("common.staffLabel")
+            : selectedStudent.parent?.name ?? t("vendor.newOrder.fallbackParent"),
+          lines: cart.map((line, index) => ({
+            key: `${line.foodItemId}-${index}`,
+            name: line.foodName,
+            quantity: line.quantity,
+            price: line.kind === "CHARGE" ? line.price : 0,
+            packageName: line.kind === "PACKAGE" ? line.packageName : undefined,
+          })),
+          total: cartTotal,
+        });
+      }
+
       setCart([]);
       setError("");
-      setFeedback(
-        t("vendor.newOrder.successSentToKitchen")
-          .replace("{student}", selectedStudent?.name ?? "")
-          .replace(
-            "{parent}",
-            selectedStudent && isStaffStudent(selectedStudent)
-              ? t("common.staffLabel")
-              : selectedStudent?.parent?.name ?? t("vendor.newOrder.fallbackParent")
-          )
-      );
       setSelectedStudentId("");
       setIsStudentPickerOpen(true);
+      setStudentSearch("");
     },
     onError: (mutationError: unknown) => {
       const message =
         axios.isAxiosError(mutationError) && mutationError.response?.data?.error
           ? String(mutationError.response.data.error)
           : t("vendor.newOrder.errorSendOrder");
-      setFeedback("");
       setError(message);
     },
   });
@@ -258,7 +374,6 @@ function VendorNewOrderContent() {
       return;
     }
     setError("");
-    setFeedback("");
     acceptMutation.mutate();
   };
 
@@ -314,39 +429,62 @@ function VendorNewOrderContent() {
                 />
               </div>
 
-              <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-                {studentsLoading ? (
-                  <p className="text-sm text-slate-500">{t("vendor.newOrder.loadingStudents")}</p>
-                ) : filteredStudents.length === 0 ? (
-                  <p className="text-sm text-slate-500">{t("vendor.newOrder.noStudentsFound")}</p>
-                ) : (
-                  filteredStudents.map((student) => (
-                    <button
-                      key={student.id}
-                      onClick={() => selectStudent(student)}
-                      className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-left transition-colors hover:border-cyan-300 hover:bg-cyan-50/40"
-                    >
-                      <p className="flex flex-wrap items-center gap-2 font-bold text-slate-900">
-                        <span>{student.name}</span>
-                        {isStaffStudent(student) ? (
-                          <span className="rounded-full bg-violet-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-violet-700">
-                            {t("common.staffLabel")}
-                          </span>
+              {studentSearch.trim() ? (
+                <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                  {studentsLoading ? (
+                    <p className="text-sm text-slate-500">{t("vendor.newOrder.loadingStudents")}</p>
+                  ) : filteredStudents.length === 0 ? (
+                    <p className="text-sm text-slate-500">{t("vendor.newOrder.noStudentsFound")}</p>
+                  ) : (
+                    filteredStudents.map((student) => (
+                      <button
+                        key={student.id}
+                        onClick={() => selectStudent(student)}
+                        className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-left transition-colors hover:border-cyan-300 hover:bg-cyan-50/40"
+                      >
+                        <p className="flex flex-wrap items-center gap-2 font-bold text-slate-900">
+                          <span>{student.name}</span>
+                          {isStaffStudent(student) ? (
+                            <span className="rounded-full bg-violet-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-violet-700">
+                              {t("common.staffLabel")}
+                            </span>
+                          ) : null}
+                        </p>
+                        <p className="mt-1 text-xs text-slate-600">
+                          {isStaffStudent(student) ? t("common.staffLevelLabel") : student.level}
+                        </p>
+                        {!isStaffStudent(student) && student.parent?.name ? (
+                          <p className="mt-0.5 text-xs text-slate-400">{student.parent.name}</p>
                         ) : null}
-                      </p>
-                      <p className="mt-1 text-xs text-slate-600">
-                        {isStaffStudent(student) ? t("common.staffLevelLabel") : student.level}
-                      </p>
-                      {!isStaffStudent(student) && student.parent?.name ? (
-                        <p className="mt-0.5 text-xs text-slate-400">{student.parent.name}</p>
-                      ) : null}
-                    </button>
-                  ))
-                )}
-              </div>
+                      </button>
+                    ))
+                  )}
+                </div>
+              ) : lastOrder ? (
+                <OrderSummaryCard order={lastOrder} t={t} onDismiss={() => setLastOrder(null)} />
+              ) : (
+                <p className="mt-4 text-sm text-slate-400">{t("vendor.newOrder.searchToStartHint")}</p>
+              )}
             </div>
           )}
         </section>
+
+        {selectedStudent && !isStudentPickerOpen && alreadyOrderedToday.length > 0 ? (
+          <section className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 shadow-sm sm:p-5">
+            <div className="flex items-center gap-2 font-bold text-emerald-800">
+              <CheckCircle2 className="h-4 w-4" />
+              {t("vendor.newOrder.alreadyOrderedTitle")}
+            </div>
+            <p className="mt-1 text-xs text-emerald-700">{t("vendor.newOrder.alreadyOrderedHint")}</p>
+            <ul className="mt-2 space-y-1">
+              {alreadyOrderedToday.map((item) => (
+                <li key={item.id} className="text-sm font-semibold text-emerald-900">
+                  {item.foodItem.name} × {item.quantity}
+                </li>
+              ))}
+            </ul>
+          </section>
+        ) : null}
 
         {selectedStudent && !isStudentPickerOpen ? (
           <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_380px] xl:gap-6">
@@ -403,6 +541,8 @@ function VendorNewOrderContent() {
                   <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                     {filteredMenu.map((item) => {
                       const price = getPriceForStudentLevel(item, selectedStudent.level);
+                      const eligiblePackages = eligiblePackagesForCategory(item.category.id);
+                      const isPackageCovered = eligiblePackages.length > 0;
 
                       return (
                         <article
@@ -424,6 +564,12 @@ function VendorNewOrderContent() {
                             <div className="absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-full border border-slate-200/80 bg-white/90 text-slate-800 shadow-sm backdrop-blur-sm">
                               <UtensilsCrossed className="h-4 w-4" />
                             </div>
+                            {isPackageCovered ? (
+                              <div className="absolute left-3 top-3 inline-flex items-center gap-1 rounded-full bg-emerald-500 px-2.5 py-1 text-[10px] font-bold text-white shadow-sm">
+                                <Ticket className="h-3 w-3" />
+                                {t("vendor.newOrder.packageBadge")}
+                              </div>
+                            ) : null}
                           </div>
 
                           <div className="relative -mt-4 flex flex-1 flex-col rounded-t-[1.25rem] bg-white px-4 pb-4 pt-3">
@@ -435,11 +581,15 @@ function VendorNewOrderContent() {
 
                             <div className="mt-auto flex items-center justify-between border-t border-cyan-100 pt-3">
                               <span className="text-sm font-black text-slate-900">
-                                {price ? formatCurrency(price) : t("vendor.newOrder.noPrice")}
+                                {isPackageCovered
+                                  ? t("vendor.newOrder.coveredNoCharge")
+                                  : price
+                                  ? formatCurrency(price)
+                                  : t("vendor.newOrder.noPrice")}
                               </span>
                               <button
                                 onClick={() => addToOrder(item)}
-                                disabled={!price}
+                                disabled={!isPackageCovered && !price}
                                 className="inline-flex items-center gap-1.5 rounded-xl bg-cyan-500 px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-cyan-600 disabled:cursor-not-allowed disabled:bg-slate-300"
                               >
                                 <Plus className="h-3.5 w-3.5" />
@@ -470,43 +620,65 @@ function VendorNewOrderContent() {
                     {t("vendor.newOrder.addProductsFromMenu")}
                   </div>
                 ) : (
-                  cart.map((line) => (
-                    <div
-                      key={line.foodItemId}
-                      className="flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2"
-                    >
-                      <div className="min-w-0 flex-1">
-                        <p className="truncate text-sm font-semibold text-slate-800">{line.foodName}</p>
-                        <p className="text-xs text-slate-500">{formatCurrency(line.price)} {t("vendor.newOrder.perUnit")}</p>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <button
-                          onClick={() => changeQuantity(line.foodItemId, -1)}
-                          className="rounded-md border border-slate-200 bg-white p-1 text-slate-500 hover:bg-slate-100"
-                          aria-label={t("vendor.newOrder.removeUnitLabel").replace("{name}", line.foodName)}
-                        >
-                          <Minus className="h-3 w-3" />
-                        </button>
-                        <span className="w-5 text-center text-sm font-bold text-slate-800">
-                          {line.quantity}
-                        </span>
-                        <button
-                          onClick={() => changeQuantity(line.foodItemId, 1)}
-                          className="rounded-md border border-slate-200 bg-white p-1 text-slate-500 hover:bg-slate-100"
-                          aria-label={t("vendor.newOrder.addUnitLabel").replace("{name}", line.foodName)}
-                        >
-                          <Plus className="h-3 w-3" />
-                        </button>
-                      </div>
-                      <button
-                        onClick={() => removeLine(line.foodItemId)}
-                        className="rounded-md p-1 text-red-500 hover:bg-red-50"
-                        aria-label={t("vendor.newOrder.removeItemLabel").replace("{name}", line.foodName)}
+                  cart.map((line, index) =>
+                    line.kind === "PACKAGE" ? (
+                      <div
+                        key={`${line.foodItemId}-${index}`}
+                        className="flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2"
                       >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    </div>
-                  ))
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-sm font-semibold text-emerald-900">{line.foodName}</p>
+                          <p className="flex items-center gap-1 text-xs text-emerald-700">
+                            <Ticket className="h-3 w-3" />
+                            {t("vendor.newOrder.coveredByPackage").replace("{package}", line.packageName)}
+                          </p>
+                        </div>
+                        <button
+                          onClick={() => removeLine(index)}
+                          className="rounded-md p-1 text-red-500 hover:bg-red-50"
+                          aria-label={t("vendor.newOrder.removeItemLabel").replace("{name}", line.foodName)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
+                    ) : (
+                      <div
+                        key={`${line.foodItemId}-${index}`}
+                        className="flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2"
+                      >
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-sm font-semibold text-slate-800">{line.foodName}</p>
+                          <p className="text-xs text-slate-500">{formatCurrency(line.price)} {t("vendor.newOrder.perUnit")}</p>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <button
+                            onClick={() => changeQuantity(line.foodItemId, -1)}
+                            className="rounded-md border border-slate-200 bg-white p-1 text-slate-500 hover:bg-slate-100"
+                            aria-label={t("vendor.newOrder.removeUnitLabel").replace("{name}", line.foodName)}
+                          >
+                            <Minus className="h-3 w-3" />
+                          </button>
+                          <span className="w-5 text-center text-sm font-bold text-slate-800">
+                            {line.quantity}
+                          </span>
+                          <button
+                            onClick={() => changeQuantity(line.foodItemId, 1)}
+                            className="rounded-md border border-slate-200 bg-white p-1 text-slate-500 hover:bg-slate-100"
+                            aria-label={t("vendor.newOrder.addUnitLabel").replace("{name}", line.foodName)}
+                          >
+                            <Plus className="h-3 w-3" />
+                          </button>
+                        </div>
+                        <button
+                          onClick={() => removeLine(index)}
+                          className="rounded-md p-1 text-red-500 hover:bg-red-50"
+                          aria-label={t("vendor.newOrder.removeItemLabel").replace("{name}", line.foodName)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
+                    )
+                  )
                 )}
               </div>
 
@@ -545,27 +717,119 @@ function VendorNewOrderContent() {
             </aside>
           </div>
         ) : null}
+      </div>
 
-        {feedback ? (
-          <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
-            <span>{feedback}</span>
-            <div className="flex items-center gap-2">
-              <Link
-                href="/vendor/orders"
-                className="inline-flex h-8 items-center gap-1.5 rounded-lg bg-emerald-600 px-3 text-xs font-semibold text-white hover:bg-emerald-700"
-              >
-                {t("vendor.newOrder.viewInTodayOrders")}
-              </Link>
+      {packageChoice ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="w-full max-w-sm rounded-2xl bg-white shadow-2xl">
+            <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
+              <h2 className="font-bold text-slate-900">
+                {t("vendor.newOrder.choosePackageTitle").replace("{name}", packageChoice.food.name)}
+              </h2>
+              <button onClick={() => setPackageChoice(null)} className="rounded-lg p-1.5 hover:bg-slate-100">
+                <X className="h-4 w-4 text-slate-500" />
+              </button>
+            </div>
+            <div className="space-y-2 p-5">
+              {packageChoice.options.map((option) => (
+                <button
+                  key={option.id}
+                  onClick={() => {
+                    addPackageLine(packageChoice.food, option);
+                    setPackageChoice(null);
+                  }}
+                  className="flex w-full items-center justify-between rounded-xl border border-slate-200 px-4 py-3 text-left text-sm font-semibold text-slate-800 hover:border-cyan-300 hover:bg-cyan-50/40"
+                >
+                  <span>{option.package.name}</span>
+                </button>
+              ))}
+            </div>
+            <div className="border-t border-slate-100 px-5 py-4">
               <button
-                onClick={() => setFeedback("")}
-                className="rounded-md p-1 text-emerald-600 hover:bg-emerald-100"
-                aria-label={t("vendor.newOrder.closeNotice")}
+                onClick={() => setPackageChoice(null)}
+                className="w-full rounded-xl border border-slate-200 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50"
               >
-                <X className="h-4 w-4" />
+                {t("vendor.newOrder.choosePackageCancel")}
               </button>
             </div>
           </div>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function OrderSummaryCard({
+  order,
+  t,
+  onDismiss,
+}: {
+  order: OrderSummary;
+  t: (key: string) => string;
+  onDismiss: () => void;
+}) {
+  return (
+    <div className="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 shadow-sm sm:p-5">
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex items-center gap-2 text-sm font-bold text-emerald-800">
+          <CheckCircle2 className="h-4 w-4" />
+          {t("vendor.newOrder.orderSentTitle")}
+        </div>
+        <button
+          onClick={onDismiss}
+          className="rounded-md p-1 text-emerald-600 hover:bg-emerald-100"
+          aria-label={t("vendor.newOrder.closeNotice")}
+        >
+          <X className="h-4 w-4" />
+        </button>
+      </div>
+
+      <p className="mt-2 flex flex-wrap items-center gap-2 text-lg font-black text-slate-900">
+        <span>{order.studentName}</span>
+        {order.isStaff ? (
+          <span className="rounded-full bg-violet-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-violet-700">
+            {t("common.staffLabel")}
+          </span>
         ) : null}
+      </p>
+      {!order.isStaff ? (
+        <p className="text-xs font-semibold text-emerald-700">
+          {t("vendor.newOrder.guardianLabel")}: {order.parentLabel}
+        </p>
+      ) : null}
+
+      <ul className="mt-3 space-y-1.5">
+        {order.lines.map((line) => (
+          <li key={line.key} className="flex items-center justify-between gap-2 text-sm">
+            <span className="flex flex-wrap items-center gap-1.5 font-semibold text-slate-800">
+              • {line.name} × {line.quantity}
+              {line.packageName ? (
+                <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-700">
+                  <Ticket className="h-3 w-3" />
+                  {line.packageName}
+                </span>
+              ) : null}
+            </span>
+            {!line.packageName ? (
+              <span className="shrink-0 font-semibold text-slate-600">{formatCurrency(line.price * line.quantity)}</span>
+            ) : null}
+          </li>
+        ))}
+      </ul>
+
+      <div className="mt-3 flex items-center justify-between border-t border-emerald-200 pt-3 text-sm font-black text-slate-900">
+        {t("vendor.newOrder.total")}
+        <span>{formatCurrency(order.total)}</span>
+      </div>
+
+      <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
+        <p className="text-xs text-emerald-700">{t("vendor.newOrder.searchNextHint")}</p>
+        <Link
+          href="/vendor/orders"
+          className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-lg bg-emerald-600 px-3 text-xs font-semibold text-white hover:bg-emerald-700"
+        >
+          {t("vendor.newOrder.viewInTodayOrders")}
+        </Link>
       </div>
     </div>
   );

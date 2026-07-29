@@ -200,7 +200,7 @@ export default function ParentBalancePage() {
               </div>
 
               <div className="space-y-3 px-5 py-4">
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                   <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
                     <p className="text-xs font-semibold text-slate-500">{t("parent.balance.balanceLabel")}</p>
                     <p className="mt-1 text-2xl font-black text-slate-900">

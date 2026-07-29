@@ -1,11 +1,12 @@
-export type FoodTab = "GENERAL" | "DRINKS" | "CASADOS";
+export type FoodTab = "GENERAL" | "DRINKS" | "CASADOS" | "SNACK";
 
-export const FOOD_TAB_VALUES: FoodTab[] = ["GENERAL", "DRINKS", "CASADOS"];
+export const FOOD_TAB_VALUES: FoodTab[] = ["GENERAL", "DRINKS", "CASADOS", "SNACK"];
 
 export const FOOD_TABS: { key: FoodTab; labelKey: string }[] = [
   { key: "GENERAL", labelKey: "foodTabs.general" },
   { key: "DRINKS", labelKey: "foodTabs.drinks" },
   { key: "CASADOS", labelKey: "foodTabs.casados" },
+  { key: "SNACK", labelKey: "foodTabs.snack" },
 ];
 
 export function isFoodTab(value: unknown): value is FoodTab {

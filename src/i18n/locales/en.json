@@ -28,6 +28,8 @@
       "monthlyMenu": "Monthly Menu",
       "categories": "Categories",
       "orders": "Orders",
+      "packages": "Packages",
+      "consumptions": "Consumption",
       "payments": "Pending Payments",
       "settings": "Settings"
     },
@@ -39,6 +41,7 @@
       "myChildren": "My Children",
       "menu": "Menu",
       "plan": "Plan Meals",
+      "packages": "Packages",
       "history": "History & Tracking",
       "balance": "Balance & Payments"
     },
@@ -47,7 +50,8 @@
       "dashboard": "Dashboard",
       "newOrder": "New Order",
       "ordersOfDay": "Today's Orders",
-      "searchStudent": "Find Student"
+      "searchStudent": "Find Student",
+      "history": "History"
     },
     "logout": "Log out",
     "openMenu": "Open menu",
@@ -166,13 +170,8 @@
   },
   "publicFooter": {
     "description": "Healthy and delicious meals for students. Quality nutrition prepared with love.",
-    "menuTitle": "Menu",
-    "menuItems": ["Breakfasts", "Lunches", "Snacks", "Drinks", "Snacks & Treats", "Packages"],
     "portalTitle": "Portal",
     "portalSignIn": "Sign In",
-    "portalParent": "Parent Portal",
-    "portalAdmin": "Admin Panel",
-    "portalNutrition": "Nutritionist & Tips",
     "contactTitle": "Contact",
     "rights": "All rights reserved.",
     "privacy": "Privacy",
@@ -491,8 +490,13 @@
       "title": "Packages",
       "subtitle": "Check and buy meal plans for your children",
       "buyPackage": "Buy package",
+      "studentLabel": "Student",
+      "packageLabel": "Package",
+      "startDateLabel": "Start date",
       "selectStudent": "Select student",
       "selectPackage": "Select package",
+      "selectStudentFirst": "Select a student first",
+      "noPackagesForLevel": "No packages available for this level",
       "processing": "Processing...",
       "selectBothError": "Select student and package",
       "purchaseSuccess": "Package purchased successfully. A pending payment was generated for review.",
@@ -616,6 +620,7 @@
       "title": "Today's Orders",
       "subtitle": "Accept orders and mark served or not picked up",
       "searchPlaceholder": "Search by student, parent or order number...",
+      "bucketAll": "All",
       "bucketOther": "Other",
       "newOrder": "New Order",
       "loadingOrders": "Loading orders...",
@@ -677,9 +682,20 @@
       "errorAddOneProduct": "Add at least one product to the order.",
       "errorSendOrder": "Couldn't send the order",
       "confirmChangeStudent": "Each order is for a single student. If you change student, everything added will be cleared. Do you want to continue?",
-      "successSentToKitchen": "Order sent to kitchen for {student}. Charged to {parent}'s account.",
+      "orderSentTitle": "Order sent to kitchen",
+      "searchToStartHint": "Type a name above to find a student and start an order.",
+      "searchNextHint": "Search for the next student above to start a new order.",
       "fallbackParent": "their parent/guardian",
-      "guardianLabel": "Parent/guardian"
+      "guardianLabel": "Parent/guardian",
+      "alreadyOrderedTitle": "Already has an order for today",
+      "alreadyOrderedHint": "These products were already ordered by the parent/guardian and are ready for the kitchen.",
+      "coveredByPackage": "Covered by {package}",
+      "coveredNoCharge": "No charge (package)",
+      "choosePackageTitle": "Which package should cover {name}?",
+      "choosePackageCancel": "Cancel",
+      "choosePackageConfirm": "Use this package",
+      "errorRegisterConsumption": "Couldn't register the package consumption",
+      "packageBadge": "Package"
     },
     "history": {
       "title": "History",
@@ -743,7 +759,8 @@
   "foodTabs": {
     "general": "General food",
     "drinks": "Drinks",
-    "casados": "Dish of the Day"
+    "casados": "Dish of the Day",
+    "snack": "Snacks (in-person sale)"
   },
   "mealPeriods": {
     "break": "Break",

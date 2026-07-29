@@ -24,11 +24,17 @@ function fixedMealPeriodLabel(mealPeriod: string, dict: Dictionary): string {
   return key ? dict.mealPeriods[key] : "";
 }
 
-const FOOD_TAB_DICT_KEY: Record<FoodTab, "general" | "drinks" | "casados"> = {
+const FOOD_TAB_DICT_KEY: Record<FoodTab, "general" | "drinks" | "casados" | "snack"> = {
   GENERAL: "general",
   DRINKS: "drinks",
   CASADOS: "casados",
+  SNACK: "snack",
 };
+
+// The Snack tab is vendor-only stock (in-person walk-up sales) — parents
+// never see it, so it's excluded before items reach this page at the query
+// level (visibility: VENDOR_ONLY) and its pill is hidden here too.
+const PARENT_VISIBLE_FOOD_TABS = FOOD_TABS.filter((tab) => tab.key !== "SNACK");
 
 const levelLabelByValue = Object.fromEntries(
   PRICE_LEVELS.map((level) => [level.value, level.label])
@@ -53,7 +59,7 @@ function resolveActiveTab(rawTab: string | undefined): FoodTab {
 
 async function getMenuData() {
   return prisma.foodItem.findMany({
-    where: { available: true },
+    where: { available: true, visibility: { not: "VENDOR_ONLY" } },
     include: {
       category: true,
       prices: true,
@@ -112,6 +118,7 @@ export default async function ParentMenuPage({ params, searchParams }: ParentMen
     GENERAL: [],
     DRINKS: [],
     CASADOS: [],
+    SNACK: [],
   };
 
   for (const item of items) {
@@ -166,7 +173,7 @@ export default async function ParentMenuPage({ params, searchParams }: ParentMen
         ) : (
           <section className="space-y-4">
             <div className="flex flex-wrap items-center gap-2">
-              {FOOD_TABS.map((tab) => {
+              {PARENT_VISIBLE_FOOD_TABS.map((tab) => {
                 const isActive = tab.key === activeTab;
                 const count = categorizedItems[tab.key].length;
                 const href =
@@ -217,11 +224,13 @@ export default async function ParentMenuPage({ params, searchParams }: ParentMen
             ) : (
               <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
                 {visibleItems.map((item) => {
-                  const visiblePrices = visiblePriceLevels
-                    ? item.prices.filter((price) =>
-                        visiblePriceLevels.has(normalizePriceLevel(price.level))
-                      )
-                    : item.prices;
+                  const visiblePrices = (
+                    visiblePriceLevels
+                      ? item.prices.filter((price) =>
+                          visiblePriceLevels.has(normalizePriceLevel(price.level))
+                        )
+                      : item.prices
+                  ).filter((price) => price.price > 1);
 
                   return (
                     <article

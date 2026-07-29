@@ -88,7 +88,7 @@ export default function PublicNavbar() {
 
         {/* Mobile menu toggle */}
         <button
-          className="lg:hidden p-2 rounded-lg bg-white/80 backdrop-blur-sm hover:bg-white transition-colors"
+          className="ml-auto lg:hidden p-2 rounded-lg bg-white/80 backdrop-blur-sm hover:bg-white transition-colors"
           onClick={() => setOpen(!open)}
         >
           {open ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}

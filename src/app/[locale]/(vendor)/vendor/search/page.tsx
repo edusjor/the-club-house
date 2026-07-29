@@ -9,7 +9,7 @@ import StatusBadge from "@/components/dashboard/StatusBadge";
 import { useTranslations } from "@/i18n/I18nProvider";
 import { Search, UtensilsCrossed } from "lucide-react";
 
-type Student = { id: string; name: string; level: string; allergies?: string | null; active: boolean; parent?: { name: string; phone?: string | null }; studentPackages?: { status: string; remaining: number; package: { name: string } }[] };
+type Student = { id: string; name: string; level: string; allergies?: string | null; active: boolean; parent?: { name: string; phone?: string | null }; studentPackages?: { status: string; package: { name: string } }[] };
 
 export default function VendorSearchPage() {
   const t = useTranslations();
@@ -56,7 +56,7 @@ export default function VendorSearchPage() {
                 <div className="mt-2 text-xs text-slate-500">{t("vendor.search.allergiesRestrictions")}: {student.allergies ?? t("vendor.search.none")}</div>
               </div>
               <div className="mt-4 space-y-2">
-                {student.studentPackages?.length ? student.studentPackages.map((sp) => <div key={sp.package.name} className="rounded-xl bg-slate-50 px-4 py-2 text-sm text-slate-700">{sp.package.name} · {sp.remaining} {t("vendor.search.remaining")}</div>) : <div className="rounded-xl bg-slate-50 px-4 py-2 text-sm text-slate-500">{t("vendor.search.noActivePackage")}</div>}
+                {student.studentPackages?.length ? student.studentPackages.map((sp) => <div key={sp.package.name} className="rounded-xl bg-slate-50 px-4 py-2 text-sm text-slate-700">{sp.package.name}</div>) : <div className="rounded-xl bg-slate-50 px-4 py-2 text-sm text-slate-500">{t("vendor.search.noActivePackage")}</div>}
               </div>
               <Link
                 href={`/vendor/new-order?studentId=${student.id}`}

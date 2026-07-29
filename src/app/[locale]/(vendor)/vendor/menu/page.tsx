@@ -34,7 +34,7 @@ export default async function VendorMenuPage({
               <StatusBadge status={item.available ? "ACTIVE" : "INACTIVE"} />
             </div>
             <div className="mt-3 space-y-1 text-xs text-slate-500">
-              {item.prices.map((price) => <div key={price.id}>{price.level}: {formatCurrency(price.price)}</div>)}
+              {item.prices.filter((price) => price.price > 1).map((price) => <div key={price.id}>{price.level}: {formatCurrency(price.price)}</div>)}
             </div>
           </div>
         ))}

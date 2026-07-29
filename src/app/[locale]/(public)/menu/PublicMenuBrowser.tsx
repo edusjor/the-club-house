@@ -5,6 +5,10 @@ import Image from "next/image";
 import Link from "@/i18n/Link";
 import { Search, ShoppingCart, UtensilsCrossed } from "lucide-react";
 import { FOOD_TABS, getFoodTab, parseFoodTags, type FoodTab } from "@/lib/food-tabs";
+
+// The Snack tab is vendor-only stock (in-person walk-up sales); the public
+// menu is server-filtered to exclude those items, and its pill is hidden here.
+const PUBLIC_VISIBLE_FOOD_TABS = FOOD_TABS.filter((tab) => tab.key !== "SNACK");
 import DietaryTagBadges, { DietaryTagLabels } from "@/components/dashboard/DietaryTagBadges";
 import { useTranslations } from "@/i18n/I18nProvider";
 
@@ -59,6 +63,7 @@ export default function PublicMenuBrowser({ items }: PublicMenuBrowserProps) {
       GENERAL: 0,
       DRINKS: 0,
       CASADOS: 0,
+      SNACK: 0,
     };
 
     for (const item of items) {
@@ -81,7 +86,7 @@ export default function PublicMenuBrowser({ items }: PublicMenuBrowserProps) {
       </div>
 
       <div className="flex flex-wrap items-center gap-2">
-        {FOOD_TABS.map((tab) => {
+        {PUBLIC_VISIBLE_FOOD_TABS.map((tab) => {
           const isActive = tab.key === activeTab;
           return (
             <button

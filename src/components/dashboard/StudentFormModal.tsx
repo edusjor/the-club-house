@@ -32,6 +32,7 @@ interface StudentFormModalProps {
   onSubmit: (values: StudentFormValues) => void;
   submitting?: boolean;
   lockParent?: boolean;
+  hideAthleteLevel?: boolean;
 }
 
 export default function StudentFormModal({
@@ -42,6 +43,7 @@ export default function StudentFormModal({
   onSubmit,
   submitting,
   lockParent,
+  hideAthleteLevel,
 }: StudentFormModalProps) {
   const t = useTranslations();
   const [showPassword, setShowPassword] = useState(false);
@@ -62,6 +64,11 @@ export default function StudentFormModal({
     if (submitting) return t("studentForm.saving");
     return initialData ? t("studentForm.updateStudent") : t("studentForm.createStudent");
   }, [initialData, submitting, t]);
+
+  const levelOptions = useMemo(
+    () => (hideAthleteLevel ? LEVELS.filter((level) => level.value !== "ATHLETES") : LEVELS),
+    [hideAthleteLevel]
+  );
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
@@ -163,7 +170,7 @@ export default function StudentFormModal({
               onChange={(e) => setForm({ ...form, level: e.target.value })}
               className="h-10 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500"
             >
-              {LEVELS.map((level) => (
+              {levelOptions.map((level) => (
                 <option key={level.value} value={level.value}>
                   {level.label}
                 </option>

@@ -21,7 +21,7 @@ export default async function ParentStatementsPage({
   const [orders, payments, consumptions, dict] = await Promise.all([
     prisma.order.aggregate({ where: { parentId }, _sum: { total: true }, _count: { _all: true } }),
     prisma.payment.aggregate({ where: { parentId, status: "APPROVED" }, _sum: { amount: true }, _count: { _all: true } }),
-    prisma.consumption.count({ where: { student: { parentId } } }),
+    prisma.orderItem.count({ where: { delivered: true, student: { parentId } } }),
     getDictionary(locale),
   ]);
   const t = dict.parent.statements;

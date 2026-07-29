@@ -2,10 +2,15 @@ import { prisma } from "@/lib/db";
 import { auth } from "@/auth";
 import { isMealPeriod } from "@/lib/meal-scheduling";
 import { isFoodTab } from "@/lib/food-tabs";
+import { canRoleSeeVendorOnlyItems, isFoodVisibility } from "@/lib/food-visibility";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function GET() {
+  const session = await auth();
+  const role = (session?.user as { role?: string } | undefined)?.role;
+
   const items = await prisma.foodItem.findMany({
+    where: canRoleSeeVendorOnlyItems(role) ? undefined : { visibility: { not: "VENDOR_ONLY" } },
     include: { category: true, prices: true },
     orderBy: { createdAt: "desc" },
   });
@@ -19,7 +24,7 @@ export async function POST(req: NextRequest) {
   }
 
   const body = await req.json();
-  const { name, image, description, categoryId, ingredients, tags, available, availableDays, stockQuantity, fixedMealPeriod, foodTab, prices } = body;
+  const { name, image, description, categoryId, ingredients, tags, available, availableDays, stockQuantity, fixedMealPeriod, foodTab, visibility, prices } = body;
 
   if (fixedMealPeriod !== null && fixedMealPeriod !== undefined && !isMealPeriod(fixedMealPeriod)) {
     return NextResponse.json({ error: "Tiempo de comida inválido" }, { status: 400 });
@@ -27,6 +32,10 @@ export async function POST(req: NextRequest) {
 
   if (foodTab !== null && foodTab !== undefined && !isFoodTab(foodTab)) {
     return NextResponse.json({ error: "Pestaña de menú inválida" }, { status: 400 });
+  }
+
+  if (visibility !== null && visibility !== undefined && !isFoodVisibility(visibility)) {
+    return NextResponse.json({ error: "Visibilidad de menú inválida" }, { status: 400 });
   }
 
   const item = await prisma.foodItem.create({
@@ -42,6 +51,7 @@ export async function POST(req: NextRequest) {
       stockQuantity,
       fixedMealPeriod: fixedMealPeriod ?? null,
       foodTab: foodTab ?? null,
+      visibility: visibility ?? "ALL",
       prices: {
         create: (prices ?? []).map((p: { level: string; price: number }) => ({
           level: p.level,

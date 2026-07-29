@@ -43,7 +43,7 @@ async function getVendorDashboardData() {
       },
       _sum: { quantity: true },
     }),
-    prisma.consumption.count({ where: { consumedAt: { gte: new Date(new Date().setHours(0, 0, 0, 0)) } } }),
+    prisma.orderItem.count({ where: { delivered: true, scheduledDate: { gte: start, lte: end } } }),
     prisma.student.count({ where: { active: true } }),
     prisma.order.findMany({
       take: 6,

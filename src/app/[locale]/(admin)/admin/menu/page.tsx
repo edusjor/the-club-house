@@ -10,6 +10,7 @@ import Image from "next/image";
 import { Leaf, MilkOff, Plus, Search, Edit2, Trash2, WheatOff, X } from "lucide-react";
 import DietaryTagBadges, { DietaryTagLabels } from "@/components/dashboard/DietaryTagBadges";
 import { DIETARY_TAGS, FOOD_TABS, getDietaryTags, getFoodTab, type DietaryTag, type FoodTab } from "@/lib/food-tabs";
+import { getFoodVisibility, type FoodVisibility } from "@/lib/food-visibility";
 import { MEAL_PERIODS } from "@/lib/meal-periods";
 import type { MealPeriod } from "@/lib/meal-scheduling";
 
@@ -17,6 +18,12 @@ const FOOD_TAB_LABEL: Record<FoodTab, string> = {
   GENERAL: "General food",
   DRINKS: "Drinks",
   CASADOS: "Dish of the Day",
+  SNACK: "Snack (venta directa)",
+};
+
+const FOOD_VISIBILITY_LABEL: Record<FoodVisibility, string> = {
+  ALL: "Todos (incluye padres)",
+  VENDOR_ONLY: "Solo vendedor / admin",
 };
 
 type Category = { id: string; name: string };
@@ -33,6 +40,7 @@ type FoodItem = {
   stockQuantity?: number | null;
   fixedMealPeriod?: MealPeriod | null;
   foodTab?: FoodTab | null;
+  visibility?: string | null;
   createdAt: string;
   category: Category;
   prices: PriceRow[];
@@ -55,6 +63,7 @@ type MenuFormPayload = {
   stockQuantity: number | null;
   fixedMealPeriod: MealPeriod | null;
   foodTab: FoodTab;
+  visibility: FoodVisibility;
   prices: PriceRow[];
 };
 
@@ -119,6 +128,7 @@ function MenuModal({ item, categories, onClose, onSave }: MenuModalProps) {
     stockQuantity: item?.stockQuantity ?? null,
     fixedMealPeriod: item?.fixedMealPeriod ?? null,
     foodTab: item ? getFoodTab(item) : "GENERAL",
+    visibility: item ? getFoodVisibility(item) : "ALL",
     prices: normalizePriceRows(item?.prices ?? []),
   });
   const [uploadError, setUploadError] = useState("");
@@ -304,6 +314,31 @@ function MenuModal({ item, categories, onClose, onSave }: MenuModalProps) {
             </div>
 
             <div className="md:col-span-2">
+              <p className="mb-1.5 text-xs font-semibold text-slate-600">Quién puede verlo y pedirlo</p>
+              <div className="flex flex-wrap gap-2">
+                {(Object.keys(FOOD_VISIBILITY_LABEL) as FoodVisibility[]).map((visibility) => (
+                  <button
+                    key={visibility}
+                    type="button"
+                    onClick={() => setForm({ ...form, visibility })}
+                    className={`rounded-xl border px-3 py-2 text-sm font-semibold transition-colors ${
+                      form.visibility === visibility
+                        ? "border-cyan-500 bg-cyan-500 text-white"
+                        : "border-slate-200 bg-slate-50 text-slate-600 hover:border-cyan-300"
+                    }`}
+                  >
+                    {FOOD_VISIBILITY_LABEL[visibility]}
+                  </button>
+                ))}
+              </div>
+              {form.visibility === "VENDOR_ONLY" ? (
+                <p className="mt-1.5 text-xs text-slate-500">
+                  Los padres nunca verán este producto. Solo el vendedor puede venderlo cuando el estudiante lo pide en persona.
+                </p>
+              ) : null}
+            </div>
+
+            <div className="md:col-span-2">
               <p className="mb-1.5 text-xs font-semibold text-slate-600">Tipo de comida</p>
               <div className="flex flex-wrap gap-2">
                 <button
@@ -420,7 +455,15 @@ export default function AdminMenuPage() {
 
   const createMutation = useMutation({ mutationFn: (data: Record<string, unknown>) => axios.post("/api/menu", data), onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["menu"] }); setCreating(false); } });
   const updateMutation = useMutation({ mutationFn: ({ id, ...data }: FoodItem) => axios.put(`/api/menu/${id}`, data), onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["menu"] }); setEditing(undefined); } });
-  const deleteMutation = useMutation({ mutationFn: (id: string) => axios.delete(`/api/menu/${id}`), onSuccess: () => queryClient.invalidateQueries({ queryKey: ["menu"] }) });
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => axios.delete(`/api/menu/${id}`),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["menu"] }),
+    onError: (error: AxiosError<ApiError>) => {
+      const message =
+        error.response?.data?.error ?? error.response?.data?.message ?? error.message;
+      alert(`No se pudo eliminar la comida: ${message}`);
+    },
+  });
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase();
@@ -516,7 +559,7 @@ export default function AdminMenuPage() {
                   <DietaryTagBadges rawTags={item.tags} labels={DIETARY_LABELS} className="mt-4" />
 
                   <div className="mt-4 space-y-1.5 text-sm">
-                    {item.prices.map((price) => (
+                    {item.prices.filter((price) => price.price > 1).map((price) => (
                       <div
                         key={price.level}
                         className="flex items-center justify-between"

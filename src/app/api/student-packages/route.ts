@@ -1,10 +1,17 @@
 import { auth } from "@/auth";
 import { prisma } from "@/lib/db";
+import { normalizePriceLevel } from "@/lib/utils";
 import { NextRequest, NextResponse } from "next/server";
 
-function calculatePackageRemaining(items: { quantity: number }[]) {
-  const total = items.reduce((sum, item) => sum + item.quantity, 0);
-  return total > 0 ? total : 1;
+function getDayBounds(date = new Date()) {
+  const start = new Date(date);
+  start.setHours(0, 0, 0, 0);
+
+  const end = new Date(start);
+  end.setDate(end.getDate() + 1);
+  end.setMilliseconds(end.getMilliseconds() - 1);
+
+  return { start, end };
 }
 
 export async function GET() {
@@ -21,7 +28,7 @@ export async function GET() {
       ? await prisma.studentPackage.findMany({
           include: {
             student: true,
-            package: true,
+            package: { include: { prices: true } },
           },
           orderBy: { createdAt: "desc" },
         })
@@ -30,7 +37,7 @@ export async function GET() {
           where: { student: { parentId: userId } },
           include: {
             student: true,
-            package: true,
+            package: { include: { prices: true } },
           },
           orderBy: { createdAt: "desc" },
         })
@@ -38,12 +45,13 @@ export async function GET() {
       ? await prisma.studentPackage.findMany({
           where: {
             status: "ACTIVE",
-            remaining: { gt: 0 },
             student: { active: true },
+            startDate: { lte: new Date() },
+            OR: [{ endDate: null }, { endDate: { gte: new Date() } }],
           },
           include: {
             student: true,
-            package: true,
+            package: { include: { prices: true, packageItems: true } },
           },
           orderBy: { createdAt: "desc" },
         })
@@ -51,6 +59,22 @@ export async function GET() {
 
   if (!studentPackages) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  if (role === "VENDOR" && studentPackages.length > 0) {
+    const { start, end } = getDayBounds();
+    const usedTodayRows = await prisma.orderItem.findMany({
+      where: {
+        coveredByStudentPackageId: { in: studentPackages.map((sp) => sp.id) },
+        scheduledDate: { gte: start, lte: end },
+      },
+      select: { coveredByStudentPackageId: true },
+    });
+    const usedTodayIds = new Set(usedTodayRows.map((row) => row.coveredByStudentPackageId));
+
+    return NextResponse.json(
+      studentPackages.map((sp) => ({ ...sp, usedToday: usedTodayIds.has(sp.id) }))
+    );
   }
 
   return NextResponse.json(studentPackages);
@@ -81,13 +105,13 @@ export async function POST(req: NextRequest) {
   const [student, pkg] = await Promise.all([
     prisma.student.findUnique({
       where: { id: studentId },
-      select: { id: true, name: true, parentId: true, active: true },
+      select: { id: true, name: true, level: true, parentId: true, active: true },
     }),
     prisma.package.findUnique({
       where: { id: packageId },
       include: {
-        packageItems: {
-          select: { quantity: true },
+        prices: {
+          select: { level: true, price: true },
         },
       },
     }),
@@ -108,12 +132,25 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Paquete no disponible" }, { status: 400 });
   }
 
+  const normalizedStudentLevel = normalizePriceLevel(student.level);
+  const priceForLevel = pkg.prices.find(
+    (p) => normalizePriceLevel(p.level) === normalizedStudentLevel
+  );
+
+  if (!priceForLevel || priceForLevel.price <= 0) {
+    return NextResponse.json(
+      { error: "Este paquete no está disponible para el nivel del estudiante" },
+      { status: 400 }
+    );
+  }
+
+  const packagePrice = priceForLevel.price;
+
   const effectiveStartDate = startDate ? new Date(startDate) : new Date();
   if (Number.isNaN(effectiveStartDate.getTime())) {
     return NextResponse.json({ error: "startDate inválido" }, { status: 400 });
   }
 
-  const remaining = calculatePackageRemaining(pkg.packageItems);
   const endDate =
     pkg.validityDays && pkg.validityDays > 0
       ? new Date(effectiveStartDate.getTime() + pkg.validityDays * 24 * 60 * 60 * 1000)
@@ -128,33 +165,40 @@ export async function POST(req: NextRequest) {
         endDate,
         status: "ACTIVE",
         consumed: 0,
-        remaining,
       },
       include: {
         student: true,
-        package: true,
+        package: { include: { prices: true } },
       },
     });
 
-    const payment = await tx.payment.create({
-      data: {
-        parentId: student.parentId,
-        amount: pkg.price,
-        status: "PENDING",
-        comment: `Compra de paquete ${pkg.name} para ${student.name}`,
-      },
-      select: { id: true, amount: true, status: true },
+    // A package purchase is charged the same way an order is: it lands on
+    // the parent's pending balance immediately, and the parent settles it
+    // later from /parent/balance (upload a receipt, admin approves it).
+    // There's no separate "payment awaiting approval" record for the
+    // purchase itself — that would leave the charge invisible on the
+    // balance the parent actually sees.
+    let balance = await tx.parentBalance.findUnique({ where: { parentId: student.parentId } });
+    if (!balance) {
+      balance = await tx.parentBalance.create({
+        data: { parentId: student.parentId, pendingBalance: 0, approvedBalance: 0 },
+      });
+    }
+
+    await tx.parentBalance.update({
+      where: { parentId: student.parentId },
+      data: { pendingBalance: balance.pendingBalance + packagePrice },
     });
 
     await tx.notification.create({
       data: {
         userId: student.parentId,
         title: "Paquete adquirido",
-        message: `Se registró ${pkg.name} para ${student.name}. Pago pendiente por ${pkg.price} CRC.`,
+        message: `Se registró ${pkg.name} para ${student.name}. Se agregaron ${packagePrice} CRC a tu saldo por pagar.`,
       },
     });
 
-    return { studentPackage, payment };
+    return { studentPackage };
   });
 
   return NextResponse.json(result, { status: 201 });

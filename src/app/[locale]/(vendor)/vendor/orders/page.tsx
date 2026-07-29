@@ -19,6 +19,7 @@ import {
   Play,
   Search,
   Store,
+  Ticket,
   UtensilsCrossed,
   XCircle,
 } from "lucide-react";
@@ -32,6 +33,7 @@ type OrderItem = {
   mealPeriod: string | null;
   student: { name: string; level: string };
   foodItem: { name: string };
+  coveredByStudentPackage?: { package: { name: string } } | null;
 };
 
 type Order = {
@@ -56,6 +58,7 @@ type Bucket = {
 const EMPTY_ORDERS: Order[] = [];
 const FINISHED_STATUSES = new Set(["DELIVERED", "NOT_PICKED_UP", "CANCELLED"]);
 const OTHER_BUCKET_KEY = "OTHER";
+const ALL_BUCKET_KEY = "ALL";
 const MEAL_PERIOD_ORDER: string[] = MEAL_PERIODS.map((period) => period.key);
 
 const FOOD_DOT_STYLES = [
@@ -173,33 +176,46 @@ export default function VendorOrdersPage() {
       else groups.set(key, [order]);
     }
 
-    return [...groups.entries()]
+    function buildBucket(key: string, bucketOrders: OrderWithTime[]): Bucket {
+      const foodCounts = new Map<string, number>();
+      let totalPlates = 0;
+
+      for (const order of bucketOrders) {
+        for (const item of order.items) {
+          totalPlates += item.quantity;
+          foodCounts.set(item.foodItem.name, (foodCounts.get(item.foodItem.name) ?? 0) + item.quantity);
+        }
+      }
+
+      const mealPeriodLabelKey = MEAL_PERIODS.find((period) => period.key === key)?.labelKey;
+      const label =
+        key === ALL_BUCKET_KEY
+          ? t("vendor.orders.bucketAll")
+          : mealPeriodLabelKey
+          ? t(mealPeriodLabelKey)
+          : t("vendor.orders.bucketOther");
+
+      return {
+        key,
+        label,
+        orders: bucketOrders,
+        totalPlates,
+        topFoods: [...foodCounts.entries()].sort(([, a], [, b]) => b - a),
+      };
+    }
+
+    const mealBuckets = [...groups.entries()]
       .sort(([a], [b]) => {
         const rankA = a === OTHER_BUCKET_KEY ? MEAL_PERIOD_ORDER.length : MEAL_PERIOD_ORDER.indexOf(a);
         const rankB = b === OTHER_BUCKET_KEY ? MEAL_PERIOD_ORDER.length : MEAL_PERIOD_ORDER.indexOf(b);
         return rankA - rankB;
       })
-      .map(([key, bucketOrders]) => {
-        const foodCounts = new Map<string, number>();
-        let totalPlates = 0;
+      .map(([key, bucketOrders]) => buildBucket(key, bucketOrders));
 
-        for (const order of bucketOrders) {
-          for (const item of order.items) {
-            totalPlates += item.quantity;
-            foodCounts.set(item.foodItem.name, (foodCounts.get(item.foodItem.name) ?? 0) + item.quantity);
-          }
-        }
+    /* "All" leads with the most recently created order first, so a just-placed restaurant order is immediately visible. */
+    const allBucket = buildBucket(ALL_BUCKET_KEY, [...ordersWithTime].reverse());
 
-        const mealPeriodLabelKey = MEAL_PERIODS.find((period) => period.key === key)?.labelKey;
-
-        return {
-          key,
-          label: mealPeriodLabelKey ? t(mealPeriodLabelKey) : t("vendor.orders.bucketOther"),
-          orders: bucketOrders,
-          totalPlates,
-          topFoods: [...foodCounts.entries()].sort(([, a], [, b]) => b - a),
-        };
-      });
+    return [allBucket, ...mealBuckets];
   }, [ordersWithTime, t]);
 
   const activeBucket = buckets.find((bucket) => bucket.key === selectedBucketKey) ?? buckets[0] ?? null;
@@ -542,10 +558,16 @@ function OrderRow({
       {!isStaffOrder ? (
         <p className="mt-1 text-xs font-medium text-slate-400">{t("vendor.orders.parentLabel")}: {order.parent.name}</p>
       ) : null}
-      <div className="mt-1 flex flex-wrap gap-x-3 gap-y-0.5">
+      <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1">
         {order.items.map((item) => (
-          <span key={item.id} className="text-xs font-semibold text-slate-700">
+          <span key={item.id} className="inline-flex items-center gap-1 text-xs font-semibold text-slate-700">
             • {item.foodItem.name}
+            {item.coveredByStudentPackage ? (
+              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-700">
+                <Ticket className="h-3 w-3" />
+                {item.coveredByStudentPackage.package.name}
+              </span>
+            ) : null}
           </span>
         ))}
       </div>

@@ -19,6 +19,7 @@ import {
   History,
   Sparkles,
   Store,
+  Ticket,
   XCircle,
 } from "lucide-react";
 
@@ -65,6 +66,7 @@ type OrderItem = {
   mealPeriod: string | null;
   student: { name: string };
   foodItem: { name: string; image?: string | null };
+  coveredByStudentPackage?: { package: { name: string } } | null;
 };
 
 type Order = {
@@ -392,11 +394,17 @@ function ParentHistoryContent() {
                                 <span className="flex h-full items-center justify-center text-sm">🍽️</span>
                               )}
                             </div>
-                            <p className="min-w-0 flex-1 truncate text-sm font-semibold text-slate-900">
-                              {item.foodItem.name}
-                            </p>
+                            <div className="min-w-0 flex-1">
+                              <p className="truncate text-sm font-semibold text-slate-900">{item.foodItem.name}</p>
+                              {item.coveredByStudentPackage ? (
+                                <span className="mt-0.5 inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-700">
+                                  <Ticket className="h-3 w-3" />
+                                  {item.coveredByStudentPackage.package.name}
+                                </span>
+                              ) : null}
+                            </div>
                             <span className="shrink-0 text-sm font-bold text-slate-700">
-                              {formatCurrency(item.price * (item.quantity > 0 ? item.quantity : 1))}
+                              {item.coveredByStudentPackage ? "Incluido" : formatCurrency(item.price * (item.quantity > 0 ? item.quantity : 1))}
                             </span>
                           </div>
                         ))}
@@ -506,11 +514,17 @@ function ParentHistoryContent() {
                               <span className="flex h-full items-center justify-center text-sm">🍽️</span>
                             )}
                           </div>
-                          <p className="min-w-0 flex-1 truncate text-sm font-semibold text-slate-900">
-                            {item.foodItem.name}
-                          </p>
+                          <div className="min-w-0 flex-1">
+                            <p className="truncate text-sm font-semibold text-slate-900">{item.foodItem.name}</p>
+                            {item.coveredByStudentPackage ? (
+                              <span className="mt-0.5 inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-700">
+                                <Ticket className="h-3 w-3" />
+                                {item.coveredByStudentPackage.package.name}
+                              </span>
+                            ) : null}
+                          </div>
                           <span className="shrink-0 text-sm font-bold text-slate-700">
-                            {formatCurrency(item.price * (item.quantity > 0 ? item.quantity : 1))}
+                            {item.coveredByStudentPackage ? "Incluido" : formatCurrency(item.price * (item.quantity > 0 ? item.quantity : 1))}
                           </span>
                         </div>
                       ))}

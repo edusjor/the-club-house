@@ -36,7 +36,6 @@ type Student = {
   studentPackages?: {
     id: string;
     status: string;
-    remaining: number;
     package: {
       name: string;
     };
@@ -249,6 +248,7 @@ export default function ParentChildrenPage() {
           title={t("parent.children.addChild")}
           parents={parentOptions}
           lockParent
+          hideAthleteLevel
           submitting={createMutation.isPending}
           onClose={() => setShowCreateModal(false)}
           onSubmit={(values) => createMutation.mutate(values)}
@@ -269,6 +269,7 @@ export default function ParentChildrenPage() {
           title={t("parent.children.editChild")}
           parents={parentOptions}
           lockParent
+          hideAthleteLevel
           submitting={updateMutation.isPending}
           onClose={() => setSelectedStudent(null)}
           onSubmit={(values) => updateMutation.mutate(values)}

@@ -28,6 +28,8 @@
       "monthlyMenu": "Menú Mensual",
       "categories": "Categorías",
       "orders": "Pedidos",
+      "packages": "Paquetes",
+      "consumptions": "Consumos",
       "payments": "Pagos Pendientes",
       "settings": "Configuración"
     },
@@ -39,6 +41,7 @@
       "myChildren": "Mis Hijos",
       "menu": "Menú",
       "plan": "Planificar Comidas",
+      "packages": "Paquetes",
       "history": "Historial y Seguimiento",
       "balance": "Saldo y Pagos"
     },
@@ -47,7 +50,8 @@
       "dashboard": "Dashboard",
       "newOrder": "Nueva Orden",
       "ordersOfDay": "Pedidos del Día",
-      "searchStudent": "Buscar Estudiante"
+      "searchStudent": "Buscar Estudiante",
+      "history": "Historial"
     },
     "logout": "Cerrar Sesión",
     "openMenu": "Abrir menú",
@@ -166,13 +170,8 @@
   },
   "publicFooter": {
     "description": "Comidas saludables y deliciosas para estudiantes. Nutrición de calidad preparada con amor.",
-    "menuTitle": "Menú",
-    "menuItems": ["Desayunos", "Almuerzos", "Meriendas", "Bebidas", "Snacks", "Paquetes"],
     "portalTitle": "Portal",
     "portalSignIn": "Iniciar Sesión",
-    "portalParent": "Portal de Padres",
-    "portalAdmin": "Panel Admin",
-    "portalNutrition": "Nutricionista & Tips",
     "contactTitle": "Contacto",
     "rights": "Todos los derechos reservados.",
     "privacy": "Privacidad",
@@ -491,8 +490,13 @@
       "title": "Paquetes",
       "subtitle": "Consulta y compra planes de comidas para tus hijos",
       "buyPackage": "Comprar paquete",
+      "studentLabel": "Estudiante",
+      "packageLabel": "Paquete",
+      "startDateLabel": "Fecha de inicio",
       "selectStudent": "Selecciona estudiante",
       "selectPackage": "Selecciona paquete",
+      "selectStudentFirst": "Selecciona primero un estudiante",
+      "noPackagesForLevel": "No hay paquetes disponibles para este nivel",
       "processing": "Procesando...",
       "selectBothError": "Selecciona estudiante y paquete",
       "purchaseSuccess": "Paquete comprado correctamente. Se generó un pago pendiente para revisión.",
@@ -616,6 +620,7 @@
       "title": "Pedidos del Día",
       "subtitle": "Acepta los pedidos y marca servido o no recogido",
       "searchPlaceholder": "Buscar por estudiante, padre o número de pedido...",
+      "bucketAll": "Todos",
       "bucketOther": "Otros",
       "newOrder": "Nueva orden",
       "loadingOrders": "Cargando pedidos...",
@@ -677,9 +682,20 @@
       "errorAddOneProduct": "Agrega al menos un producto al pedido.",
       "errorSendOrder": "No se pudo enviar el pedido",
       "confirmChangeStudent": "Cada pedido es para un solo estudiante. Si cambias de estudiante se borrará todo lo agregado. ¿Deseas continuar?",
-      "successSentToKitchen": "Pedido enviado a cocina para {student}. Se cargó a la cuenta de {parent}.",
+      "orderSentTitle": "Pedido enviado a cocina",
+      "searchToStartHint": "Escribe un nombre arriba para buscar un estudiante e iniciar un pedido.",
+      "searchNextHint": "Busca al siguiente estudiante arriba para iniciar un nuevo pedido.",
       "fallbackParent": "su padre/madre",
-      "guardianLabel": "Padre/Madre"
+      "guardianLabel": "Padre/Madre",
+      "alreadyOrderedTitle": "Ya tiene pedido para hoy",
+      "alreadyOrderedHint": "Estos productos ya fueron pedidos por el padre/madre y están listos para cocina.",
+      "coveredByPackage": "Cubierto por {package}",
+      "coveredNoCharge": "Sin costo (paquete)",
+      "choosePackageTitle": "¿Con cuál paquete se cubre {name}?",
+      "choosePackageCancel": "Cancelar",
+      "choosePackageConfirm": "Usar este paquete",
+      "errorRegisterConsumption": "No se pudo registrar el consumo del paquete",
+      "packageBadge": "Paquete"
     },
     "history": {
       "title": "Historial",
@@ -743,7 +759,8 @@
   "foodTabs": {
     "general": "Comida general",
     "drinks": "Bebidas",
-    "casados": "Plato del Día"
+    "casados": "Plato del Día",
+    "snack": "Snacks (venta directa)"
   },
   "mealPeriods": {
     "break": "Break",
