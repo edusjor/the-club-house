@@ -13,7 +13,7 @@ function extractLocalePrefix(pathname: string): Locale | null {
 // Paths that stay reachable while "coming soon" mode is on, so an admin can
 // still sign in and manage the site. Disabling it is always manual — the
 // target date shown on the coming-soon page is purely informational.
-const COMING_SOON_ALLOWED_PATHS = ["/login", "/post-login", "/admin", "/coming-soon"];
+const COMING_SOON_ALLOWED_PATHS = ["/login", "/admin", "/coming-soon"];
 
 function isAllowedDuringComingSoon(path: string): boolean {
   return COMING_SOON_ALLOWED_PATHS.some(

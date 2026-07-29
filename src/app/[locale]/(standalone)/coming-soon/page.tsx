@@ -1,7 +1,6 @@
-import Link from "@/i18n/Link";
 import { Clock3, Sparkles } from "lucide-react";
 import { getDictionary } from "@/i18n/dictionaries";
-import { isLocale } from "@/i18n/config";
+import { isLocale, localePath } from "@/i18n/config";
 import { notFound } from "next/navigation";
 import { getSiteSettings } from "@/lib/site-settings";
 import { formatCostaRicaDateTime } from "@/lib/coming-soon-date";
@@ -58,12 +57,19 @@ export default async function ComingSoonPage({
         className="pointer-events-none absolute bottom-6 right-6 w-20 opacity-70 sm:right-10 sm:w-28"
       />
 
-      <Link
-        href="/login"
+      {/*
+        Plain <a>, not the i18n Link: this page is reached via a proxy
+        rewrite (the browser URL never actually becomes "/coming-soon"),
+        which leaves the client router's segment cache out of sync and
+        swallows client-side navigations. A full page load re-enters the
+        proxy cleanly and lands on the real /login page.
+      */}
+      <a
+        href={localePath(locale, "/login")}
         className="mt-12 text-xs font-semibold text-cyan-900/40 underline-offset-4 hover:text-cyan-700 hover:underline"
       >
         {t.signIn}
-      </Link>
+      </a>
     </div>
   );
 }
