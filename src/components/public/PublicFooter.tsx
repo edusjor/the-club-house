@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "@/i18n/Link";
-import { Mail, Phone, MapPin, Globe, AtSign, MessageCircle } from "lucide-react";
+import { Mail, Globe, AtSign, MessageCircle } from "lucide-react";
 import { useTranslations } from "@/i18n/I18nProvider";
 
 export default function PublicFooter() {
@@ -53,7 +53,7 @@ export default function PublicFooter() {
           <ul className="space-y-2 text-sm">
             {portalLinks.map((l) => (
               <li key={l.href}>
-                <Link href={l.href} className="hover:text-cyan-400 transition-colors">
+                <Link href={l.href} className="text-white hover:text-cyan-400 transition-colors">
                   {l.label}
                 </Link>
               </li>
@@ -69,15 +69,7 @@ export default function PublicFooter() {
           <ul className="space-y-3 text-sm">
             <li className="flex items-start gap-2.5">
               <Mail className="w-4 h-4 text-cyan-400 flex-shrink-0 mt-0.5" />
-              <span>support@theclubhousecr.com</span>
-            </li>
-            <li className="flex items-start gap-2.5">
-              <Phone className="w-4 h-4 text-cyan-400 flex-shrink-0 mt-0.5" />
-              <span>+506 4000 0000</span>
-            </li>
-            <li className="flex items-start gap-2.5">
-              <MapPin className="w-4 h-4 text-cyan-400 flex-shrink-0 mt-0.5" />
-              <span>San José, Costa Rica</span>
+              <span className="text-white">support@theclubhousecr.com</span>
             </li>
           </ul>
         </div>
@@ -86,10 +78,10 @@ export default function PublicFooter() {
       <div className="border-t border-slate-800 py-5 px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-300">
         <p>© {new Date().getFullYear()} The Club House. {t("publicFooter.rights")}</p>
         <div className="flex gap-4">
-          <Link href="#" className="hover:text-cyan-400 transition-colors">
+          <Link href="#" className="text-white hover:text-cyan-400 transition-colors">
             {t("publicFooter.privacy")}
           </Link>
-          <Link href="#" className="hover:text-cyan-400 transition-colors">
+          <Link href="#" className="text-white hover:text-cyan-400 transition-colors">
             {t("publicFooter.terms")}
           </Link>
         </div>

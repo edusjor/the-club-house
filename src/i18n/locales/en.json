@@ -53,6 +53,7 @@
       "searchStudent": "Find Student",
       "history": "History"
     },
+    "home": "Home",
     "logout": "Log out",
     "openMenu": "Open menu",
     "closeMenu": "Close menu"

@@ -9,7 +9,7 @@ import Header from "@/components/dashboard/Header";
 import BodyPortal from "@/components/BodyPortal";
 import DietaryTagBadges, { DietaryTagLabels } from "@/components/dashboard/DietaryTagBadges";
 import MonthlyMenuLinkButton from "@/components/parent/MonthlyMenuLinkButton";
-import { formatCurrency, LEVELS, normalizePriceLevel } from "@/lib/utils";
+import { cn, formatCurrency, LEVELS, normalizePriceLevel } from "@/lib/utils";
 import { FOOD_TABS, getFoodTab, parseFoodTags, type FoodTab } from "@/lib/food-tabs";
 
 // The Snack tab is vendor-only stock (in-person walk-up sales); /api/menu
@@ -562,12 +562,17 @@ export default function ParentPlanPage() {
       <button
         type="button"
         onClick={() => setIsCartMenuOpen((current) => !current)}
-        className="fixed right-3 top-3 z-50 inline-flex h-11 w-11 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-700 shadow-sm hover:bg-slate-50 sm:hidden"
+        className={cn(
+          "fixed right-3 top-3 z-50 inline-flex h-11 w-11 items-center justify-center rounded-xl border shadow-sm sm:hidden",
+          savedUnits > 0
+            ? "animate-pulse border-red-500 bg-red-500 text-white shadow-lg hover:bg-red-600"
+            : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+        )}
         aria-label={t("parent.plan.openCart")}
       >
         <ShoppingCart className="h-5 w-5" />
         {savedUnits > 0 ? (
-          <span className="absolute -right-1 -top-1 flex h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-cyan-600 px-1 text-[10px] font-bold text-white">
+          <span className="absolute -right-1 -top-1 flex h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-white px-1 text-[10px] font-bold text-red-600 ring-2 ring-red-500">
             {savedUnits}
           </span>
         ) : null}

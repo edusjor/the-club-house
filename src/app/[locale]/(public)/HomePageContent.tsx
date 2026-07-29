@@ -77,7 +77,7 @@ export default function HomePageContent() {
               </p>
               <div className="mt-8 flex flex-wrap gap-4">
                 <Link
-                  href="/menu"
+                  href="/monthly-menu"
                   className="inline-flex items-center gap-2 rounded-full bg-cyan-500 px-7 py-3.5 text-sm font-extrabold text-white shadow-md transition-colors hover:bg-cyan-600"
                 >
                   {home.hero.ctaMenu}
@@ -116,7 +116,7 @@ export default function HomePageContent() {
           </p>
         </div>
         <div className="overflow-hidden">
-          <div className="flex animate-marquee gap-48 whitespace-nowrap">
+          <div className="flex animate-marquee gap-16 whitespace-nowrap sm:gap-48">
             {[
               "/assets/logos/Logo 1008.webp",
               "/assets/logos/Logo Barra Brava (1).png",

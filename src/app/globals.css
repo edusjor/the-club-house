@@ -102,6 +102,12 @@ body {
   animation: marquee 25s linear infinite;
 }
 
+@media (max-width: 640px) {
+  .animate-marquee {
+    animation-duration: 12s;
+  }
+}
+
 @keyframes float-slow {
   0%,
   100% {

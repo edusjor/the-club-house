@@ -11,7 +11,6 @@ import {
   LayoutDashboard,
   LogOut,
   Package,
-  ShieldAlert,
   ShoppingCart,
   UtensilsCrossed,
   Users,
@@ -72,9 +71,8 @@ const sections: Section[] = [
     body: (
       <>
         <ul className="space-y-2 text-sm text-slate-600">
-          <li>• Organized into tabs: <b className="text-slate-900">General</b>, <b className="text-slate-900">Drinks</b>, and <b className="text-slate-900">Casados</b> (the daily special, with a photo from the monthly menu).</li>
+          <li>• Organized into tabs: <b className="text-slate-900">General</b>, <b className="text-slate-900">Drinks</b>, and <b className="text-slate-900">Meal of the Day</b> (the daily special, with a photo from the monthly menu).</li>
           <li>• Prices vary by each child&apos;s <b className="text-slate-900">school level</b>.</li>
-          <li>• Dishes are flagged when they&apos;re <b className="text-slate-900">gluten-free</b>, <b className="text-slate-900">lactose-free</b>, or <b className="text-slate-900">vegetarian</b>.</li>
         </ul>
         <p className="mt-3 text-sm text-slate-500">To actually order, use <b className="text-slate-900">Plan</b> below — that&apos;s where items go into a cart.</p>
       </>
@@ -90,9 +88,9 @@ const sections: Section[] = [
       <>
         <ol className="space-y-2.5 text-sm text-slate-700">
           <li className="flex gap-2.5"><span className="flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-cyan-500 text-[11px] font-bold text-white">1</span><span><b>Choose who it&apos;s for</b> — a child, or your own profile if you&apos;re staff. Prices adjust automatically to their level.</span></li>
-          <li className="flex gap-2.5"><span className="flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-cyan-500 text-[11px] font-bold text-white">2</span><span><b>Search or filter</b> dishes by tab (General, Drinks, Casados) and add them with the <em>Add</em> button.</span></li>
-          <li className="flex gap-2.5"><span className="flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-cyan-500 text-[11px] font-bold text-white">3</span><span><b>Pick the meal moment</b>: Break, Lunch, or Afterschool, for today or tomorrow. If a dish is the day&apos;s special, the moment locks in automatically.</span></li>
-          <li className="flex gap-2.5"><span className="flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-cyan-500 text-[11px] font-bold text-white">4</span><span>Tap <b>Add Line</b> to save that group of dishes to the cart — repeat for another child or another meal moment.</span></li>
+          <li className="flex gap-2.5"><span className="flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-cyan-500 text-[11px] font-bold text-white">2</span><span><b>Search or filter</b> dishes by tab (General, Drinks, Meal of the Day) and add them with the <em>Add</em> button.</span></li>
+          <li className="flex gap-2.5"><span className="flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-cyan-500 text-[11px] font-bold text-white">3</span><span><b>Pick the meal moment</b>: Break, Lunch, or Afterschool. If a dish is the day&apos;s special, the moment locks in automatically.</span></li>
+          <li className="flex gap-2.5"><span className="flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-cyan-500 text-[11px] font-bold text-white">4</span><span>Tap <b>Add Line</b> to save that group of dishes to the cart — repeat for another meal moment. Each cart is for a single child; switching child clears it and starts a new one.</span></li>
           <li className="flex gap-2.5"><span className="flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-cyan-500 text-[11px] font-bold text-white">5</span><span>Review the cart on the right (or the floating cart icon on mobile) and tap <b>Submit Order</b>.</span></li>
         </ol>
         <div className="mt-3 flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5 text-xs text-amber-800">
@@ -179,8 +177,6 @@ export default function GuidePage() {
             <Link href="/login" className="font-semibold text-cyan-700 hover:text-cyan-800">
               theclubhousecr.com/login
             </Link>
-            <span className="text-slate-300">·</span>
-            <span className="text-slate-500">Switch language anytime from the sidebar footer.</span>
           </div>
 
           {/* Family vs staff lanes */}
@@ -244,12 +240,6 @@ export default function GuidePage() {
 
           {/* Good to know */}
           <div className="mt-10 grid gap-3 sm:grid-cols-2">
-            <div className="rounded-xl border border-slate-200 border-l-4 border-l-amber-500 bg-white p-4 shadow-sm">
-              <p className="mb-1 flex items-center gap-1.5 text-sm font-bold text-slate-900">
-                <ShieldAlert className="h-4 w-4 text-amber-600" /> Allergies &amp; restrictions
-              </p>
-              <p className="text-xs text-slate-500">Add them on each child&apos;s profile — kitchen staff see them before handing over food.</p>
-            </div>
             <div className="rounded-xl border border-slate-200 border-l-4 border-l-amber-500 bg-white p-4 shadow-sm">
               <p className="mb-1 flex items-center gap-1.5 text-sm font-bold text-slate-900">
                 <Calendar className="h-4 w-4 text-amber-600" /> One order per meal

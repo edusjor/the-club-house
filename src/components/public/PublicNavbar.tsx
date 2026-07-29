@@ -18,9 +18,12 @@ export default function PublicNavbar() {
   const locale = useLocale();
   const pathname = usePathname();
 
+  // "Guide" is a fixed English label — it links to the English-only quick
+  // guide, so it isn't run through translation like the other nav links.
   const navLinks = [
     { href: "/", label: t("publicNav.home") },
-    { href: "/monthly-menu", label: t("publicNav.menu") },
+    { href: "/monthly-menu", label: t("publicNav.monthMenu") },
+    { href: "/guide", label: "Guide" },
   ];
 
   const isActive = (href: string) => {
@@ -36,7 +39,7 @@ export default function PublicNavbar() {
 
   return (
     <header className="absolute inset-x-0 top-0 z-30 bg-transparent">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-6 pr-28 sm:pr-44">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-6 lg:pr-28 xl:pr-44">
         {/* Desktop nav */}
         <nav className="hidden lg:flex items-center gap-1 rounded-full bg-white/90 p-1.5 shadow-sm backdrop-blur-sm">
           {navLinks.map((l) => {
@@ -86,9 +89,9 @@ export default function PublicNavbar() {
           )}
         </div>
 
-        {/* Mobile menu toggle */}
+        {/* Mobile menu toggle — kept on the left since the logo already anchors the top-right corner on small screens */}
         <button
-          className="ml-auto lg:hidden p-2 rounded-lg bg-white/80 backdrop-blur-sm hover:bg-white transition-colors"
+          className="lg:hidden p-2 rounded-lg bg-white/80 backdrop-blur-sm hover:bg-white transition-colors"
           onClick={() => setOpen(!open)}
         >
           {open ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}

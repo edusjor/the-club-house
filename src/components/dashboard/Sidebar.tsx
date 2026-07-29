@@ -8,6 +8,7 @@ import LanguageSwitcher from "@/i18n/LanguageSwitcher";
 import { localePath } from "@/i18n/config";
 import { useLocale, useTranslations } from "@/i18n/I18nProvider";
 import {
+  Home,
   LayoutDashboard,
   Users,
   UserCircle,
@@ -38,6 +39,8 @@ type NavItem = {
 };
 
 const adminNav: NavItem[] = [
+  { href: "/", labelKey: "nav.home", icon: Home },
+  { href: "/monthly-menu", labelKey: "publicNav.monthMenu", icon: Images },
   { href: "/admin/dashboard", labelKey: "nav.admin.dashboard", icon: LayoutDashboard },
   { href: "/admin/users", labelKey: "nav.admin.users", icon: Users },
   { href: "/admin/parents", labelKey: "nav.admin.parents", icon: UserCircle },
@@ -49,9 +52,12 @@ const adminNav: NavItem[] = [
   { href: "/admin/packages", labelKey: "nav.admin.packages", icon: Package },
   { href: "/admin/payments", labelKey: "nav.admin.payments", icon: CreditCard },
   { href: "/admin/settings", labelKey: "nav.admin.settings", icon: Settings },
+  { href: "/guide", label: "Guide", icon: HelpCircle },
 ];
 
 const parentNav: NavItem[] = [
+  { href: "/", labelKey: "nav.home", icon: Home },
+  { href: "/monthly-menu", labelKey: "publicNav.monthMenu", icon: Images },
   { href: "/parent/dashboard", labelKey: "nav.parent.dashboard", icon: LayoutDashboard },
   { href: "/parent/children", labelKey: "nav.parent.myChildren", icon: Baby },
   { href: "/parent/menu", labelKey: "nav.parent.menu", icon: UtensilsCrossed },
@@ -63,11 +69,14 @@ const parentNav: NavItem[] = [
 ];
 
 const vendorNav: NavItem[] = [
+  { href: "/", labelKey: "nav.home", icon: Home },
+  { href: "/monthly-menu", labelKey: "publicNav.monthMenu", icon: Images },
   { href: "/vendor/dashboard", labelKey: "nav.vendor.dashboard", icon: LayoutDashboard },
   { href: "/vendor/new-order", labelKey: "nav.vendor.newOrder", icon: UtensilsCrossed },
   { href: "/vendor/orders", labelKey: "nav.vendor.ordersOfDay", icon: ShoppingCart },
   { href: "/vendor/search", labelKey: "nav.vendor.searchStudent", icon: Search },
   { href: "/vendor/history", labelKey: "nav.vendor.history", icon: History },
+  { href: "/guide", label: "Guide", icon: HelpCircle },
 ];
 
 type SidebarRole = "ADMIN" | "PARENT" | "VENDOR";
@@ -119,7 +128,8 @@ export default function Sidebar({ role, userName, userEmail, className, onNaviga
         {navItems.map((item) => {
           const Icon = item.icon;
           const fullHref = localePath(locale, item.href);
-          const active = pathname === fullHref || pathname.startsWith(fullHref + "/");
+          const active =
+            item.href === "/" ? pathname === fullHref : pathname === fullHref || pathname.startsWith(fullHref + "/");
           return (
             <Link
               key={item.href}
