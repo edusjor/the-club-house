@@ -19,6 +19,7 @@ const statusMap: Record<
   DELIVERED: { labelKey: "status.delivered", className: "bg-emerald-100 text-emerald-700" },
   NOT_PICKED_UP: { labelKey: "status.notPickedUp", className: "bg-slate-200 text-slate-700" },
   CANCELLED: { labelKey: "status.cancelled", className: "bg-red-100 text-red-700" },
+  CANCELLED_BY_ADMIN: { labelKey: "status.cancelledByAdmin", className: "bg-red-100 text-red-700" },
   // Payment statuses
   APPROVED: { labelKey: "status.approved", className: "bg-emerald-100 text-emerald-700" },
   REJECTED: { labelKey: "status.rejected", className: "bg-red-100 text-red-700" },

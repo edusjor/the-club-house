@@ -301,6 +301,7 @@
     "delivered": "Entregado",
     "notPickedUp": "No recogido",
     "cancelled": "Cancelado",
+    "cancelledByAdmin": "Cancelado por admin",
     "approved": "Aprobado",
     "rejected": "Rechazado",
     "active": "Activo",
@@ -510,7 +511,13 @@
       "consumed": "Consumidos",
       "since": "Desde",
       "until": "Hasta",
-      "days": "días"
+      "days": "días",
+      "cancel": "Cancelar",
+      "cancelling": "Cancelando...",
+      "cancelConfirm": "¿Cancelar este paquete? El monto cobrado se descontará de tu saldo.",
+      "cancelSuccess": "Paquete cancelado. Se descontó el cargo de tu saldo.",
+      "cancelError": "No se pudo cancelar el paquete",
+      "alreadyStartedNotice": "Este paquete ya inició. Contacta a un administrador para cancelarlo."
     },
     "plan": {
       "headerTitle": "Pedir Comida",
@@ -576,6 +583,7 @@
       "confirmChangeChild": "Cada pedido es para un solo hijo. Si cambias de hijo se borrará todo lo que agregaste al carrito. ¿Deseas continuar?",
       "confirmChangePerson": "Cada pedido es para una sola persona. Si cambias de persona se borrará todo lo que agregaste al carrito. ¿Deseas continuar?",
       "errorCreateOrder": "No se pudo crear el pedido",
+      "viewBalancePage": "Ver mi saldo",
       "more": "más"
     },
     "profile": {
@@ -611,6 +619,8 @@
       "registered": "Registrados",
       "activeStudents": "Estudiantes activos",
       "available": "Disponibles",
+      "cancelledToday": "Cancelados hoy",
+      "forRecord": "Para registro",
       "monthlySales": "Ventas del mes",
       "accumulatedOrders": "Pedidos acumulados",
       "quickSearch": "Búsqueda rápida",

@@ -2,6 +2,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/db";
 import { redirect } from "next/navigation";
 import DashboardShell from "@/components/dashboard/DashboardShell";
+import ImpersonationBanner from "@/components/dashboard/ImpersonationBanner";
 import { localePath } from "@/i18n/config";
 
 export default async function ParentLayout({
@@ -45,6 +46,7 @@ export default async function ParentLayout({
       userEmail={currentUser.email ?? undefined}
       titleKey={titleKey}
     >
+      <ImpersonationBanner />
       {children}
     </DashboardShell>
   );

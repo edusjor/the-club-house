@@ -591,7 +591,11 @@ export async function POST(req: NextRequest) {
   } catch (error) {
     if (error instanceof Error && error.message === "CREDIT_LIMIT_EXCEEDED") {
       return NextResponse.json(
-        { error: "El saldo pendiente del padre supera el límite disponible. Un administrador debe aumentar el límite para poder pedir de nuevo." },
+        {
+          error:
+            "El saldo pendiente supera el límite de crédito disponible. Pague el saldo pendiente para poder pedir de nuevo, o pídale a un administrador que aumente el límite.",
+          code: "CREDIT_LIMIT_EXCEEDED",
+        },
         { status: 400 }
       );
     }

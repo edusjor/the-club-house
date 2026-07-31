@@ -464,3 +464,4 @@ docker image prune -f
 docker builder prune -f
 
 
+docker compose logs --tail=60 app

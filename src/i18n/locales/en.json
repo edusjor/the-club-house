@@ -301,6 +301,7 @@
     "delivered": "Delivered",
     "notPickedUp": "Not picked up",
     "cancelled": "Cancelled",
+    "cancelledByAdmin": "Cancelled by admin",
     "approved": "Approved",
     "rejected": "Rejected",
     "active": "Active",
@@ -510,7 +511,13 @@
       "consumed": "Consumed",
       "since": "Since",
       "until": "Until",
-      "days": "days"
+      "days": "days",
+      "cancel": "Cancel",
+      "cancelling": "Cancelling...",
+      "cancelConfirm": "Cancel this package? The amount charged will be removed from your balance.",
+      "cancelSuccess": "Package cancelled. The charge was removed from your balance.",
+      "cancelError": "Couldn't cancel the package",
+      "alreadyStartedNotice": "This package already started. Contact an administrator to cancel it."
     },
     "plan": {
       "headerTitle": "Order Food",
@@ -576,6 +583,7 @@
       "confirmChangeChild": "Each order is for a single child. If you change child, everything added to the cart will be cleared. Do you want to continue?",
       "confirmChangePerson": "Each order is for a single person. If you change person, everything added to the cart will be cleared. Do you want to continue?",
       "errorCreateOrder": "Couldn't create the order",
+      "viewBalancePage": "View my balance",
       "more": "more"
     },
     "profile": {
@@ -611,6 +619,8 @@
       "registered": "Registered",
       "activeStudents": "Active students",
       "available": "Available",
+      "cancelledToday": "Cancelled today",
+      "forRecord": "For record",
       "monthlySales": "Monthly sales",
       "accumulatedOrders": "Accumulated orders",
       "quickSearch": "Quick search",

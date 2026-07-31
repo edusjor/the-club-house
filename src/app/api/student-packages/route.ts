@@ -27,7 +27,11 @@ export async function GET() {
     role === "ADMIN"
       ? await prisma.studentPackage.findMany({
           include: {
-            student: true,
+            student: {
+              include: {
+                parent: { select: { id: true, name: true, email: true, phone: true } },
+              },
+            },
             package: { include: { prices: true } },
           },
           orderBy: { createdAt: "desc" },
@@ -165,6 +169,7 @@ export async function POST(req: NextRequest) {
         endDate,
         status: "ACTIVE",
         consumed: 0,
+        pricePaid: packagePrice,
       },
       include: {
         student: true,

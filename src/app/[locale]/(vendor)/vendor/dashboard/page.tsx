@@ -5,7 +5,7 @@ import Header from "@/components/dashboard/Header";
 import StatsCard from "@/components/dashboard/StatsCard";
 import StatusBadge from "@/components/dashboard/StatusBadge";
 import { formatCurrency, formatDateTime } from "@/lib/utils";
-import { ClipboardList, Search, ShoppingCart, TrendingUp, UtensilsCrossed, Users } from "lucide-react";
+import { ClipboardList, Search, ShoppingCart, TrendingUp, UtensilsCrossed, Users, XCircle } from "lucide-react";
 import { getDictionary } from "@/i18n/dictionaries";
 import { isLocale } from "@/i18n/config";
 import { notFound } from "next/navigation";
@@ -26,9 +26,10 @@ async function getVendorDashboardData() {
   const userId = (session?.user as { id?: string } | undefined)?.id;
   const { start, end } = getDayBounds();
 
-  const [todayOrders, pendingOrders, todayConsumptions, activeStudents, recentOrders] = await Promise.all([
+  const [todayOrders, pendingOrders, cancelledOrders, todayConsumptions, activeStudents, recentOrders] = await Promise.all([
     prisma.order.count({
       where: {
+        status: { not: "CANCELLED" },
         items: {
           some: {
             scheduledDate: { gte: start, lte: end },
@@ -40,8 +41,19 @@ async function getVendorDashboardData() {
       where: {
         delivered: false,
         scheduledDate: { gte: start, lte: end },
+        order: { status: { not: "CANCELLED" } },
       },
       _sum: { quantity: true },
+    }),
+    prisma.order.count({
+      where: {
+        status: "CANCELLED",
+        items: {
+          some: {
+            scheduledDate: { gte: start, lte: end },
+          },
+        },
+      },
     }),
     prisma.orderItem.count({ where: { delivered: true, scheduledDate: { gte: start, lte: end } } }),
     prisma.student.count({ where: { active: true } }),
@@ -76,6 +88,7 @@ async function getVendorDashboardData() {
   return {
     todayOrders,
     pendingOrders: pendingOrders._sum.quantity ?? 0,
+    cancelledOrders,
     todayConsumptions,
     activeStudents,
     recentOrders,
@@ -100,11 +113,12 @@ export default async function VendorDashboard({
       <Header title={dict.nav.vendor.title} subtitle={t.subtitle} />
 
       <div className="p-6 space-y-6">
-        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-5">
           <StatsCard title={t.todayOrders} value={data.todayOrders} icon={ShoppingCart} iconColor="text-cyan-600" iconBg="bg-cyan-100" subtitle={t.generatedToday} />
           <StatsCard title={t.pending} value={data.pendingOrders} icon={ClipboardList} iconColor="text-yellow-600" iconBg="bg-yellow-100" subtitle={t.itemsToDeliver} />
           <StatsCard title={t.todayConsumptions} value={data.todayConsumptions} icon={UtensilsCrossed} iconColor="text-emerald-600" iconBg="bg-emerald-100" subtitle={t.registered} />
           <StatsCard title={t.activeStudents} value={data.activeStudents} icon={Users} iconColor="text-violet-600" iconBg="bg-violet-100" subtitle={t.available} />
+          <StatsCard title={t.cancelledToday} value={data.cancelledOrders} icon={XCircle} iconColor="text-red-600" iconBg="bg-red-100" subtitle={t.forRecord} />
         </div>
 
         <div className="grid sm:grid-cols-2 gap-5">

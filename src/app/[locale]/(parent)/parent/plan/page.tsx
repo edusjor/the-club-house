@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 import Image from "next/image";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Header from "@/components/dashboard/Header";
 import BodyPortal from "@/components/BodyPortal";
@@ -149,6 +150,7 @@ export default function ParentPlanPage() {
 
   const [cartLines, setCartLines] = useState<CartLine[]>([]);
   const [formError, setFormError] = useState("");
+  const [creditLimitExceeded, setCreditLimitExceeded] = useState(false);
 
   const dietaryLabels: DietaryTagLabels = {
     GLUTEN_FREE: t("dietaryTags.glutenFree"),
@@ -420,6 +422,7 @@ export default function ParentPlanPage() {
       setEditingLineId(null);
       setPendingFoodToAdd(null);
       setFormError("");
+      setCreditLimitExceeded(false);
 
       const total = createdOrders.reduce((sum, order) => sum + order.total, 0);
       const ids = createdOrders.map((order) => order.id).join(",");
@@ -433,6 +436,9 @@ export default function ParentPlanPage() {
           ? String(error.response.data.error)
           : t("parent.plan.errorCreateOrder");
       setFormError(message);
+      setCreditLimitExceeded(
+        axios.isAxiosError(error) && error.response?.data?.code === "CREDIT_LIMIT_EXCEEDED"
+      );
     },
   });
 
@@ -445,6 +451,7 @@ export default function ParentPlanPage() {
     if (cartLines.length === 0 || orderMutation.isPending) return;
 
     setFormError("");
+    setCreditLimitExceeded(false);
     orderMutation.mutate(cartLines);
   };
 
@@ -527,6 +534,17 @@ export default function ParentPlanPage() {
       {formError ? (
         <div className="mb-3 rounded-xl border border-red-200 bg-red-50 px-3 py-2.5 text-sm text-red-700">
           {formError}
+          {creditLimitExceeded ? (
+            <>
+              {" "}
+              <Link
+                href={localePath(locale, "/parent/balance")}
+                className="font-semibold underline hover:text-red-800"
+              >
+                {t("parent.plan.viewBalancePage")}
+              </Link>
+            </>
+          ) : null}
         </div>
       ) : null}
 

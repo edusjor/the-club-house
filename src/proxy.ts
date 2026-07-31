@@ -9,8 +9,39 @@ function extractLocalePrefix(pathname: string): Locale | null {
   return match ?? null;
 }
 
+const SAFE_METHODS = new Set(["GET", "HEAD", "OPTIONS"]);
+
 export default auth((req) => {
   const { pathname, search } = req.nextUrl;
+
+  // Admin impersonation sessions are read-only by default (see src/auth.ts).
+  // Enforce that centrally here rather than in every route handler, so a
+  // route added later doesn't accidentally forget the check.
+  if (pathname.startsWith("/api/")) {
+    // NextAuth's own routes must always pass through untouched — otherwise a
+    // read-only session could never call /api/auth/session to toggle
+    // write-access or exit impersonation.
+    if (pathname.startsWith("/api/auth/")) {
+      return NextResponse.next();
+    }
+
+    if (!SAFE_METHODS.has(req.method)) {
+      const user = req.auth?.user as
+        | { impersonating?: boolean; impersonationWriteAllowed?: boolean }
+        | undefined;
+      if (user?.impersonating && !user.impersonationWriteAllowed) {
+        return NextResponse.json(
+          {
+            error:
+              "Acción bloqueada: estás viendo esta cuenta como administrador en modo solo lectura.",
+          },
+          { status: 403 }
+        );
+      }
+    }
+    return NextResponse.next();
+  }
+
   const localePrefix = extractLocalePrefix(pathname);
 
   // The default locale (English) is served without a URL prefix: "/menu"
@@ -74,5 +105,5 @@ export default auth((req) => {
 });
 
 export const config = {
-  matcher: ["/((?!api|_next|.*\\..*).*)"],
+  matcher: ["/((?!api|_next|.*\\..*).*)", "/api/:path*"],
 };

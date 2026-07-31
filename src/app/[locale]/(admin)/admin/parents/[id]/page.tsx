@@ -2,8 +2,9 @@
 
 import { useMemo, useState } from "react";
 import Link from "@/i18n/Link";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useSession } from "next-auth/react";
 import axios from "axios";
 import Header from "@/components/dashboard/Header";
 import StatusBadge from "@/components/dashboard/StatusBadge";
@@ -11,7 +12,9 @@ import StudentFormModal, {
   ParentOption,
   StudentFormValues,
 } from "@/components/dashboard/StudentFormModal";
-import { ArrowLeft, Mail, Phone, Plus, UserCircle, Pencil } from "lucide-react";
+import { ArrowLeft, Mail, Phone, Plus, UserCircle, Pencil, Eye } from "lucide-react";
+import { useLocale } from "@/i18n/I18nProvider";
+import { localePath } from "@/i18n/config";
 
 type ParentDetail = {
   id: string;
@@ -131,9 +134,27 @@ export default function AdminParentDetailPage() {
   const params = useParams<{ id: string }>();
   const parentId = params?.id;
   const queryClient = useQueryClient();
+  const router = useRouter();
+  const locale = useLocale();
+  const { update: updateSession } = useSession();
   const [showParentModal, setShowParentModal] = useState(false);
   const [showStudentModal, setShowStudentModal] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState<ParentDetail["parentStudents"][number] | null>(null);
+  const [impersonating, setImpersonating] = useState(false);
+
+  const handleImpersonate = async (targetId: string) => {
+    if (
+      !window.confirm(
+        "Vas a entrar a la cuenta de este padre/madre sin contraseña, viendo todo como si hubiera iniciado sesión. Esta acción es sensible. ¿Continuar?"
+      )
+    ) {
+      return;
+    }
+    setImpersonating(true);
+    await updateSession({ impersonateUserId: targetId });
+    router.push(localePath(locale, "/parent/dashboard"));
+    router.refresh();
+  };
 
   const { data: parent, isLoading } = useQuery<ParentDetail>({
     queryKey: ["parent-detail", parentId],
@@ -199,6 +220,16 @@ export default function AdminParentDetailPage() {
         subtitle="Informacion personal, edicion y gestion de hijos"
         actions={
           <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => handleImpersonate(parent.id)}
+              disabled={impersonating}
+              className="inline-flex items-center gap-2 rounded-xl border border-amber-300 bg-amber-50 px-4 py-2 text-sm font-semibold text-amber-800 hover:bg-amber-100 disabled:opacity-60"
+              title="Entra a la cuenta de este padre sin contraseña, en modo solo lectura por defecto"
+            >
+              <Eye className="h-4 w-4" />
+              {impersonating ? "Entrando..." : "Ver como este padre"}
+            </button>
             <button
               type="button"
               onClick={() => setShowParentModal(true)}

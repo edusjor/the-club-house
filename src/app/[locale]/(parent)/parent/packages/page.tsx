@@ -7,7 +7,7 @@ import Header from "@/components/dashboard/Header";
 import StatusBadge from "@/components/dashboard/StatusBadge";
 import { formatCurrency, formatDate, normalizePriceLevel } from "@/lib/utils";
 import { useTranslations } from "@/i18n/I18nProvider";
-import { CheckCircle2, PackagePlus } from "lucide-react";
+import { CheckCircle2, PackagePlus, XCircle } from "lucide-react";
 
 type PriceRow = { level: string; price: number };
 type Student = { id: string; name: string; level: string };
@@ -23,11 +23,16 @@ type StudentPackage = {
   id: string;
   status: string;
   consumed: number;
+  pricePaid: number;
   startDate: string;
   endDate?: string | null;
   student: { name: string; level: string };
   package: { name: string; validityDays?: number | null; prices: PriceRow[] };
 };
+
+function hasNotStartedYet(startDate: string, reference: Date = new Date()): boolean {
+  return new Date(startDate).getTime() > reference.getTime();
+}
 
 function priceForLevel(prices: PriceRow[], level: string | undefined): number | null {
   if (!level) return null;
@@ -90,6 +95,25 @@ export default function ParentPackagesPage() {
         axios.isAxiosError(mutationError) && mutationError.response?.data?.error
           ? String(mutationError.response.data.error)
           : t("parent.packages.purchaseError");
+      setFeedback("");
+      setError(message);
+    },
+  });
+
+  const cancelMutation = useMutation({
+    mutationFn: (studentPackageId: string) =>
+      axios.patch(`/api/student-packages/${studentPackageId}`, { action: "cancel" }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["student-packages"] });
+      queryClient.invalidateQueries({ queryKey: ["parent-balance"] });
+      setFeedback(t("parent.packages.cancelSuccess"));
+      setError("");
+    },
+    onError: (mutationError: unknown) => {
+      const message =
+        axios.isAxiosError(mutationError) && mutationError.response?.data?.error
+          ? String(mutationError.response.data.error)
+          : t("parent.packages.cancelError");
       setFeedback("");
       setError(message);
     },
@@ -199,6 +223,12 @@ export default function ParentPackagesPage() {
 
         {studentPackages.map((studentPackage) => {
           const price = priceForLevel(studentPackage.package.prices, studentPackage.student.level) ?? 0;
+          const notStarted = hasNotStartedYet(studentPackage.startDate);
+          const canCancel = studentPackage.status === "ACTIVE" && notStarted;
+          const alreadyStarted = studentPackage.status === "ACTIVE" && !notStarted;
+          const isCancelling =
+            cancelMutation.isPending && cancelMutation.variables === studentPackage.id;
+
           return (
             <div key={studentPackage.id} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
               <div className="flex items-start justify-between gap-4">
@@ -211,6 +241,30 @@ export default function ParentPackagesPage() {
                 <StatusBadge status={studentPackage.status} />
               </div>
               <div className="mt-3 text-sm text-slate-600">{formatCurrency(price)} · {studentPackage.package.validityDays ?? 0} {t("parent.packages.days")}</div>
+
+              {canCancel ? (
+                <div className="mt-3 flex justify-end">
+                  <button
+                    onClick={() => {
+                      if (!window.confirm(t("parent.packages.cancelConfirm"))) return;
+                      setFeedback("");
+                      setError("");
+                      cancelMutation.mutate(studentPackage.id);
+                    }}
+                    disabled={cancelMutation.isPending}
+                    className="inline-flex items-center gap-2 rounded-xl border border-red-200 px-3 py-1.5 text-xs font-semibold text-red-600 hover:bg-red-50 disabled:opacity-60"
+                  >
+                    {isCancelling ? (
+                      <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-red-600 border-t-transparent" />
+                    ) : (
+                      <XCircle className="h-3.5 w-3.5" />
+                    )}
+                    {isCancelling ? t("parent.packages.cancelling") : t("parent.packages.cancel")}
+                  </button>
+                </div>
+              ) : alreadyStarted ? (
+                <p className="mt-3 text-right text-xs text-slate-400">{t("parent.packages.alreadyStartedNotice")}</p>
+              ) : null}
             </div>
           );
         })}

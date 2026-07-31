@@ -159,6 +159,7 @@ model StudentPackage {
   endDate     DateTime?
   status      String    @default("ACTIVE")
   consumed    Int       @default(0) // how many days this package has been used — informational only, doesn't gate eligibility
+  pricePaid   Int       @default(0) // amount charged to the parent's balance at purchase — reversed/reapplied on cancel/reactivate
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 
