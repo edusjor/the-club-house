@@ -52,7 +52,7 @@ type StudentPackageVendorView = {
   id: string;
   usedToday: boolean;
   student: { id: string; name: string };
-  package: { name: string };
+  package: { name: string; eligibleItemNames: string[] };
 };
 
 type OrderWithTime = Order & { time: Date; mealPeriod: string | null; carriedOver?: boolean };
@@ -528,37 +528,53 @@ function AvailablePackagesSummary({
   packages: StudentPackageVendorView[];
   t: (key: string) => string;
 }) {
-  const byStudent = new Map<string, { name: string; packages: StudentPackageVendorView[] }>();
+  const byStudent = new Map<string, { id: string; name: string; packages: StudentPackageVendorView[] }>();
   for (const sp of packages) {
     const existing = byStudent.get(sp.student.id);
     if (existing) existing.packages.push(sp);
-    else byStudent.set(sp.student.id, { name: sp.student.name, packages: [sp] });
+    else byStudent.set(sp.student.id, { id: sp.student.id, name: sp.student.name, packages: [sp] });
   }
 
   return (
-    <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 shadow-sm">
-      <div className="flex items-center gap-2 text-sm font-black text-emerald-900">
-        <Ticket className="h-4 w-4" />
+    <div className="space-y-2">
+      <div className="flex items-center gap-2 text-sm font-black text-slate-700">
+        <Ticket className="h-4 w-4 text-emerald-600" />
         {t("vendor.orders.availablePackagesTitle")}
       </div>
-      <div className="mt-2 space-y-2">
-        {[...byStudent.values()].map((entry) => (
-          <div key={entry.name} className="flex flex-wrap items-center gap-2 text-sm">
-            <span className="font-semibold text-emerald-900">{entry.name}:</span>
-            {entry.packages.map((sp) => (
-              <span
-                key={sp.id}
-                className={cn(
-                  "inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-bold",
-                  sp.usedToday ? "bg-slate-200 text-slate-600" : "bg-emerald-500 text-white"
-                )}
-              >
-                {sp.package.name} · {sp.usedToday ? t("vendor.orders.packageUsedToday") : t("vendor.orders.packageAvailableToday")}
-              </span>
-            ))}
+      {[...byStudent.values()].map((entry) => (
+        <Link
+          key={entry.id}
+          href={`/vendor/new-order?studentId=${entry.id}`}
+          className="block rounded-2xl border border-emerald-200 bg-emerald-50 p-4 shadow-sm transition-colors hover:border-emerald-300 hover:bg-emerald-100"
+        >
+          <div className="flex items-center justify-between gap-2">
+            <span className="font-bold text-emerald-900">{entry.name}</span>
+            <span className="shrink-0 text-xs font-bold text-emerald-700">{t("vendor.search.newOrder")} →</span>
           </div>
-        ))}
-      </div>
+          <div className="mt-2 flex flex-wrap gap-2">
+            {entry.packages.map((sp) => {
+              const covers = sp.package.eligibleItemNames.join(", ");
+              return (
+                <span
+                  key={sp.id}
+                  title={covers ? `${t("vendor.orders.packageCoversLabel")}: ${covers}` : undefined}
+                  className={cn(
+                    "inline-flex flex-col items-start gap-0.5 rounded-xl px-2.5 py-1.5 text-xs font-bold",
+                    sp.usedToday ? "bg-slate-200 text-slate-600" : "bg-emerald-500 text-white"
+                  )}
+                >
+                  <span>{sp.package.name} · {sp.usedToday ? t("vendor.orders.packageUsedToday") : t("vendor.orders.packageAvailableToday")}</span>
+                  {covers ? (
+                    <span className={cn("text-[10px] font-semibold", sp.usedToday ? "text-slate-500" : "text-emerald-50")}>
+                      {t("vendor.orders.packageCoversLabel")}: {covers}
+                    </span>
+                  ) : null}
+                </span>
+              );
+            })}
+          </div>
+        </Link>
+      ))}
     </div>
   );
 }

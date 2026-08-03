@@ -666,7 +666,8 @@
       "carriedOverBadge": "Ordered {date}, not picked up",
       "availablePackagesTitle": "Available packages",
       "packageUsedToday": "Used today",
-      "packageAvailableToday": "Available today"
+      "packageAvailableToday": "Available today",
+      "packageCoversLabel": "Covers"
     },
     "newOrder": {
       "title": "New Restaurant Order",
@@ -717,7 +718,8 @@
       "packageBadge": "Package",
       "availablePackagesTitle": "Available packages",
       "packageUsedToday": "Used today",
-      "packageAvailableToday": "Available today"
+      "packageAvailableToday": "Available today",
+      "packageCoversLabel": "Covers"
     },
     "history": {
       "title": "History",

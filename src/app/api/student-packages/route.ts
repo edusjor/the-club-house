@@ -1,6 +1,7 @@
 import { auth } from "@/auth";
 import { prisma } from "@/lib/db";
 import { normalizePriceLevel } from "@/lib/utils";
+import { getFoodTab, isPackageEligibleFoodTab } from "@/lib/food-tabs";
 import { NextRequest, NextResponse } from "next/server";
 
 function getDayBounds(date = new Date()) {
@@ -22,6 +23,80 @@ export async function GET() {
 
   const role = (session.user as { role?: string }).role;
   const userId = (session.user as { id?: string }).id;
+
+  if (role === "VENDOR") {
+    const studentPackages = await prisma.studentPackage.findMany({
+      where: {
+        status: "ACTIVE",
+        student: { active: true },
+        startDate: { lte: new Date() },
+        OR: [{ endDate: null }, { endDate: { gte: new Date() } }],
+      },
+      include: {
+        student: true,
+        package: {
+          include: {
+            prices: true,
+            packageItems: { include: { category: { select: { name: true } } } },
+          },
+        },
+      },
+      orderBy: { createdAt: "desc" },
+    });
+
+    if (studentPackages.length === 0) {
+      return NextResponse.json(studentPackages);
+    }
+
+    const { start, end } = getDayBounds();
+    const usedTodayRows = await prisma.orderItem.findMany({
+      where: {
+        coveredByStudentPackageId: { in: studentPackages.map((sp) => sp.id) },
+        scheduledDate: { gte: start, lte: end },
+      },
+      select: { coveredByStudentPackageId: true },
+    });
+    const usedTodayIds = new Set(usedTodayRows.map((row) => row.coveredByStudentPackageId));
+
+    // A package's PackageItem is scoped to a whole FoodCategory (e.g.
+    // "Lunch"), but that category also holds regular a-la-carte dishes sold
+    // separately — the package only ever actually redeems the dish-of-the-day
+    // (CASADOS tab) or a walk-up snack (SNACK tab) within it. Resolve the
+    // real eligible item names here so the vendor UI shows what a package
+    // truly covers instead of the whole (misleadingly broad) category name.
+    const categoryIds = [
+      ...new Set(studentPackages.flatMap((sp) => sp.package.packageItems.map((pi) => pi.categoryId))),
+    ];
+    const candidateFoodItems =
+      categoryIds.length > 0
+        ? await prisma.foodItem.findMany({
+            where: { categoryId: { in: categoryIds }, available: true },
+            select: { name: true, categoryId: true, foodTab: true, category: { select: { name: true } } },
+          })
+        : [];
+    const eligibleNamesByCategory = new Map<string, string[]>();
+    for (const item of candidateFoodItems) {
+      if (!isPackageEligibleFoodTab(getFoodTab(item))) continue;
+      const names = eligibleNamesByCategory.get(item.categoryId) ?? [];
+      names.push(item.name);
+      eligibleNamesByCategory.set(item.categoryId, names);
+    }
+
+    return NextResponse.json(
+      studentPackages.map((sp) => ({
+        ...sp,
+        usedToday: usedTodayIds.has(sp.id),
+        package: {
+          ...sp.package,
+          eligibleItemNames: [
+            ...new Set(
+              sp.package.packageItems.flatMap((pi) => eligibleNamesByCategory.get(pi.categoryId) ?? [])
+            ),
+          ],
+        },
+      }))
+    );
+  }
 
   const studentPackages =
     role === "ADMIN"
@@ -45,40 +120,10 @@ export async function GET() {
           },
           orderBy: { createdAt: "desc" },
         })
-      : role === "VENDOR"
-      ? await prisma.studentPackage.findMany({
-          where: {
-            status: "ACTIVE",
-            student: { active: true },
-            startDate: { lte: new Date() },
-            OR: [{ endDate: null }, { endDate: { gte: new Date() } }],
-          },
-          include: {
-            student: true,
-            package: { include: { prices: true, packageItems: true } },
-          },
-          orderBy: { createdAt: "desc" },
-        })
       : null;
 
   if (!studentPackages) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  }
-
-  if (role === "VENDOR" && studentPackages.length > 0) {
-    const { start, end } = getDayBounds();
-    const usedTodayRows = await prisma.orderItem.findMany({
-      where: {
-        coveredByStudentPackageId: { in: studentPackages.map((sp) => sp.id) },
-        scheduledDate: { gte: start, lte: end },
-      },
-      select: { coveredByStudentPackageId: true },
-    });
-    const usedTodayIds = new Set(usedTodayRows.map((row) => row.coveredByStudentPackageId));
-
-    return NextResponse.json(
-      studentPackages.map((sp) => ({ ...sp, usedToday: usedTodayIds.has(sp.id) }))
-    );
   }
 
   return NextResponse.json(studentPackages);

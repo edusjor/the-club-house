@@ -13,6 +13,18 @@ export function isFoodTab(value: unknown): value is FoodTab {
   return typeof value === "string" && (FOOD_TAB_VALUES as string[]).includes(value);
 }
 
+// Monthly packages (Lunch, Snack) are scoped to their FoodCategory (e.g.
+// "Lunch"), but that category also holds regular a-la-carte items sold
+// separately — Chicken Quesadilla, Cheese Burger, chips, cookies, etc. A
+// package should only ever redeem the dish-of-the-day (CASADOS tab) or a
+// walk-up snack (SNACK tab), never those a-la-carte GENERAL/DRINKS items,
+// even though they share the same category.
+const PACKAGE_ELIGIBLE_TABS: FoodTab[] = ["CASADOS", "SNACK"];
+
+export function isPackageEligibleFoodTab(foodTab: FoodTab): boolean {
+  return (PACKAGE_ELIGIBLE_TABS as string[]).includes(foodTab);
+}
+
 export function normalizeFoodToken(value: string): string {
   return value
     .normalize("NFD")

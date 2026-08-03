@@ -8,8 +8,8 @@ import Image from "next/image";
 import Link from "@/i18n/Link";
 import Header from "@/components/dashboard/Header";
 import DietaryTagBadges, { DietaryTagLabels } from "@/components/dashboard/DietaryTagBadges";
-import { formatCurrency, normalizePriceLevel } from "@/lib/utils";
-import { FOOD_TABS, getFoodTab, type FoodTab } from "@/lib/food-tabs";
+import { cn, formatCurrency, normalizePriceLevel } from "@/lib/utils";
+import { FOOD_TABS, getFoodTab, isPackageEligibleFoodTab, type FoodTab } from "@/lib/food-tabs";
 import { useTranslations } from "@/i18n/I18nProvider";
 import {
   AlertTriangle,
@@ -56,7 +56,12 @@ type StudentPackageVendorView = {
   id: string;
   usedToday: boolean;
   student: { id: string };
-  package: { id: string; name: string; packageItems: { categoryId: string }[] };
+  package: {
+    id: string;
+    name: string;
+    packageItems: { categoryId: string }[];
+    eligibleItemNames: string[];
+  };
 };
 
 type TodayOrder = {
@@ -172,7 +177,12 @@ function VendorNewOrderContent() {
       .filter((item) => item.student.id === selectedStudentId && !item.delivered);
   }, [todayOrders, selectedStudentId]);
 
-  const eligiblePackagesForCategory = (categoryId: string): StudentPackageVendorView[] => {
+  const eligiblePackagesForFood = (food: FoodItem): StudentPackageVendorView[] => {
+    // A package only ever redeems the dish-of-the-day (CASADOS tab) or a
+    // walk-up snack (SNACK tab) — never a regular a-la-carte GENERAL/DRINKS
+    // item, even if it happens to share the same food category.
+    if (!isPackageEligibleFoodTab(getFoodTab(food))) return [];
+
     const alreadyPickedInCart = new Set(
       cart.filter((line): line is Extract<CartLine, { kind: "PACKAGE" }> => line.kind === "PACKAGE").map((line) => line.studentPackageId)
     );
@@ -180,7 +190,7 @@ function VendorNewOrderContent() {
       (sp) =>
         !sp.usedToday &&
         !alreadyPickedInCart.has(sp.id) &&
-        sp.package.packageItems.some((pi) => pi.categoryId === categoryId)
+        sp.package.packageItems.some((pi) => pi.categoryId === food.category.id)
     );
   };
 
@@ -257,7 +267,7 @@ function VendorNewOrderContent() {
   const addToOrder = (food: FoodItem) => {
     if (!selectedStudent) return;
 
-    const eligiblePackages = eligiblePackagesForCategory(food.category.id);
+    const eligiblePackages = eligiblePackagesForFood(food);
     if (eligiblePackages.length === 1) {
       setError("");
       addPackageLine(food, eligiblePackages[0]);
@@ -494,18 +504,37 @@ function VendorNewOrderContent() {
               <Ticket className="h-4 w-4" />
               {t("vendor.newOrder.availablePackagesTitle")}
             </div>
-            <div className="mt-2 flex flex-wrap gap-2">
-              {packagesForSelectedStudent.map((sp) => (
-                <span
-                  key={sp.id}
-                  className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold ${
-                    sp.usedToday ? "bg-slate-200 text-slate-600" : "bg-emerald-500 text-white"
-                  }`}
-                >
-                  <Ticket className="h-3.5 w-3.5" />
-                  {sp.package.name} · {sp.usedToday ? t("vendor.newOrder.packageUsedToday") : t("vendor.newOrder.packageAvailableToday")}
-                </span>
-              ))}
+            <div className="mt-2 space-y-1.5">
+              {packagesForSelectedStudent.map((sp) => {
+                const covers = sp.package.eligibleItemNames.join(", ");
+                return (
+                  <div
+                    key={sp.id}
+                    className={cn(
+                      "rounded-xl border px-3 py-2",
+                      sp.usedToday ? "border-slate-200 bg-slate-100" : "border-emerald-300 bg-white"
+                    )}
+                  >
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <span className={cn("flex items-center gap-1.5 text-sm font-bold", sp.usedToday ? "text-slate-500" : "text-emerald-900")}>
+                        <Ticket className="h-3.5 w-3.5 shrink-0" />
+                        {sp.package.name}
+                      </span>
+                      <span
+                        className={cn(
+                          "shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold",
+                          sp.usedToday ? "bg-slate-300 text-slate-600" : "bg-emerald-500 text-white"
+                        )}
+                      >
+                        {sp.usedToday ? t("vendor.newOrder.packageUsedToday") : t("vendor.newOrder.packageAvailableToday")}
+                      </span>
+                    </div>
+                    {covers ? (
+                      <p className="mt-0.5 text-xs text-slate-500">{t("vendor.newOrder.packageCoversLabel")}: {covers}</p>
+                    ) : null}
+                  </div>
+                );
+              })}
             </div>
           </section>
         ) : null}
@@ -582,7 +611,7 @@ function VendorNewOrderContent() {
                   <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                     {filteredMenu.map((item) => {
                       const price = getPriceForStudentLevel(item, selectedStudent.level);
-                      const eligiblePackages = eligiblePackagesForCategory(item.category.id);
+                      const eligiblePackages = eligiblePackagesForFood(item);
                       const isPackageCovered = eligiblePackages.length > 0;
 
                       return (

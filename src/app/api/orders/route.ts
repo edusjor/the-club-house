@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db";
 import { normalizePriceLevel } from "@/lib/utils";
 import { buildScheduledDateForMealPeriod, isMealPeriod, type MealPeriod } from "@/lib/meal-scheduling";
 import { canRoleSeeVendorOnlyItems, getFoodVisibility } from "@/lib/food-visibility";
+import { getFoodTab, isPackageEligibleFoodTab } from "@/lib/food-tabs";
 import { NextRequest, NextResponse } from "next/server";
 
 type IncomingOrderItem =
@@ -307,9 +308,12 @@ export async function POST(req: NextRequest) {
       },
       select: {
         id: true,
+        name: true,
         categoryId: true,
         fixedMealPeriod: true,
+        foodTab: true,
         visibility: true,
+        category: { select: { name: true } },
         prices: {
           select: {
             level: true,
@@ -465,9 +469,11 @@ export async function POST(req: NextRequest) {
       }
 
       const studentPackage = eligiblePackageById.get(item.studentPackageId);
-      const coversCategory = studentPackage?.package.packageItems.some(
-        (packageItem) => packageItem.categoryId === foodItem.categoryId
-      );
+      const coversCategory =
+        isPackageEligibleFoodTab(getFoodTab(foodItem)) &&
+        studentPackage?.package.packageItems.some(
+          (packageItem) => packageItem.categoryId === foodItem.categoryId
+        );
 
       if (!studentPackage || studentPackage.studentId !== item.studentId || !coversCategory) {
         return NextResponse.json(
