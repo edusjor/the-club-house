@@ -1,5 +1,6 @@
 import { auth } from "@/auth";
 import { prisma } from "@/lib/db";
+import { recomputeParentBalance } from "@/lib/balance";
 import { NextRequest, NextResponse } from "next/server";
 
 const PAYMENT_STATUSES = ["PENDING", "APPROVED", "REJECTED"] as const;
@@ -14,30 +15,50 @@ export async function PUT(
   }
 
   const { id } = await params;
-  const { status, comment } = await req.json();
+  const { status, comment, amount } = await req.json();
 
-  if (!status || !PAYMENT_STATUSES.includes(status)) {
+  if (status !== undefined && !PAYMENT_STATUSES.includes(status)) {
     return NextResponse.json({ error: "Estado de pago inválido" }, { status: 400 });
+  }
+
+  if (amount !== undefined && (typeof amount !== "number" || !Number.isFinite(amount) || amount <= 0)) {
+    return NextResponse.json({ error: "Monto inválido" }, { status: 400 });
+  }
+
+  if (status === undefined && comment === undefined && amount === undefined) {
+    return NextResponse.json({ error: "Nada que actualizar" }, { status: 400 });
   }
 
   try {
     const payment = await prisma.$transaction(async (tx) => {
       const existing = await tx.payment.findUnique({
         where: { id },
-        select: { id: true, parentId: true, orderId: true, amount: true },
+        select: { id: true, parentId: true, orderId: true, amount: true, status: true, comment: true },
       });
 
       if (!existing) {
         throw new Error("PAYMENT_NOT_FOUND");
       }
 
+      const nextStatus = status ?? existing.status;
+      const nextAmount = amount ?? existing.amount;
+      const nextComment = comment !== undefined ? comment || null : existing.comment;
+      const wasApproved = existing.status === "APPROVED";
+      const willBeApproved = nextStatus === "APPROVED";
+      const nothingChanged =
+        nextStatus === existing.status && nextAmount === existing.amount && nextComment === existing.comment;
+
       const updated = await tx.payment.update({
         where: { id },
         data: {
-          status,
-          comment: comment || undefined,
-          approvedById:
-            status === "APPROVED" ? (session.user as { id?: string }).id : undefined,
+          status: nextStatus,
+          amount: nextAmount,
+          comment: comment !== undefined ? comment || null : undefined,
+          approvedById: willBeApproved
+            ? (session.user as { id?: string }).id
+            : wasApproved
+            ? null
+            : undefined,
         },
         include: {
           parent: { select: { name: true, email: true } },
@@ -46,19 +67,21 @@ export async function PUT(
         },
       });
 
-      // Handle balance payments (no orderId)
-      if (!updated.order?.id && status === "APPROVED") {
-        let balance = await tx.parentBalance.findUnique({
+      // Handle balance payments (no orderId). Recomputed from source
+      // (orders + packages still charged, minus approved balance payments)
+      // rather than patched incrementally, so correcting an already-approved
+      // payment's amount self-heals the balance instead of compounding a
+      // stale pendingBalance floor-at-zero clamp from an earlier mistake.
+      if (!nothingChanged && !updated.order?.id) {
+        const existingBalance = await tx.parentBalance.findUnique({
           where: { parentId: updated.parentId },
         });
 
-        if (balance) {
-          balance = await tx.parentBalance.update({
+        if (existingBalance) {
+          const recomputed = await recomputeParentBalance(tx, updated.parentId);
+          await tx.parentBalance.update({
             where: { parentId: updated.parentId },
-            data: {
-              pendingBalance: Math.max(0, balance.pendingBalance - updated.amount),
-              approvedBalance: balance.approvedBalance + updated.amount,
-            },
+            data: recomputed,
           });
         }
       }
@@ -78,33 +101,48 @@ export async function PUT(
 
         const approvedAmount = approved._sum.amount ?? 0;
         const undeliveredUnits = undeliveredItems._sum.quantity ?? 0;
-        const nextStatus =
+        const nextOrderStatus =
           approvedAmount >= updated.order.total
             ? "PAID"
             : undeliveredUnits === 0
             ? "DELIVERED"
             : "PENDING";
 
-        if (nextStatus !== updated.order.status) {
+        if (nextOrderStatus !== updated.order.status) {
           await tx.order.update({
             where: { id: updated.order.id },
-            data: { status: nextStatus },
+            data: { status: nextOrderStatus },
           });
         }
       }
 
-      await tx.notification.create({
-        data: {
-          userId: updated.parentId,
-          title: `Pago ${status === "APPROVED" ? "aprobado" : status === "REJECTED" ? "rechazado" : "actualizado"}`,
-          message:
-            status === "APPROVED"
-              ? "Tu pago fue aprobado y aplicado a tu cuenta."
-              : status === "REJECTED"
-              ? `Tu pago fue rechazado${comment ? `: ${comment}` : "."}`
-              : "Tu pago fue actualizado.",
-        },
-      });
+      if (!nothingChanged) {
+        const becameApproved = !wasApproved && willBeApproved;
+        const becameRejected = existing.status !== "REJECTED" && nextStatus === "REJECTED";
+        const amountCorrected = wasApproved && willBeApproved && nextAmount !== existing.amount;
+
+        const title = becameApproved
+          ? "Pago aprobado"
+          : becameRejected
+          ? "Pago rechazado"
+          : amountCorrected
+          ? "Pago corregido"
+          : "Pago actualizado";
+
+        const message = becameApproved
+          ? "Tu pago fue aprobado y aplicado a tu cuenta."
+          : becameRejected
+          ? `Tu pago fue rechazado${comment ? `: ${comment}` : "."}`
+          : amountCorrected
+          ? `Se corrigió el monto de tu pago aprobado a ${nextAmount} CRC.${comment ? ` Nota: ${comment}` : ""}`
+          : comment
+          ? `Tu pago fue actualizado. Nota: ${comment}`
+          : "Tu pago fue actualizado.";
+
+        await tx.notification.create({
+          data: { userId: updated.parentId, title, message },
+        });
+      }
 
       return updated;
     });
