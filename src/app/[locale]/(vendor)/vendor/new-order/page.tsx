@@ -12,6 +12,7 @@ import { formatCurrency, normalizePriceLevel } from "@/lib/utils";
 import { FOOD_TABS, getFoodTab, type FoodTab } from "@/lib/food-tabs";
 import { useTranslations } from "@/i18n/I18nProvider";
 import {
+  AlertTriangle,
   CheckCircle2,
   Minus,
   Plus,
@@ -29,6 +30,7 @@ type Student = {
   name: string;
   level: string;
   active: boolean;
+  allergies?: string | null;
   parent?: { name: string; phone?: string | null } | null;
 };
 
@@ -387,33 +389,44 @@ function VendorNewOrderContent() {
       <div className="space-y-4 p-6">
         <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
           {selectedStudent && !isStudentPickerOpen ? (
-            <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-cyan-200 bg-cyan-50 px-4 py-3">
-              <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-cyan-100">
-                  <UserRound className="h-5 w-5 text-cyan-700" />
+            <div className="space-y-3">
+              <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-cyan-200 bg-cyan-50 px-4 py-3">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-cyan-100">
+                    <UserRound className="h-5 w-5 text-cyan-700" />
+                  </div>
+                  <div>
+                    <p className="flex flex-wrap items-center gap-2 text-lg font-black text-slate-900">
+                      <span>{selectedStudent.name}</span>
+                      {isStaffStudent(selectedStudent) ? (
+                        <span className="rounded-full bg-violet-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-violet-700">
+                          {t("common.staffLabel")}
+                        </span>
+                      ) : null}
+                    </p>
+                    <p className="text-xs font-semibold text-slate-600">
+                      {isStaffStudent(selectedStudent)
+                        ? t("common.staffLevelLabel")
+                        : `${selectedStudent.level}${selectedStudent.parent?.name ? ` · ${t("vendor.newOrder.guardianLabel")}: ${selectedStudent.parent.name}` : ""}`}
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <p className="flex flex-wrap items-center gap-2 text-lg font-black text-slate-900">
-                    <span>{selectedStudent.name}</span>
-                    {isStaffStudent(selectedStudent) ? (
-                      <span className="rounded-full bg-violet-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-violet-700">
-                        {t("common.staffLabel")}
-                      </span>
-                    ) : null}
-                  </p>
-                  <p className="text-xs font-semibold text-slate-600">
-                    {isStaffStudent(selectedStudent)
-                      ? t("common.staffLevelLabel")
-                      : `${selectedStudent.level}${selectedStudent.parent?.name ? ` · ${t("vendor.newOrder.guardianLabel")}: ${selectedStudent.parent.name}` : ""}`}
-                  </p>
-                </div>
+                <button
+                  onClick={changeStudent}
+                  className="rounded-xl border border-cyan-300 bg-white px-3 py-2 text-xs font-semibold text-cyan-700 hover:bg-cyan-100"
+                >
+                  {t("vendor.newOrder.changeStudent")}
+                </button>
               </div>
-              <button
-                onClick={changeStudent}
-                className="rounded-xl border border-cyan-300 bg-white px-3 py-2 text-xs font-semibold text-cyan-700 hover:bg-cyan-100"
-              >
-                {t("vendor.newOrder.changeStudent")}
-              </button>
+
+              {selectedStudent.allergies?.trim() ? (
+                <div className="flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3">
+                  <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-red-600" />
+                  <p className="text-sm font-semibold text-red-800">
+                    {t("vendor.search.allergiesRestrictions")}: {selectedStudent.allergies}
+                  </p>
+                </div>
+              ) : null}
             </div>
           ) : (
             <div>
@@ -456,6 +469,12 @@ function VendorNewOrderContent() {
                         {!isStaffStudent(student) && student.parent?.name ? (
                           <p className="mt-0.5 text-xs text-slate-400">{student.parent.name}</p>
                         ) : null}
+                        {student.allergies?.trim() ? (
+                          <p className="mt-1 flex items-center gap-1 text-xs font-semibold text-red-600">
+                            <AlertTriangle className="h-3 w-3 shrink-0" />
+                            {student.allergies}
+                          </p>
+                        ) : null}
                       </button>
                     ))
                   )}
@@ -469,16 +488,38 @@ function VendorNewOrderContent() {
           )}
         </section>
 
-        {selectedStudent && !isStudentPickerOpen && alreadyOrderedToday.length > 0 ? (
+        {selectedStudent && !isStudentPickerOpen && packagesForSelectedStudent.length > 0 ? (
           <section className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 shadow-sm sm:p-5">
             <div className="flex items-center gap-2 font-bold text-emerald-800">
+              <Ticket className="h-4 w-4" />
+              {t("vendor.newOrder.availablePackagesTitle")}
+            </div>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {packagesForSelectedStudent.map((sp) => (
+                <span
+                  key={sp.id}
+                  className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold ${
+                    sp.usedToday ? "bg-slate-200 text-slate-600" : "bg-emerald-500 text-white"
+                  }`}
+                >
+                  <Ticket className="h-3.5 w-3.5" />
+                  {sp.package.name} · {sp.usedToday ? t("vendor.newOrder.packageUsedToday") : t("vendor.newOrder.packageAvailableToday")}
+                </span>
+              ))}
+            </div>
+          </section>
+        ) : null}
+
+        {selectedStudent && !isStudentPickerOpen && alreadyOrderedToday.length > 0 ? (
+          <section className="rounded-2xl border border-cyan-200 bg-cyan-50 p-4 shadow-sm sm:p-5">
+            <div className="flex items-center gap-2 font-bold text-cyan-800">
               <CheckCircle2 className="h-4 w-4" />
               {t("vendor.newOrder.alreadyOrderedTitle")}
             </div>
-            <p className="mt-1 text-xs text-emerald-700">{t("vendor.newOrder.alreadyOrderedHint")}</p>
+            <p className="mt-1 text-xs text-cyan-700">{t("vendor.newOrder.alreadyOrderedHint")}</p>
             <ul className="mt-2 space-y-1">
               {alreadyOrderedToday.map((item) => (
-                <li key={item.id} className="text-sm font-semibold text-emerald-900">
+                <li key={item.id} className="text-sm font-semibold text-cyan-900">
                   {item.foodItem.name} × {item.quantity}
                 </li>
               ))}

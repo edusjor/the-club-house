@@ -7,7 +7,7 @@ import Link from "@/i18n/Link";
 import Header from "@/components/dashboard/Header";
 import StatusBadge from "@/components/dashboard/StatusBadge";
 import { useTranslations } from "@/i18n/I18nProvider";
-import { Search, UtensilsCrossed } from "lucide-react";
+import { AlertTriangle, Search, UtensilsCrossed } from "lucide-react";
 
 type Student = { id: string; name: string; level: string; allergies?: string | null; active: boolean; parent?: { name: string; phone?: string | null }; studentPackages?: { status: string; package: { name: string } }[] };
 
@@ -53,7 +53,14 @@ export default function VendorSearchPage() {
               <div className="mt-3 text-sm text-slate-700">
                 {!isStaff ? <div>{t("vendor.search.parent")}: {student.parent?.name ?? t("vendor.search.noParent")}</div> : null}
                 <div>{t("vendor.search.phone")}: {student.parent?.phone ?? '—'}</div>
-                <div className="mt-2 text-xs text-slate-500">{t("vendor.search.allergiesRestrictions")}: {student.allergies ?? t("vendor.search.none")}</div>
+                {student.allergies?.trim() ? (
+                  <div className="mt-2 flex items-start gap-1.5 rounded-lg border border-red-200 bg-red-50 px-2.5 py-1.5 text-xs font-semibold text-red-700">
+                    <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                    {t("vendor.search.allergiesRestrictions")}: {student.allergies}
+                  </div>
+                ) : (
+                  <div className="mt-2 text-xs text-slate-500">{t("vendor.search.allergiesRestrictions")}: {t("vendor.search.none")}</div>
+                )}
               </div>
               <div className="mt-4 space-y-2">
                 {student.studentPackages?.length ? student.studentPackages.map((sp) => <div key={sp.package.name} className="rounded-xl bg-slate-50 px-4 py-2 text-sm text-slate-700">{sp.package.name}</div>) : <div className="rounded-xl bg-slate-50 px-4 py-2 text-sm text-slate-500">{t("vendor.search.noActivePackage")}</div>}

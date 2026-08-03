@@ -128,6 +128,13 @@ export async function GET(req: NextRequest) {
   const selectedDate = parseDayParam(req.nextUrl.searchParams.get("date"));
   const { start, end } = getDayBounds(selectedDate);
 
+  // "carriedOver" ignores the date picker entirely — it's for surfacing
+  // orders that are still stuck PAID/PREPARING from before today regardless
+  // of which day the vendor happens to be viewing, so a name search always
+  // finds a student's forgotten order from a previous day.
+  const isCarriedOverScope = role === "VENDOR" && req.nextUrl.searchParams.get("scope") === "carriedOver";
+  const { start: todayStart } = getDayBounds(new Date());
+
   const orders =
     role === "ADMIN"
       ? await prisma.order.findMany({
@@ -164,27 +171,34 @@ export async function GET(req: NextRequest) {
         })
       : role === "VENDOR"
       ? await prisma.order.findMany({
-          where: {
-            status: { in: ["PAID", "PREPARING", "DELIVERED", "NOT_PICKED_UP"] },
-            items: {
-              some: {
-                scheduledDate: {
-                  gte: start,
-                  lte: end,
+          where: isCarriedOverScope
+            ? {
+                status: { in: ["PAID", "PREPARING"] },
+                items: { some: { scheduledDate: { lt: todayStart } } },
+              }
+            : {
+                status: { in: ["PAID", "PREPARING", "DELIVERED", "NOT_PICKED_UP"] },
+                items: {
+                  some: {
+                    scheduledDate: {
+                      gte: start,
+                      lte: end,
+                    },
+                  },
                 },
               },
-            },
-          },
           include: {
             parent: { select: { name: true } },
             createdBy: { select: { name: true, role: true } },
             items: {
-              where: {
-                scheduledDate: {
-                  gte: start,
-                  lte: end,
-                },
-              },
+              where: isCarriedOverScope
+                ? { scheduledDate: { lt: todayStart } }
+                : {
+                    scheduledDate: {
+                      gte: start,
+                      lte: end,
+                    },
+                  },
               include: {
                 student: true,
                 foodItem: true,

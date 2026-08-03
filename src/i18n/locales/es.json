@@ -517,7 +517,7 @@
       "cancelConfirm": "¿Cancelar este paquete? El monto cobrado se descontará de tu saldo.",
       "cancelSuccess": "Paquete cancelado. Se descontó el cargo de tu saldo.",
       "cancelError": "No se pudo cancelar el paquete",
-      "alreadyStartedNotice": "Este paquete ya inició. Contacta a un administrador para cancelarlo."
+      "alreadyStartedNotice": "Este paquete ya inició. Si necesitas cancelarlo o editarlo, contacta a un administrador."
     },
     "plan": {
       "headerTitle": "Pedir Comida",
@@ -662,7 +662,11 @@
       "totalPlates": "Total de platos",
       "noDataForFilter": "No hay datos para este filtro.",
       "errorUpdateOrder": "No se pudo actualizar el pedido",
-      "errorBulkAccept": "No se pudo aceptar el lote de pedidos"
+      "errorBulkAccept": "No se pudo aceptar el lote de pedidos",
+      "carriedOverBadge": "Pedido del {date}, no recogido",
+      "availablePackagesTitle": "Paquetes disponibles",
+      "packageUsedToday": "Usado hoy",
+      "packageAvailableToday": "Disponible hoy"
     },
     "newOrder": {
       "title": "Nueva Orden en Restaurante",
@@ -710,7 +714,10 @@
       "choosePackageCancel": "Cancelar",
       "choosePackageConfirm": "Usar este paquete",
       "errorRegisterConsumption": "No se pudo registrar el consumo del paquete",
-      "packageBadge": "Paquete"
+      "packageBadge": "Paquete",
+      "availablePackagesTitle": "Paquetes disponibles",
+      "packageUsedToday": "Usado hoy",
+      "packageAvailableToday": "Disponible hoy"
     },
     "history": {
       "title": "Historial",

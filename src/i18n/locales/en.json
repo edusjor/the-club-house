@@ -517,7 +517,7 @@
       "cancelConfirm": "Cancel this package? The amount charged will be removed from your balance.",
       "cancelSuccess": "Package cancelled. The charge was removed from your balance.",
       "cancelError": "Couldn't cancel the package",
-      "alreadyStartedNotice": "This package already started. Contact an administrator to cancel it."
+      "alreadyStartedNotice": "This package already started. Contact an administrator if you need to cancel or edit it."
     },
     "plan": {
       "headerTitle": "Order Food",
@@ -662,7 +662,11 @@
       "totalPlates": "Total plates",
       "noDataForFilter": "No data for this filter.",
       "errorUpdateOrder": "Couldn't update the order",
-      "errorBulkAccept": "Couldn't accept the batch of orders"
+      "errorBulkAccept": "Couldn't accept the batch of orders",
+      "carriedOverBadge": "Ordered {date}, not picked up",
+      "availablePackagesTitle": "Available packages",
+      "packageUsedToday": "Used today",
+      "packageAvailableToday": "Available today"
     },
     "newOrder": {
       "title": "New Restaurant Order",
@@ -710,7 +714,10 @@
       "choosePackageCancel": "Cancel",
       "choosePackageConfirm": "Use this package",
       "errorRegisterConsumption": "Couldn't register the package consumption",
-      "packageBadge": "Package"
+      "packageBadge": "Package",
+      "availablePackagesTitle": "Available packages",
+      "packageUsedToday": "Used today",
+      "packageAvailableToday": "Available today"
     },
     "history": {
       "title": "History",

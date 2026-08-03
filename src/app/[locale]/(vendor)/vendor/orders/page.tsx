@@ -6,16 +6,18 @@ import axios from "axios";
 import Header from "@/components/dashboard/Header";
 import StatusBadge from "@/components/dashboard/StatusBadge";
 import Link from "@/i18n/Link";
-import { cn, formatOrderNumber } from "@/lib/utils";
+import { cn, formatDate, formatOrderNumber } from "@/lib/utils";
 import { MEAL_PERIODS } from "@/lib/meal-periods";
 import { useTranslations } from "@/i18n/I18nProvider";
 import {
+  AlertTriangle,
   BarChart3,
   CheckCircle2,
   ChevronDown,
   ChevronLeft,
   ChevronRight,
   ChevronUp,
+  Clock,
   Play,
   Search,
   Store,
@@ -31,7 +33,7 @@ type OrderItem = {
   delivered: boolean;
   scheduledDate: string;
   mealPeriod: string | null;
-  student: { name: string; level: string };
+  student: { name: string; level: string; allergies?: string | null };
   foodItem: { name: string };
   coveredByStudentPackage?: { package: { name: string } } | null;
 };
@@ -46,7 +48,14 @@ type Order = {
   items: OrderItem[];
 };
 
-type OrderWithTime = Order & { time: Date; mealPeriod: string | null };
+type StudentPackageVendorView = {
+  id: string;
+  usedToday: boolean;
+  student: { id: string; name: string };
+  package: { name: string };
+};
+
+type OrderWithTime = Order & { time: Date; mealPeriod: string | null; carriedOver?: boolean };
 type Bucket = {
   key: string;
   label: string;
@@ -109,7 +118,23 @@ export default function VendorOrdersPage() {
     queryFn: () => axios.get(`/api/orders?date=${dateValue}`).then((response) => response.data),
   });
 
-  const invalidate = () => queryClient.invalidateQueries({ queryKey: ["vendor-orders", dateValue] });
+  // Orders left PAID/PREPARING from before today, regardless of the date
+  // picker — so searching a child's name still finds an order that was
+  // scheduled for yesterday and never got picked up.
+  const { data: carriedOverOrders = EMPTY_ORDERS } = useQuery<Order[]>({
+    queryKey: ["vendor-orders-carried-over"],
+    queryFn: () => axios.get("/api/orders?scope=carriedOver").then((response) => response.data),
+  });
+
+  const { data: studentPackages = [] } = useQuery<StudentPackageVendorView[]>({
+    queryKey: ["vendor-student-packages"],
+    queryFn: () => axios.get("/api/student-packages").then((response) => response.data),
+  });
+
+  const invalidate = () => {
+    queryClient.invalidateQueries({ queryKey: ["vendor-orders", dateValue] });
+    queryClient.invalidateQueries({ queryKey: ["vendor-orders-carried-over"] });
+  };
 
   const [pendingOrderId, setPendingOrderId] = useState<string | null>(null);
 
@@ -153,18 +178,37 @@ export default function VendorOrdersPage() {
       .sort((a, b) => a.time.getTime() - b.time.getTime());
   }, [orders]);
 
+  const carriedOverWithTime = useMemo<OrderWithTime[]>(() => {
+    return carriedOverOrders.map((order) => ({
+      ...order,
+      time: new Date(order.createdAt),
+      mealPeriod: order.items[0]?.mealPeriod ?? null,
+      carriedOver: true,
+    }));
+  }, [carriedOverOrders]);
+
   const normalizedQuery = normalizeToken(search.trim());
   const isSearching = normalizedQuery.length > 0;
 
   const searchResults = useMemo(() => {
     if (!isSearching) return [];
-    return ordersWithTime.filter(
-      (order) =>
-        order.items.some((item) => normalizeToken(item.student.name).includes(normalizedQuery)) ||
-        normalizeToken(order.parent.name).includes(normalizedQuery) ||
-        formatOrderNumber(order.id).toLowerCase().includes(normalizedQuery)
+
+    const matchesQuery = (order: OrderWithTime) =>
+      order.items.some((item) => normalizeToken(item.student.name).includes(normalizedQuery)) ||
+      normalizeToken(order.parent.name).includes(normalizedQuery) ||
+      formatOrderNumber(order.id).toLowerCase().includes(normalizedQuery);
+
+    const idsInDayView = new Set(ordersWithTime.map((order) => order.id));
+    const carriedOverMatches = carriedOverWithTime.filter(
+      (order) => !idsInDayView.has(order.id) && matchesQuery(order)
     );
-  }, [ordersWithTime, normalizedQuery, isSearching]);
+    return [...ordersWithTime.filter(matchesQuery), ...carriedOverMatches];
+  }, [ordersWithTime, carriedOverWithTime, normalizedQuery, isSearching]);
+
+  const matchingStudentPackages = useMemo(() => {
+    if (!isSearching) return [];
+    return studentPackages.filter((sp) => normalizeToken(sp.student.name).includes(normalizedQuery));
+  }, [studentPackages, normalizedQuery, isSearching]);
 
   const buckets = useMemo<Bucket[]>(() => {
     const groups = new Map<string, OrderWithTime[]>();
@@ -313,14 +357,19 @@ export default function VendorOrdersPage() {
           </div>
         ) : isSearching ? (
           /* Search cuts across the whole day, so it ignores buckets entirely. */
-          <OrderListSection
-            active={searchActive}
-            finished={searchFinished}
-            showFinished={true}
-            onToggleFinished={() => {}}
-            emptyLabel={t("vendor.orders.noOrdersMatchSearch")}
-            {...rowActions}
-          />
+          <div className="space-y-4">
+            {matchingStudentPackages.length > 0 ? (
+              <AvailablePackagesSummary packages={matchingStudentPackages} t={t} />
+            ) : null}
+            <OrderListSection
+              active={searchActive}
+              finished={searchFinished}
+              showFinished={true}
+              onToggleFinished={() => {}}
+              emptyLabel={t("vendor.orders.noOrdersMatchSearch")}
+              {...rowActions}
+            />
+          </div>
         ) : buckets.length === 0 ? (
           <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center text-sm text-slate-500 shadow-sm">
             {t("vendor.orders.noOrdersForDay")}
@@ -472,6 +521,48 @@ function OrderListSection({
   );
 }
 
+function AvailablePackagesSummary({
+  packages,
+  t,
+}: {
+  packages: StudentPackageVendorView[];
+  t: (key: string) => string;
+}) {
+  const byStudent = new Map<string, { name: string; packages: StudentPackageVendorView[] }>();
+  for (const sp of packages) {
+    const existing = byStudent.get(sp.student.id);
+    if (existing) existing.packages.push(sp);
+    else byStudent.set(sp.student.id, { name: sp.student.name, packages: [sp] });
+  }
+
+  return (
+    <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 shadow-sm">
+      <div className="flex items-center gap-2 text-sm font-black text-emerald-900">
+        <Ticket className="h-4 w-4" />
+        {t("vendor.orders.availablePackagesTitle")}
+      </div>
+      <div className="mt-2 space-y-2">
+        {[...byStudent.values()].map((entry) => (
+          <div key={entry.name} className="flex flex-wrap items-center gap-2 text-sm">
+            <span className="font-semibold text-emerald-900">{entry.name}:</span>
+            {entry.packages.map((sp) => (
+              <span
+                key={sp.id}
+                className={cn(
+                  "inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-bold",
+                  sp.usedToday ? "bg-slate-200 text-slate-600" : "bg-emerald-500 text-white"
+                )}
+              >
+                {sp.package.name} · {sp.usedToday ? t("vendor.orders.packageUsedToday") : t("vendor.orders.packageAvailableToday")}
+              </span>
+            ))}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function OrderRow({
   order,
   busy,
@@ -492,6 +583,14 @@ function OrderRow({
     order.items.length > 0 && order.items.every((item) => item.student.level === "STAFF");
   const studentNames = [...new Set(order.items.map((item) => item.student.name))];
   const mealPeriodLabelKey = MEAL_PERIODS.find((period) => period.key === order.mealPeriod)?.labelKey;
+  const allergyNotes = [...new Map(order.items.map((item) => [item.student.name, item.student.allergies])).entries()].filter(
+    (entry): entry is [string, string] => Boolean(entry[1]?.trim())
+  );
+  const originalScheduledDate = order.carriedOver
+    ? order.items
+        .map((item) => new Date(item.scheduledDate))
+        .sort((a, b) => a.getTime() - b.getTime())[0]
+    : null;
 
   return (
     <div className="rounded-xl border border-slate-200 bg-white px-4 py-3">
@@ -509,6 +608,12 @@ function OrderRow({
         {mealPeriodLabelKey ? (
           <span className="inline-flex shrink-0 items-center rounded-full bg-cyan-100 px-2 py-0.5 text-[10px] font-bold text-cyan-700">
             {t(mealPeriodLabelKey)}
+          </span>
+        ) : null}
+        {order.carriedOver && originalScheduledDate ? (
+          <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-800">
+            <Clock className="h-3 w-3" />
+            {t("vendor.orders.carriedOverBadge").replace("{date}", formatDate(originalScheduledDate))}
           </span>
         ) : null}
         {isVendorOrder ? (
@@ -557,6 +662,17 @@ function OrderRow({
 
       {!isStaffOrder ? (
         <p className="mt-1 text-xs font-medium text-slate-400">{t("vendor.orders.parentLabel")}: {order.parent.name}</p>
+      ) : null}
+      {allergyNotes.length > 0 ? (
+        <div className="mt-1.5 space-y-1">
+          {allergyNotes.map(([name, allergies]) => (
+            <p key={name} className="flex items-center gap-1 text-xs font-semibold text-red-600">
+              <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+              {studentNames.length > 1 ? `${name}: ` : ""}
+              {t("vendor.search.allergiesRestrictions")}: {allergies}
+            </p>
+          ))}
+        </div>
       ) : null}
       <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1">
         {order.items.map((item) => (
