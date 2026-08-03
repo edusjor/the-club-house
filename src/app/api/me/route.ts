@@ -17,13 +17,14 @@ export async function GET() {
 
   const user = await prisma.user.findUnique({
     where: { id },
-    select: { name: true, isStaff: true },
+    select: { name: true, email: true, isStaff: true },
   });
 
   return NextResponse.json({
     role,
     id,
     name: user?.name ?? null,
+    email: user?.email ?? null,
     isStaff: user?.isStaff ?? false,
   });
 }

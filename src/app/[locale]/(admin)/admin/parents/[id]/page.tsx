@@ -15,6 +15,7 @@ import StudentFormModal, {
 import { ArrowLeft, Mail, Phone, Plus, UserCircle, Pencil, Eye } from "lucide-react";
 import { useLocale } from "@/i18n/I18nProvider";
 import { localePath } from "@/i18n/config";
+import { isInternalStudentEmail } from "@/lib/utils";
 
 type ParentDetail = {
   id: string;
@@ -395,7 +396,7 @@ export default function AdminParentDetailPage() {
             userId: selectedStudent.user.id,
             parentId: parent.id,
             name: selectedStudent.name,
-            email: selectedStudent.user.email,
+            email: isInternalStudentEmail(selectedStudent.user.email) ? "" : selectedStudent.user.email,
             phone: selectedStudent.user.phone ?? "",
             level: selectedStudent.level,
             allergies: selectedStudent.allergies ?? "",

@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 import Header from "@/components/dashboard/Header";
-import { formatDateTime } from "@/lib/utils";
+import { formatDateTime, isInternalStudentEmail } from "@/lib/utils";
 import StudentFormModal, {
   ParentOption,
   StudentFormValues,
@@ -261,7 +261,7 @@ export default function AdminStudentsPage() {
             userId: selectedStudent.userId,
             parentId: selectedStudent.parentId,
             name: selectedStudent.name,
-            email: selectedStudent.user?.email ?? "",
+            email: isInternalStudentEmail(selectedStudent.user?.email) ? "" : selectedStudent.user?.email ?? "",
             phone: selectedStudent.user?.phone ?? "",
             level: selectedStudent.level,
             allergies: selectedStudent.allergies ?? "",

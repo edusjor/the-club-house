@@ -12,10 +12,12 @@ import StudentFormModal, {
 import { BriefcaseBusiness, Pencil, Plus, ShieldAlert, UtensilsCrossed } from "lucide-react";
 import Link from "@/i18n/Link";
 import { useTranslations } from "@/i18n/I18nProvider";
+import { isInternalStudentEmail } from "@/lib/utils";
 
 type MeResponse = {
   id?: string;
   role?: string;
+  email?: string | null;
 };
 
 type Student = {
@@ -70,7 +72,7 @@ export default function ParentChildrenPage() {
         {
           id: me.id,
           name: t("parent.children.myAccount"),
-          email: "cuenta-familiar@theclubhouse.local",
+          email: me.email ?? "",
         },
       ]
     : [];
@@ -278,7 +280,7 @@ export default function ParentChildrenPage() {
             userId: selectedStudent.userId,
             parentId: selectedStudent.parentId,
             name: selectedStudent.name,
-            email: selectedStudent.user?.email ?? "",
+            email: isInternalStudentEmail(selectedStudent.user?.email) ? "" : selectedStudent.user?.email ?? "",
             phone: selectedStudent.user?.phone ?? "",
             level: selectedStudent.level,
             allergies: selectedStudent.allergies ?? "",

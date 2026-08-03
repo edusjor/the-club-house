@@ -56,6 +56,10 @@ export function formatPaymentNumber(paymentId: string): string {
   return formatNumericReference(paymentId, 8);
 }
 
+export function isInternalStudentEmail(email?: string | null): boolean {
+  return typeof email === "string" && email.endsWith("@students.local");
+}
+
 export const LEVELS = [
   { value: "ELEMENTARY", label: "Elementary" },
   { value: "MIDDLE_HIGH", label: "Middle/High School" },
