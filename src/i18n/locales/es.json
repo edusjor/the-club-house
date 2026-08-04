@@ -8,7 +8,40 @@
     "back": "Volver",
     "staffLabel": "Staff",
     "staffLevelLabel": "Personal del colegio",
-    "staffSelfHint": "Este eres tú — agenda tus propias comidas"
+    "staffSelfHint": "Este eres tú — agenda tus propias comidas",
+    "profileForm": {
+      "cedulaSectionTitle": "Cédula",
+      "cedulaSectionSubtitle": "Agrega o actualiza tu número de cédula",
+      "cedulaLabel": "Cédula",
+      "cedulaPlaceholder": "1-2345-6789",
+      "saveCedula": "Guardar cédula",
+      "savingCedula": "Guardando...",
+      "successCedula": "Cédula guardada correctamente.",
+      "errorCedulaRequired": "Ingresa tu cédula.",
+      "emailSectionTitle": "Correo electrónico",
+      "emailSectionSubtitle": "Actualiza el correo con el que inicias sesión",
+      "emailLabel": "Nuevo correo",
+      "emailPlaceholder": "tu@email.com",
+      "currentPasswordLabel": "Contraseña actual",
+      "currentPasswordPlaceholder": "Ingresa tu contraseña actual",
+      "saveEmail": "Actualizar correo",
+      "savingEmail": "Actualizando...",
+      "successEmail": "Correo actualizado correctamente.",
+      "passwordSectionTitle": "Contraseña",
+      "passwordSectionSubtitle": "Elige una nueva contraseña para tu cuenta",
+      "newPasswordLabel": "Nueva contraseña",
+      "newPasswordPlaceholder": "Mínimo 8 caracteres",
+      "confirmPasswordLabel": "Confirmar nueva contraseña",
+      "confirmPasswordPlaceholder": "Repite la nueva contraseña",
+      "savePassword": "Actualizar contraseña",
+      "savingPassword": "Actualizando...",
+      "successPassword": "Contraseña actualizada correctamente.",
+      "errorCurrentPasswordRequired": "Ingresa tu contraseña actual.",
+      "errorEmailInvalid": "Ingresa un correo electrónico válido.",
+      "errorPasswordLength": "La contraseña debe tener al menos 8 caracteres.",
+      "errorPasswordMismatch": "Las contraseñas no coinciden.",
+      "errorGeneric": "Algo salió mal. Intenta nuevamente."
+    }
   },
   "meta": {
     "title": "The Club House – Gestión de Alimentación Escolar",
@@ -32,7 +65,8 @@
       "consumptions": "Consumos",
       "payments": "Pagos Pendientes",
       "balances": "Saldos",
-      "settings": "Configuración"
+      "settings": "Configuración",
+      "profile": "Mi Perfil"
     },
     "parent": {
       "title": "Portal de Padres",
@@ -44,7 +78,8 @@
       "plan": "Planificar Comidas",
       "packages": "Paquetes",
       "history": "Historial y Seguimiento",
-      "balance": "Saldo y Pagos"
+      "balance": "Saldo y Pagos",
+      "profile": "Mi Perfil"
     },
     "vendor": {
       "title": "Panel Vendedor",
@@ -52,7 +87,8 @@
       "newOrder": "Nueva Orden",
       "ordersOfDay": "Pedidos del Día",
       "searchStudent": "Buscar Estudiante",
-      "history": "Historial"
+      "history": "Historial",
+      "profile": "Mi Perfil"
     },
     "home": "Inicio",
     "logout": "Cerrar Sesión",
@@ -342,6 +378,13 @@
       "addFood": "Agregar Comida",
       "viewOrders": "Ver Pedidos",
       "reviewPayments": "Revisar Pagos"
+    },
+    "profile": {
+      "title": "Mi Perfil",
+      "subtitle": "Datos de la cuenta de administrador",
+      "name": "Nombre",
+      "email": "Email",
+      "userFallback": "Administrador"
     }
   },
   "parent": {
@@ -387,6 +430,8 @@
       "infoBullet3": "El administrador revisará y aprobará tu pago",
       "infoBullet4": "También puedes pagar de más a propósito, para dejar saldo a favor y usarlo en pedidos o paquetes futuros",
       "makePayment": "Pagar o cargar saldo",
+      "sinpeNumberLabel": "Número SINPE Móvil",
+      "sinpeNumberHint": "Envía tu pago a este número y luego sube el comprobante abajo",
       "amountToPay": "Monto a pagar o cargar",
       "amountExceedsBalance": "Este monto es mayor a tu saldo pendiente — quedarán {amount} como saldo a favor una vez aprobado.",
       "sinpeReferencePlaceholder": "Referencia SINPE (opcional si subes archivo)",
@@ -587,6 +632,13 @@
       "viewBalancePage": "Ver mi saldo",
       "more": "más"
     },
+    "profile": {
+      "title": "Mi Perfil",
+      "subtitle": "Datos de la cuenta familiar",
+      "name": "Nombre",
+      "email": "Email",
+      "userFallback": "Usuario"
+    },
     "receipts": {
       "title": "Comprobantes",
       "subtitle": "Archivo de pagos y recibos subidos",
@@ -729,6 +781,13 @@
     "notifications": {
       "title": "Notificaciones",
       "subtitle": "Alertas operativas para el equipo vendedor"
+    },
+    "profile": {
+      "title": "Mi Perfil",
+      "subtitle": "Datos del usuario vendedor",
+      "name": "Nombre",
+      "email": "Email",
+      "userFallback": "Usuario"
     },
     "sales": {
       "title": "Ventas del Día",

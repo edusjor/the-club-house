@@ -41,6 +41,18 @@ export async function GET(
               active: true,
             },
           },
+          studentPackages: {
+            orderBy: { createdAt: "desc" },
+            select: {
+              id: true,
+              status: true,
+              consumed: true,
+              pricePaid: true,
+              startDate: true,
+              endDate: true,
+              package: { select: { name: true, validityDays: true } },
+            },
+          },
         },
       },
       studentProfile: {
@@ -49,6 +61,48 @@ export async function GET(
           parentId: true,
           level: true,
           active: true,
+        },
+      },
+      parentBalance: {
+        select: {
+          pendingBalance: true,
+          approvedBalance: true,
+          creditBalance: true,
+          creditLimit: true,
+        },
+      },
+      orders: {
+        orderBy: { createdAt: "desc" },
+        take: 30,
+        select: {
+          id: true,
+          status: true,
+          total: true,
+          source: true,
+          createdAt: true,
+          items: {
+            select: {
+              id: true,
+              quantity: true,
+              price: true,
+              scheduledDate: true,
+              student: { select: { name: true } },
+              foodItem: { select: { name: true } },
+            },
+          },
+        },
+      },
+      payments: {
+        orderBy: { createdAt: "desc" },
+        take: 30,
+        select: {
+          id: true,
+          amount: true,
+          status: true,
+          receipt: true,
+          comment: true,
+          createdAt: true,
+          orderId: true,
         },
       },
     },

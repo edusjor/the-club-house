@@ -27,6 +27,7 @@ import {
   Settings,
   Package,
   HelpCircle,
+  UserCog,
 } from "lucide-react";
 
 type NavItem = {
@@ -53,6 +54,7 @@ const adminNav: NavItem[] = [
   { href: "/admin/payments", labelKey: "nav.admin.payments", icon: CreditCard },
   { href: "/admin/saldos", labelKey: "nav.admin.balances", icon: DollarSign },
   { href: "/admin/settings", labelKey: "nav.admin.settings", icon: Settings },
+  { href: "/admin/profile", labelKey: "nav.admin.profile", icon: UserCog },
   { href: "/guide", label: "Guide", icon: HelpCircle },
 ];
 
@@ -66,6 +68,7 @@ const parentNav: NavItem[] = [
   { href: "/parent/packages", labelKey: "nav.parent.packages", icon: Package },
   { href: "/parent/history", labelKey: "nav.parent.history", icon: History },
   { href: "/parent/balance", labelKey: "nav.parent.balance", icon: DollarSign },
+  { href: "/parent/profile", labelKey: "nav.parent.profile", icon: UserCog },
   { href: "/guide", label: "Guide", icon: HelpCircle },
 ];
 
@@ -77,6 +80,7 @@ const vendorNav: NavItem[] = [
   { href: "/vendor/orders", labelKey: "nav.vendor.ordersOfDay", icon: ShoppingCart },
   { href: "/vendor/search", labelKey: "nav.vendor.searchStudent", icon: Search },
   { href: "/vendor/history", labelKey: "nav.vendor.history", icon: History },
+  { href: "/vendor/profile", labelKey: "nav.vendor.profile", icon: UserCog },
   { href: "/guide", label: "Guide", icon: HelpCircle },
 ];
 

@@ -8,9 +8,10 @@ import ReceiptFileLink from "@/components/ReceiptFileLink";
 import { formatCurrency, formatDateTime, formatOrderNumber, formatPaymentNumber } from "@/lib/utils";
 import { formatReceiptSummary, parsePaymentReceipt, serializePaymentReceipt } from "@/lib/payment-receipt";
 import { useTranslations } from "@/i18n/I18nProvider";
-import { CheckCircle2, CreditCard, UploadCloud } from "lucide-react";
+import { CheckCircle2, CreditCard, Smartphone, UploadCloud } from "lucide-react";
 
 const MAX_RECEIPT_FILE_SIZE = 4 * 1024 * 1024;
+const SINPE_MOVIL_NUMBER = "7290 3280";
 
 type ParentBalance = {
   id: string;
@@ -273,6 +274,15 @@ export default function ParentBalancePage() {
               </div>
 
               <div className="space-y-3 px-5 py-4">
+                <div className="rounded-xl border border-emerald-300 bg-emerald-50 px-4 py-3 text-center">
+                  <div className="flex items-center justify-center gap-1.5 text-xs font-semibold text-emerald-700">
+                    <Smartphone className="h-4 w-4" />
+                    {t("parent.balance.sinpeNumberLabel")}
+                  </div>
+                  <p className="mt-1 text-2xl font-black tracking-wide text-emerald-800">{SINPE_MOVIL_NUMBER}</p>
+                  <p className="mt-1 text-xs text-emerald-700">{t("parent.balance.sinpeNumberHint")}</p>
+                </div>
+
                 <label>
                   <span className="mb-1 block text-[11px] font-semibold text-slate-700">
                     {t("parent.balance.amountToPay")}

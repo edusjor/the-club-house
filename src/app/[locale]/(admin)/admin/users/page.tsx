@@ -5,6 +5,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 import Header from "@/components/dashboard/Header";
 import StatusBadge from "@/components/dashboard/StatusBadge";
+import Link from "@/i18n/Link";
 import { formatDateTime } from "@/lib/utils";
 import {
   Search,
@@ -402,8 +403,18 @@ export default function UsersPage() {
                       </td>
                       <td className="px-5 py-3.5">
                         <div className="flex items-center gap-2 justify-end">
+                          {u.role === "PARENT" ? (
+                            <Link
+                              href={`/admin/parents/${u.id}`}
+                              title="Ver detalle (saldo, paquetes, pedidos, pagos e hijos)"
+                              className="p-1.5 hover:bg-cyan-100 text-slate-400 hover:text-cyan-600 rounded-lg transition-colors"
+                            >
+                              <Eye className="w-3.5 h-3.5" />
+                            </Link>
+                          ) : null}
                           <button
                             onClick={() => setEditUser(u)}
+                            title="Editar"
                             className="p-1.5 hover:bg-cyan-100 text-slate-400 hover:text-cyan-600 rounded-lg transition-colors"
                           >
                             <Edit2 className="w-3.5 h-3.5" />

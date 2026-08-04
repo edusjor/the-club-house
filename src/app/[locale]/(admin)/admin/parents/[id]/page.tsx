@@ -12,10 +12,12 @@ import StudentFormModal, {
   ParentOption,
   StudentFormValues,
 } from "@/components/dashboard/StudentFormModal";
-import { ArrowLeft, Mail, Phone, Plus, UserCircle, Pencil, Eye } from "lucide-react";
+import { ArrowLeft, Mail, Phone, Plus, UserCircle, Pencil, Eye, DollarSign, Package, ShoppingCart, CreditCard, FileText } from "lucide-react";
 import { useLocale } from "@/i18n/I18nProvider";
 import { localePath } from "@/i18n/config";
-import { isInternalStudentEmail } from "@/lib/utils";
+import { formatCurrency, formatDate, formatDateTime, formatOrderNumber, formatPaymentNumber, isInternalStudentEmail } from "@/lib/utils";
+import { formatReceiptSummary, parsePaymentReceipt } from "@/lib/payment-receipt";
+import ReceiptFileLink from "@/components/ReceiptFileLink";
 
 type ParentDetail = {
   id: string;
@@ -26,6 +28,36 @@ type ParentDetail = {
   phone?: string | null;
   active: boolean;
   createdAt: string;
+  parentBalance: {
+    pendingBalance: number;
+    approvedBalance: number;
+    creditBalance: number;
+    creditLimit: number;
+  } | null;
+  orders: Array<{
+    id: string;
+    status: string;
+    total: number;
+    source: string;
+    createdAt: string;
+    items: Array<{
+      id: string;
+      quantity: number;
+      price: number;
+      scheduledDate: string;
+      student: { name: string };
+      foodItem: { name: string };
+    }>;
+  }>;
+  payments: Array<{
+    id: string;
+    amount: number;
+    status: string;
+    receipt?: string | null;
+    comment?: string | null;
+    createdAt: string;
+    orderId?: string | null;
+  }>;
   parentStudents: Array<{
     id: string;
     name: string;
@@ -38,6 +70,15 @@ type ParentDetail = {
       phone?: string | null;
       active: boolean;
     };
+    studentPackages: Array<{
+      id: string;
+      status: string;
+      consumed: number;
+      pricePaid: number;
+      startDate: string;
+      endDate?: string | null;
+      package: { name: string; validityDays?: number | null };
+    }>;
   }>;
 };
 
@@ -348,6 +389,199 @@ export default function AdminParentDetailPage() {
                     </td>
                   </tr>
                 ))
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+            <div className="flex items-center gap-2 text-sm text-slate-500">
+              <DollarSign className="h-4 w-4" />
+              Saldo pendiente
+            </div>
+            <div className="mt-1 text-2xl font-black text-slate-900">
+              {formatCurrency(parent.parentBalance?.pendingBalance ?? 0)}
+            </div>
+          </div>
+          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+            <div className="text-sm text-slate-500">Crédito disponible</div>
+            <div className="mt-1 text-2xl font-black text-slate-900">
+              {formatCurrency(
+                Math.max(0, (parent.parentBalance?.creditLimit ?? 0) - (parent.parentBalance?.pendingBalance ?? 0))
+              )}
+            </div>
+            <div className="mt-1 text-xs text-slate-500">
+              Límite: {formatCurrency(parent.parentBalance?.creditLimit ?? 0)}
+            </div>
+          </div>
+          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+            <div className="text-sm text-slate-500">Crédito acumulado</div>
+            <div className="mt-1 text-2xl font-black text-slate-900">
+              {formatCurrency(parent.parentBalance?.creditBalance ?? 0)}
+            </div>
+          </div>
+          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+            <div className="text-sm text-slate-500">Pagos aprobados (histórico)</div>
+            <div className="mt-1 text-2xl font-black text-slate-900">
+              {formatCurrency(parent.parentBalance?.approvedBalance ?? 0)}
+            </div>
+          </div>
+        </div>
+
+        <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+          <div className="border-b border-slate-100 px-5 py-4">
+            <h3 className="flex items-center gap-2 font-bold text-slate-900">
+              <Package className="h-4 w-4" />
+              Paquetes
+            </h3>
+          </div>
+          <table className="w-full text-sm">
+            <thead className="bg-slate-50 text-xs font-semibold uppercase tracking-wide text-slate-500">
+              <tr>
+                <th className="px-5 py-3 text-left">Estudiante</th>
+                <th className="px-5 py-3 text-left">Paquete</th>
+                <th className="px-5 py-3 text-left">Estado</th>
+                <th className="px-5 py-3 text-left">Consumido</th>
+                <th className="px-5 py-3 text-left">Pagado</th>
+                <th className="px-5 py-3 text-left">Vigencia</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {parent.parentStudents.flatMap((student) =>
+                student.studentPackages.map((sp) => ({ ...sp, studentName: student.name }))
+              ).length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="py-10 text-center text-slate-400">
+                    No hay paquetes registrados.
+                  </td>
+                </tr>
+              ) : (
+                parent.parentStudents
+                  .flatMap((student) => student.studentPackages.map((sp) => ({ ...sp, studentName: student.name })))
+                  .map((sp) => (
+                    <tr key={sp.id} className="hover:bg-slate-50">
+                      <td className="px-5 py-3.5 font-semibold text-slate-900">{sp.studentName}</td>
+                      <td className="px-5 py-3.5 text-slate-700">{sp.package.name}</td>
+                      <td className="px-5 py-3.5">
+                        <StatusBadge status={sp.status} />
+                      </td>
+                      <td className="px-5 py-3.5 text-slate-700">{sp.consumed}</td>
+                      <td className="px-5 py-3.5 text-slate-700">{formatCurrency(sp.pricePaid)}</td>
+                      <td className="px-5 py-3.5 text-xs text-slate-500">
+                        {formatDate(sp.startDate)} — {sp.endDate ? formatDate(sp.endDate) : "Sin vencimiento"}
+                      </td>
+                    </tr>
+                  ))
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+          <div className="border-b border-slate-100 px-5 py-4">
+            <h3 className="flex items-center gap-2 font-bold text-slate-900">
+              <ShoppingCart className="h-4 w-4" />
+              Pedidos recientes ({parent.orders.length})
+            </h3>
+          </div>
+          <table className="w-full text-sm">
+            <thead className="bg-slate-50 text-xs font-semibold uppercase tracking-wide text-slate-500">
+              <tr>
+                <th className="px-5 py-3 text-left"># Pedido</th>
+                <th className="px-5 py-3 text-left">Fecha</th>
+                <th className="px-5 py-3 text-left">Origen</th>
+                <th className="px-5 py-3 text-left">Estado</th>
+                <th className="px-5 py-3 text-left">Detalle</th>
+                <th className="px-5 py-3 text-left">Total</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {parent.orders.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="py-10 text-center text-slate-400">
+                    No hay pedidos registrados.
+                  </td>
+                </tr>
+              ) : (
+                parent.orders.map((order) => {
+                  const itemSummary = order.items
+                    .slice(0, 3)
+                    .map((item) => `${item.student.name}: ${item.foodItem.name}${item.quantity > 1 ? ` x${item.quantity}` : ""}`)
+                    .join(", ");
+                  const extra = order.items.length - 3;
+                  return (
+                    <tr key={order.id} className="hover:bg-slate-50">
+                      <td className="px-5 py-3.5 font-semibold text-slate-900">#{formatOrderNumber(order.id)}</td>
+                      <td className="px-5 py-3.5 text-xs text-slate-500">{formatDateTime(order.createdAt)}</td>
+                      <td className="px-5 py-3.5 text-slate-700">{order.source === "VENDOR" ? "Vendedor" : "Padre"}</td>
+                      <td className="px-5 py-3.5">
+                        <StatusBadge status={order.status} />
+                      </td>
+                      <td className="px-5 py-3.5 text-xs text-slate-500">
+                        {itemSummary}
+                        {extra > 0 ? ` +${extra} más` : ""}
+                      </td>
+                      <td className="px-5 py-3.5 font-semibold text-slate-900">{formatCurrency(order.total)}</td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+          <div className="border-b border-slate-100 px-5 py-4">
+            <h3 className="flex items-center gap-2 font-bold text-slate-900">
+              <CreditCard className="h-4 w-4" />
+              Pagos ({parent.payments.length})
+            </h3>
+          </div>
+          <table className="w-full text-sm">
+            <thead className="bg-slate-50 text-xs font-semibold uppercase tracking-wide text-slate-500">
+              <tr>
+                <th className="px-5 py-3 text-left"># Pago</th>
+                <th className="px-5 py-3 text-left">Fecha</th>
+                <th className="px-5 py-3 text-left">Monto</th>
+                <th className="px-5 py-3 text-left">Estado</th>
+                <th className="px-5 py-3 text-left">Comprobante</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {parent.payments.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="py-10 text-center text-slate-400">
+                    No hay pagos registrados.
+                  </td>
+                </tr>
+              ) : (
+                parent.payments.map((payment) => {
+                  const parsedReceipt = parsePaymentReceipt(payment.receipt);
+                  return (
+                    <tr key={payment.id} className="hover:bg-slate-50">
+                      <td className="px-5 py-3.5 font-semibold text-slate-900">#{formatPaymentNumber(payment.id)}</td>
+                      <td className="px-5 py-3.5 text-xs text-slate-500">{formatDateTime(payment.createdAt)}</td>
+                      <td className="px-5 py-3.5 font-semibold text-slate-900">{formatCurrency(payment.amount)}</td>
+                      <td className="px-5 py-3.5">
+                        <StatusBadge status={payment.status} />
+                      </td>
+                      <td className="px-5 py-3.5 text-xs text-slate-500">
+                        {parsedReceipt?.kind === "UPLOAD" ? (
+                          <ReceiptFileLink
+                            dataUrl={parsedReceipt.dataUrl}
+                            className="inline-flex items-center gap-1 text-cyan-600 hover:text-cyan-700"
+                          >
+                            <FileText className="h-3.5 w-3.5" />
+                            {formatReceiptSummary(payment.receipt)}
+                          </ReceiptFileLink>
+                        ) : (
+                          formatReceiptSummary(payment.receipt)
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })
               )}
             </tbody>
           </table>

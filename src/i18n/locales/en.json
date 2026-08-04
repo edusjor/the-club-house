@@ -8,7 +8,40 @@
     "back": "Back",
     "staffLabel": "Staff",
     "staffLevelLabel": "School staff",
-    "staffSelfHint": "This is you — schedule your own meals"
+    "staffSelfHint": "This is you — schedule your own meals",
+    "profileForm": {
+      "cedulaSectionTitle": "National ID (cédula)",
+      "cedulaSectionSubtitle": "Add or update your national ID number",
+      "cedulaLabel": "National ID (cédula)",
+      "cedulaPlaceholder": "1-2345-6789",
+      "saveCedula": "Save national ID",
+      "savingCedula": "Saving...",
+      "successCedula": "National ID saved successfully.",
+      "errorCedulaRequired": "Enter your national ID (cédula).",
+      "emailSectionTitle": "Email address",
+      "emailSectionSubtitle": "Update the email you use to sign in",
+      "emailLabel": "New email",
+      "emailPlaceholder": "you@email.com",
+      "currentPasswordLabel": "Current password",
+      "currentPasswordPlaceholder": "Enter your current password",
+      "saveEmail": "Update email",
+      "savingEmail": "Updating...",
+      "successEmail": "Email updated successfully.",
+      "passwordSectionTitle": "Password",
+      "passwordSectionSubtitle": "Choose a new password for your account",
+      "newPasswordLabel": "New password",
+      "newPasswordPlaceholder": "At least 8 characters",
+      "confirmPasswordLabel": "Confirm new password",
+      "confirmPasswordPlaceholder": "Repeat your new password",
+      "savePassword": "Update password",
+      "savingPassword": "Updating...",
+      "successPassword": "Password updated successfully.",
+      "errorCurrentPasswordRequired": "Enter your current password.",
+      "errorEmailInvalid": "Enter a valid email address.",
+      "errorPasswordLength": "Password must be at least 8 characters.",
+      "errorPasswordMismatch": "Passwords don't match.",
+      "errorGeneric": "Something went wrong. Please try again."
+    }
   },
   "meta": {
     "title": "The Club House – School Meal Management",
@@ -32,7 +65,8 @@
       "consumptions": "Consumption",
       "payments": "Pending Payments",
       "balances": "Balances",
-      "settings": "Settings"
+      "settings": "Settings",
+      "profile": "My Profile"
     },
     "parent": {
       "title": "Parent Portal",
@@ -44,7 +78,8 @@
       "plan": "Plan Meals",
       "packages": "Packages",
       "history": "History & Tracking",
-      "balance": "Balance & Payments"
+      "balance": "Balance & Payments",
+      "profile": "My Profile"
     },
     "vendor": {
       "title": "Vendor Panel",
@@ -52,7 +87,8 @@
       "newOrder": "New Order",
       "ordersOfDay": "Today's Orders",
       "searchStudent": "Find Student",
-      "history": "History"
+      "history": "History",
+      "profile": "My Profile"
     },
     "home": "Home",
     "logout": "Log out",
@@ -342,6 +378,13 @@
       "addFood": "Add Food",
       "viewOrders": "View Orders",
       "reviewPayments": "Review Payments"
+    },
+    "profile": {
+      "title": "My Profile",
+      "subtitle": "Administrator account details",
+      "name": "Name",
+      "email": "Email",
+      "userFallback": "Administrator"
     }
   },
   "parent": {
@@ -387,6 +430,8 @@
       "infoBullet3": "The administrator will review and approve your payment",
       "infoBullet4": "You can also pay more than you owe on purpose, to leave a credit balance for future orders or packages",
       "makePayment": "Pay or add credit",
+      "sinpeNumberLabel": "SINPE Móvil number",
+      "sinpeNumberHint": "Send your payment to this number, then upload the receipt below",
       "amountToPay": "Amount to pay or add",
       "amountExceedsBalance": "This amount is more than your pending balance — {amount} will be left as credit once approved.",
       "sinpeReferencePlaceholder": "SINPE reference (optional if you upload a file)",
@@ -587,6 +632,13 @@
       "viewBalancePage": "View my balance",
       "more": "more"
     },
+    "profile": {
+      "title": "My Profile",
+      "subtitle": "Family account details",
+      "name": "Name",
+      "email": "Email",
+      "userFallback": "User"
+    },
     "receipts": {
       "title": "Receipts",
       "subtitle": "Payment receipts and uploaded files archive",
@@ -729,6 +781,13 @@
     "notifications": {
       "title": "Notifications",
       "subtitle": "Operational alerts for the vendor team"
+    },
+    "profile": {
+      "title": "My Profile",
+      "subtitle": "Vendor user details",
+      "name": "Name",
+      "email": "Email",
+      "userFallback": "User"
     },
     "sales": {
       "title": "Today's Sales",
