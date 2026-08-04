@@ -233,9 +233,20 @@ export default function UsersPage() {
         "Ocurrió un error, intenta de nuevo")
     : null;
 
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+
   const deleteMutation = useMutation({
     mutationFn: (id: string) => axios.delete(`/api/users/${id}`),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["users"] }),
+    onSuccess: () => {
+      setDeleteError(null);
+      queryClient.invalidateQueries({ queryKey: ["users"] });
+    },
+    onError: (mutationError: unknown) => {
+      const message =
+        (axios.isAxiosError(mutationError) && mutationError.response?.data?.error) ||
+        "No se pudo eliminar el usuario, intenta de nuevo";
+      setDeleteError(String(message));
+    },
   });
 
   const filtered = users.filter((u) => {
@@ -263,6 +274,18 @@ export default function UsersPage() {
       />
 
       <div className="p-6">
+        {deleteError ? (
+          <div className="mb-4 flex items-start justify-between gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+            <span>{deleteError}</span>
+            <button
+              onClick={() => setDeleteError(null)}
+              className="shrink-0 rounded-md p-1 text-red-500 hover:bg-red-100"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+        ) : null}
+
         {/* Filters */}
         <div className="flex flex-wrap gap-3 mb-6">
           <div className="relative flex-1 min-w-60">
@@ -387,8 +410,14 @@ export default function UsersPage() {
                           </button>
                           <button
                             onClick={() => {
-                              if (confirm("¿Eliminar este usuario?"))
+                              if (
+                                confirm(
+                                  `Esto elimina PERMANENTEMENTE a "${u.name}" y, si es padre, a sus hijos, junto con todos sus pedidos, pagos y paquetes. No se puede deshacer.\n\nSolo usa esto con cuentas de prueba. Para un usuario real, desactívalo en su lugar.\n\n¿Continuar?`
+                                )
+                              ) {
+                                setDeleteError(null);
                                 deleteMutation.mutate(u.id);
+                              }
                             }}
                             className="p-1.5 hover:bg-red-100 text-slate-400 hover:text-red-600 rounded-lg transition-colors"
                           >

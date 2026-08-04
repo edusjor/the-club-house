@@ -52,7 +52,7 @@ type StudentPackageVendorView = {
   id: string;
   usedToday: boolean;
   student: { id: string; name: string };
-  package: { name: string; eligibleItemNames: string[] };
+  package: { name: string; eligibleItemNames: string[]; coversSnack: boolean };
 };
 
 type OrderWithTime = Order & { time: Date; mealPeriod: string | null; carriedOver?: boolean };
@@ -553,7 +553,9 @@ function AvailablePackagesSummary({
           </div>
           <div className="mt-2 flex flex-wrap gap-2">
             {entry.packages.map((sp) => {
-              const covers = sp.package.eligibleItemNames.join(", ");
+              const covers = sp.package.coversSnack
+                ? t("vendor.orders.packageCoversSnackText")
+                : sp.package.eligibleItemNames.join(", ");
               return (
                 <span
                   key={sp.id}

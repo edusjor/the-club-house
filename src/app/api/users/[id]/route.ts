@@ -145,6 +145,62 @@ export async function DELETE(
   }
 
   const { id } = await params;
-  await prisma.user.delete({ where: { id } });
+
+  const user = await prisma.user.findUnique({
+    where: { id },
+    select: { id: true, studentProfile: { select: { id: true } } },
+  });
+
+  if (!user) {
+    return NextResponse.json({ error: "Usuario no encontrado" }, { status: 404 });
+  }
+
+  // Permanent delete — for test accounts only, chosen deliberately by an
+  // admin (gated above + confirmed in the UI). It wipes the user's own
+  // history and, if they're a parent, their children's too: order items,
+  // payments, orders, packages, notifications, logs, balance, student
+  // profiles, and the linked student-login accounts. Deleted in FK-safe
+  // order (RESTRICT relations first) — see the migration SQL for which
+  // relations are RESTRICT vs SET NULL.
+  //
+  // Not touched: if this user is a vendor/admin who created orders or
+  // approved payments for OTHER (real) parents, those records keep existing
+  // but lose the "created/approved by" attribution (DB sets it to null) —
+  // that's a deliberate DB-level SET NULL, not a bug, but worth knowing
+  // before deleting a staff account that touched real transactions.
+  await prisma.$transaction(async (tx) => {
+    const ownedStudents = await tx.student.findMany({
+      where: { parentId: id },
+      select: { id: true, userId: true },
+    });
+    const studentIds = ownedStudents.map((student) => student.id);
+    if (user.studentProfile) studentIds.push(user.studentProfile.id);
+
+    const childUserIds = ownedStudents.map((student) => student.userId);
+    const allUserIds = [id, ...childUserIds];
+
+    await tx.orderItem.deleteMany({
+      where: { OR: [{ order: { parentId: id } }, { studentId: { in: studentIds } }] },
+    });
+    await tx.payment.deleteMany({ where: { parentId: id } });
+    await tx.order.deleteMany({ where: { parentId: id } });
+    await tx.studentPackage.deleteMany({ where: { studentId: { in: studentIds } } });
+
+    await tx.notification.deleteMany({ where: { userId: { in: allUserIds } } });
+    await tx.activityLog.deleteMany({ where: { userId: { in: allUserIds } } });
+    await tx.parentBalance.deleteMany({ where: { parentId: id } });
+
+    if (ownedStudents.length > 0) {
+      await tx.student.deleteMany({ where: { id: { in: ownedStudents.map((s) => s.id) } } });
+      await tx.user.deleteMany({ where: { id: { in: childUserIds } } });
+    }
+
+    if (user.studentProfile) {
+      await tx.student.delete({ where: { id: user.studentProfile.id } });
+    }
+
+    await tx.user.delete({ where: { id } });
+  });
+
   return NextResponse.json({ success: true });
 }

@@ -1,5 +1,6 @@
 import { auth } from "@/auth";
 import { prisma } from "@/lib/db";
+import { recomputeParentBalance } from "@/lib/balance";
 import { NextRequest, NextResponse } from "next/server";
 
 const PARENT_CANCELLATION_WINDOW_MS = 2 * 60 * 60 * 1000;
@@ -115,7 +116,7 @@ export async function DELETE(
 
       const orderStatus = remainingItems.length === 0 ? "CANCELLED" : order.status;
 
-      return tx.order.update({
+      const updatedOrder = await tx.order.update({
         where: { id: orderId },
         data: {
           total: nextTotal,
@@ -132,6 +133,23 @@ export async function DELETE(
           payments: true,
         },
       });
+
+      // Removing an item changes what the order actually owes — recompute the
+      // parent's balance from source (same self-healing helper used when an
+      // admin corrects a payment) instead of leaving the old, now-stale
+      // pendingBalance in place.
+      const existingBalance = await tx.parentBalance.findUnique({
+        where: { parentId: updatedOrder.parentId },
+      });
+      if (existingBalance) {
+        const recomputed = await recomputeParentBalance(tx, updatedOrder.parentId);
+        await tx.parentBalance.update({
+          where: { parentId: updatedOrder.parentId },
+          data: recomputed,
+        });
+      }
+
+      return updatedOrder;
     });
   } catch (error) {
     if (error instanceof Error && error.message === "ITEM_NOT_FOUND") {

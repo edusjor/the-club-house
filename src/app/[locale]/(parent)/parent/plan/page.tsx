@@ -10,14 +10,14 @@ import Header from "@/components/dashboard/Header";
 import BodyPortal from "@/components/BodyPortal";
 import DietaryTagBadges, { DietaryTagLabels } from "@/components/dashboard/DietaryTagBadges";
 import MonthlyMenuLinkButton from "@/components/parent/MonthlyMenuLinkButton";
-import { cn, formatCurrency, LEVELS, normalizePriceLevel } from "@/lib/utils";
+import { cn, formatCurrency, formatDate, LEVELS, normalizePriceLevel } from "@/lib/utils";
 import { FOOD_TABS, getFoodTab, parseFoodTags, type FoodTab } from "@/lib/food-tabs";
 
 // The Snack tab is vendor-only stock (in-person walk-up sales); /api/menu
 // already excludes those items for a PARENT session, and its pill is hidden here.
 const PARENT_VISIBLE_FOOD_TABS = FOOD_TABS.filter((tab) => tab.key !== "SNACK");
 import { MEAL_PERIODS } from "@/lib/meal-periods";
-import { resolveTargetDay, type MealPeriod } from "@/lib/meal-scheduling";
+import { isEarliestSchoolDateToday, resolveEarliestSchoolDate, type MealPeriod } from "@/lib/meal-scheduling";
 import { useLocale, useTranslations } from "@/i18n/I18nProvider";
 import { localePath } from "@/i18n/config";
 import { CalendarDays, Pencil, Plus, Search, ShoppingCart, Trash2, UtensilsCrossed, X } from "lucide-react";
@@ -91,15 +91,16 @@ function getPriceForStudentLevel(food: FoodItem, studentLevel: string) {
 
 const MEAL_PERIOD_ORDER = MEAL_PERIODS.map((period) => period.key);
 
-// "Today" vs "tomorrow" is never a manual choice — it's resolved live from
-// the current Costa Rica clock time (see resolveTargetDay), so it's always
-// computed fresh at render time rather than stored on the cart line.
+// The scheduled day is never a manual choice — it's resolved live from the
+// current Costa Rica clock time and always rolled off weekends (see
+// resolveEarliestSchoolDate), so it's computed fresh at render time rather
+// than stored on the cart line.
 function formatMealMoment(mealPeriod: MealPeriod | null, t: (key: string) => string) {
   if (!mealPeriod) return t("parent.plan.selectMealMoment");
 
-  const dayLabel = t(
-    resolveTargetDay() === "TODAY" ? "parent.plan.targetDayToday" : "parent.plan.targetDayTomorrow"
-  );
+  const dayLabel = isEarliestSchoolDateToday()
+    ? t("parent.plan.targetDayToday")
+    : formatDate(resolveEarliestSchoolDate());
   const mealPeriodLabel = t(MEAL_PERIODS.find((period) => period.key === mealPeriod)?.labelKey ?? "");
   return `${dayLabel} · ${mealPeriodLabel}`;
 }
@@ -988,15 +989,13 @@ export default function ParentPlanPage() {
                   </span>
                   <div className="rounded-xl border border-cyan-200 bg-cyan-50 px-4 py-3">
                     <p className="text-sm font-bold text-cyan-800">
-                      {t(
-                        resolveTargetDay() === "TODAY"
-                          ? "parent.plan.targetDayToday"
-                          : "parent.plan.targetDayTomorrow"
-                      )}
+                      {isEarliestSchoolDateToday()
+                        ? t("parent.plan.targetDayToday")
+                        : formatDate(resolveEarliestSchoolDate())}
                     </p>
-                    {resolveTargetDay() === "TOMORROW" ? (
+                    {!isEarliestSchoolDateToday() ? (
                       <p className="mt-1 text-xs text-cyan-700">
-                        {t("parent.plan.autoTomorrowNotice")}
+                        {t("parent.plan.autoNextAvailableDayNotice")}
                       </p>
                     ) : null}
                   </div>

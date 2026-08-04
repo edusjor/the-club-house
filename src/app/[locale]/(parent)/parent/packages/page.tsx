@@ -6,6 +6,7 @@ import axios from "axios";
 import Header from "@/components/dashboard/Header";
 import StatusBadge from "@/components/dashboard/StatusBadge";
 import { formatCurrency, formatDate, normalizePriceLevel } from "@/lib/utils";
+import { resolveEarliestSchoolDateString } from "@/lib/meal-scheduling";
 import { useTranslations } from "@/i18n/I18nProvider";
 import { CheckCircle2, PackagePlus, XCircle } from "lucide-react";
 
@@ -46,7 +47,7 @@ export default function ParentPackagesPage() {
   const queryClient = useQueryClient();
   const [studentId, setStudentId] = useState("");
   const [packageId, setPackageId] = useState("");
-  const [startDate, setStartDate] = useState(new Date().toISOString().slice(0, 10));
+  const [startDate, setStartDate] = useState(() => resolveEarliestSchoolDateString());
   const [feedback, setFeedback] = useState("");
   const [error, setError] = useState("");
 
@@ -177,6 +178,7 @@ export default function ParentPackagesPage() {
               <input
                 type="date"
                 value={startDate}
+                min={resolveEarliestSchoolDateString()}
                 onChange={(event) => setStartDate(event.target.value)}
                 className="h-10 rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm text-slate-900"
               />

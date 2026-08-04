@@ -61,6 +61,7 @@ type StudentPackageVendorView = {
     name: string;
     packageItems: { categoryId: string }[];
     eligibleItemNames: string[];
+    coversSnack: boolean;
   };
 };
 
@@ -506,7 +507,9 @@ function VendorNewOrderContent() {
             </div>
             <div className="mt-2 space-y-1.5">
               {packagesForSelectedStudent.map((sp) => {
-                const covers = sp.package.eligibleItemNames.join(", ");
+                const covers = sp.package.coversSnack
+                  ? t("vendor.newOrder.packageCoversSnackText")
+                  : sp.package.eligibleItemNames.join(", ");
                 return (
                   <div
                     key={sp.id}

@@ -11,10 +11,13 @@ async function getSalesData() {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const [orders, consumptions, payments, sales] = await Promise.all([
-    prisma.order.count({ where: { createdAt: { gte: today } } }),
+    prisma.order.count({ where: { createdAt: { gte: today }, status: { not: "CANCELLED" } } }),
     prisma.orderItem.count({ where: { delivered: true, scheduledDate: { gte: today } } }),
     prisma.payment.count({ where: { status: "APPROVED", createdAt: { gte: today } } }),
-    prisma.order.aggregate({ where: { createdAt: { gte: today } }, _sum: { total: true } }),
+    prisma.order.aggregate({
+      where: { createdAt: { gte: today }, status: { not: "CANCELLED" } },
+      _sum: { total: true },
+    }),
   ]);
   return { orders, consumptions, payments, sales: sales._sum.total ?? 0 };
 }

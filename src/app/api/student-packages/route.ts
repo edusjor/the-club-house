@@ -2,6 +2,11 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/db";
 import { normalizePriceLevel } from "@/lib/utils";
 import { getFoodTab, isPackageEligibleFoodTab } from "@/lib/food-tabs";
+import {
+  isBeforeEarliestSchoolDate,
+  isWeekendDate,
+  resolveEarliestSchoolDate,
+} from "@/lib/meal-scheduling";
 import { NextRequest, NextResponse } from "next/server";
 
 function getDayBounds(date = new Date()) {
@@ -75,8 +80,11 @@ export async function GET() {
           })
         : [];
     const eligibleNamesByCategory = new Map<string, string[]>();
+    const snackCategoryIds = new Set<string>();
     for (const item of candidateFoodItems) {
-      if (!isPackageEligibleFoodTab(getFoodTab(item))) continue;
+      const foodTab = getFoodTab(item);
+      if (!isPackageEligibleFoodTab(foodTab)) continue;
+      if (foodTab === "SNACK") snackCategoryIds.add(item.categoryId);
       const names = eligibleNamesByCategory.get(item.categoryId) ?? [];
       names.push(item.name);
       eligibleNamesByCategory.set(item.categoryId, names);
@@ -88,6 +96,11 @@ export async function GET() {
         usedToday: usedTodayIds.has(sp.id),
         package: {
           ...sp.package,
+          // A snack package can be eligible for dozens of walk-up snack
+          // items, so the vendor UI shows a generic "covers snacks" hint for
+          // it instead of the full item list (which is still meaningful for
+          // a lunch package, since that list is just the dish of the day).
+          coversSnack: sp.package.packageItems.some((pi) => snackCategoryIds.has(pi.categoryId)),
           eligibleItemNames: [
             ...new Set(
               sp.package.packageItems.flatMap((pi) => eligibleNamesByCategory.get(pi.categoryId) ?? [])
@@ -195,9 +208,29 @@ export async function POST(req: NextRequest) {
 
   const packagePrice = priceForLevel.price;
 
-  const effectiveStartDate = startDate ? new Date(startDate) : new Date();
+  const effectiveStartDate = startDate ? new Date(startDate) : resolveEarliestSchoolDate();
   if (Number.isNaN(effectiveStartDate.getTime())) {
     return NextResponse.json({ error: "startDate inválido" }, { status: 400 });
+  }
+
+  // A package start date on a Saturday/Sunday is meaningless — the school
+  // doesn't operate then — regardless of who's creating it or how far out
+  // the date is, so this applies even to admin corrections.
+  if (isWeekendDate(effectiveStartDate)) {
+    return NextResponse.json(
+      { error: "La fecha de inicio no puede ser sábado o domingo." },
+      { status: 400 }
+    );
+  }
+
+  // A parent can't backdate a package to a day that's already closed for
+  // ordering (past cutoff) — same floor as regular orders. Admins can still
+  // backdate for corrections.
+  if (role === "PARENT" && isBeforeEarliestSchoolDate(effectiveStartDate)) {
+    return NextResponse.json(
+      { error: "La fecha de inicio no puede ser antes del próximo día disponible." },
+      { status: 400 }
+    );
   }
 
   const endDate =

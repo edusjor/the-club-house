@@ -461,6 +461,15 @@ export async function POST(req: NextRequest) {
     let coveredByStudentPackageId: string | null = null;
 
     if (allowPackageCoverage && item.studentPackageId) {
+      // A package covers exactly one serving — quantity>1 would hand out
+      // extra free servings while `consumed` only increments once.
+      if (quantity !== 1) {
+        return NextResponse.json(
+          { error: "Un paquete solo puede cubrir una unidad por plato" },
+          { status: 400 }
+        );
+      }
+
       if (claimedPackageIdsInRequest.has(item.studentPackageId)) {
         return NextResponse.json(
           { error: "Ese paquete solo puede cubrir un plato por pedido" },

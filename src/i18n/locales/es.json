@@ -557,8 +557,7 @@
       "mealMomentModalTitle": "¿Para cuándo es esto?",
       "mealPeriodSectionLabel": "Momento de comida",
       "targetDayToday": "Hoy",
-      "targetDayTomorrow": "Mañana",
-      "autoTomorrowNotice": "Ya son más de las 4:00pm, el horario de pedidos de hoy está cerrado — este pedido será para mañana.",
+      "autoNextAvailableDayNotice": "El horario de pedidos de hoy ya cerró o no se ordena en fin de semana — este pedido quedará programado para el día indicado arriba.",
       "done": "Listo",
       "chooseChildModalTitle": "Elegir hijo",
       "choosePersonModalTitle": "¿Para quién es el pedido?",
@@ -667,7 +666,8 @@
       "availablePackagesTitle": "Paquetes disponibles",
       "packageUsedToday": "Usado hoy",
       "packageAvailableToday": "Disponible hoy",
-      "packageCoversLabel": "Cubre"
+      "packageCoversLabel": "Cubre",
+      "packageCoversSnackText": "Meriendas"
     },
     "newOrder": {
       "title": "Nueva Orden en Restaurante",
@@ -719,7 +719,8 @@
       "availablePackagesTitle": "Paquetes disponibles",
       "packageUsedToday": "Usado hoy",
       "packageAvailableToday": "Disponible hoy",
-      "packageCoversLabel": "Cubre"
+      "packageCoversLabel": "Cubre",
+      "packageCoversSnackText": "Meriendas"
     },
     "history": {
       "title": "Historial",
