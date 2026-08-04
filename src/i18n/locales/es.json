@@ -379,13 +379,16 @@
       "limitReachedNote": "Alcanzaste tu límite de crédito. Paga tu saldo pendiente o pide al administrador que aumente tu límite para poder ordenar de nuevo.",
       "pendingApproval": "Pagos por aprobar",
       "alreadySentInReview": "Ya enviados, en revisión",
+      "creditLabel": "Saldo a favor",
+      "creditHint": "Pago de más registrado en tu cuenta",
       "importantInfo": "Información importante:",
       "infoBullet1": "Puedes pagar el saldo total o una parte",
       "infoBullet2": "Los pagos se aplican a tu saldo acumulado",
       "infoBullet3": "El administrador revisará y aprobará tu pago",
-      "makePayment": "Realizar pago",
-      "amountToPay": "Monto a pagar",
-      "amountExceedsBalance": "El monto supera el saldo pendiente.",
+      "infoBullet4": "También puedes pagar de más a propósito, para dejar saldo a favor y usarlo en pedidos o paquetes futuros",
+      "makePayment": "Pagar o cargar saldo",
+      "amountToPay": "Monto a pagar o cargar",
+      "amountExceedsBalance": "Este monto es mayor a tu saldo pendiente — quedarán {amount} como saldo a favor una vez aprobado.",
       "sinpeReferencePlaceholder": "Referencia SINPE (opcional si subes archivo)",
       "uploadReceipt": "Subir comprobante",
       "fileLabel": "Archivo",
@@ -406,7 +409,6 @@
       "comment": "Comentario",
       "errorNoBalance": "No hay saldo disponible.",
       "errorAmountRequired": "Debes indicar un monto mayor a 0.",
-      "errorAmountExceeds": "El monto supera el saldo pendiente ({amount}).",
       "errorReceiptRequired": "Debes subir comprobante o ingresar referencia SINPE.",
       "errorFileTooBig": "El archivo supera 4MB. Sube una imagen o PDF más liviano.",
       "errorReceiptRead": "No se pudo leer el comprobante seleccionado.",
@@ -585,13 +587,6 @@
       "viewBalancePage": "Ver mi saldo",
       "more": "más"
     },
-    "profile": {
-      "title": "Mi Perfil",
-      "subtitle": "Datos de la cuenta familiar",
-      "name": "Nombre",
-      "email": "Email",
-      "userFallback": "Usuario"
-    },
     "receipts": {
       "title": "Comprobantes",
       "subtitle": "Archivo de pagos y recibos subidos",
@@ -734,13 +729,6 @@
     "notifications": {
       "title": "Notificaciones",
       "subtitle": "Alertas operativas para el equipo vendedor"
-    },
-    "profile": {
-      "title": "Mi Perfil",
-      "subtitle": "Datos del usuario vendedor",
-      "name": "Nombre",
-      "email": "Email",
-      "userFallback": "Usuario"
     },
     "sales": {
       "title": "Ventas del Día",

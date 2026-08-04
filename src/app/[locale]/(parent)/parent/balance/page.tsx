@@ -16,6 +16,7 @@ type ParentBalance = {
   id: string;
   pendingBalance: number;
   approvedBalance: number;
+  creditBalance: number;
   creditLimit: number;
 };
 
@@ -39,12 +40,9 @@ const PAYMENT_TABS = [
 
 type PaymentTabKey = (typeof PAYMENT_TABS)[number]["key"];
 
-function normalizeAmountInput(value: string, max?: number) {
+function normalizeAmountInput(value: string) {
   const parsed = Number(value);
   if (!Number.isFinite(parsed) || parsed <= 0) return 0;
-  if (typeof max === "number") {
-    return Math.min(parsed, Math.max(0, max));
-  }
   return parsed;
 }
 
@@ -86,9 +84,11 @@ export default function ParentBalancePage() {
   const availableToOrder = Math.max(0, (balance?.creditLimit ?? 0) - (balance?.pendingBalance ?? 0));
 
   const amountValue = amountInput || (balance?.pendingBalance ? String(balance.pendingBalance) : "");
-  const amount = normalizeAmountInput(amountValue, balance?.pendingBalance);
-  const rawAmount = Number(amountValue || 0);
-  const amountExceedsBalance = Number.isFinite(rawAmount) && rawAmount > (balance?.pendingBalance || 0);
+  const amount = normalizeAmountInput(amountValue);
+  // Not a validation error — paying more than what's owed is allowed on
+  // purpose, to preload credit for future orders/packages. This just flags
+  // it so the parent sees clearly what they're about to do.
+  const amountExceedsBalance = amount > 0 && amount > (balance?.pendingBalance || 0);
 
   const paymentMutation = useMutation({
     mutationFn: (payload: { amount: number; receipt: string }) =>
@@ -157,12 +157,6 @@ export default function ParentBalancePage() {
     if (amount <= 0) {
       setFeedback("");
       setError(t("parent.balance.errorAmountRequired"));
-      return;
-    }
-
-    if (amountExceedsBalance) {
-      setFeedback("");
-      setError(t("parent.balance.errorAmountExceeds").replace("{amount}", formatCurrency(balance.pendingBalance)));
       return;
     }
 
@@ -241,6 +235,15 @@ export default function ParentBalancePage() {
                     </p>
                     <p className="mt-1 text-xs text-amber-700">{t("parent.balance.alreadySentInReview")}</p>
                   </div>
+                  {balance?.creditBalance ? (
+                    <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4">
+                      <p className="text-xs font-semibold text-emerald-700">{t("parent.balance.creditLabel")}</p>
+                      <p className="mt-1 text-2xl font-black text-emerald-700">
+                        {formatCurrency(balance.creditBalance)}
+                      </p>
+                      <p className="mt-1 text-xs text-emerald-700">{t("parent.balance.creditHint")}</p>
+                    </div>
+                  ) : null}
                 </div>
 
                 {availableToOrder <= 0 ? (
@@ -255,6 +258,7 @@ export default function ParentBalancePage() {
                     <li>• {t("parent.balance.infoBullet1")}</li>
                     <li>• {t("parent.balance.infoBullet2")}</li>
                     <li>• {t("parent.balance.infoBullet3")}</li>
+                    <li>• {t("parent.balance.infoBullet4")}</li>
                   </ul>
                 </div>
               </div>
@@ -289,7 +293,12 @@ export default function ParentBalancePage() {
                 </label>
 
                 {amountExceedsBalance ? (
-                  <p className="text-xs text-amber-700">{t("parent.balance.amountExceedsBalance")}</p>
+                  <p className="text-xs text-emerald-700">
+                    {t("parent.balance.amountExceedsBalance").replace(
+                      "{amount}",
+                      formatCurrency(amount - (balance?.pendingBalance || 0))
+                    )}
+                  </p>
                 ) : null}
 
                 <input
@@ -330,7 +339,7 @@ export default function ParentBalancePage() {
 
                 <button
                   onClick={submitPayment}
-                  disabled={paymentMutation.isPending || !balance || balance.pendingBalance === 0}
+                  disabled={paymentMutation.isPending || !balance}
                   className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-500 px-4 py-2.5 text-base font-semibold text-white transition-colors hover:bg-emerald-600 disabled:cursor-not-allowed disabled:bg-slate-300"
                 >
                   {paymentMutation.isPending ? (

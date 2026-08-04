@@ -379,13 +379,16 @@
       "limitReachedNote": "You've reached your credit limit. Pay down your pending balance or ask the administrator to raise your limit to order again.",
       "pendingApproval": "Payments awaiting approval",
       "alreadySentInReview": "Already sent, under review",
+      "creditLabel": "Credit balance",
+      "creditHint": "Overpayment recorded on your account",
       "importantInfo": "Important information:",
       "infoBullet1": "You can pay the full balance or part of it",
       "infoBullet2": "Payments are applied to your accrued balance",
       "infoBullet3": "The administrator will review and approve your payment",
-      "makePayment": "Make a payment",
-      "amountToPay": "Amount to pay",
-      "amountExceedsBalance": "The amount exceeds the pending balance.",
+      "infoBullet4": "You can also pay more than you owe on purpose, to leave a credit balance for future orders or packages",
+      "makePayment": "Pay or add credit",
+      "amountToPay": "Amount to pay or add",
+      "amountExceedsBalance": "This amount is more than your pending balance — {amount} will be left as credit once approved.",
       "sinpeReferencePlaceholder": "SINPE reference (optional if you upload a file)",
       "uploadReceipt": "Upload receipt",
       "fileLabel": "File",
@@ -406,7 +409,6 @@
       "comment": "Comment",
       "errorNoBalance": "No balance available.",
       "errorAmountRequired": "You must enter an amount greater than 0.",
-      "errorAmountExceeds": "The amount exceeds the pending balance ({amount}).",
       "errorReceiptRequired": "You must upload a receipt or enter a SINPE reference.",
       "errorFileTooBig": "The file exceeds 4MB. Upload a lighter image or PDF.",
       "errorReceiptRead": "Couldn't read the selected receipt.",
@@ -585,13 +587,6 @@
       "viewBalancePage": "View my balance",
       "more": "more"
     },
-    "profile": {
-      "title": "My Profile",
-      "subtitle": "Family account details",
-      "name": "Name",
-      "email": "Email",
-      "userFallback": "User"
-    },
     "receipts": {
       "title": "Receipts",
       "subtitle": "Payment receipts and uploaded files archive",
@@ -734,13 +729,6 @@
     "notifications": {
       "title": "Notifications",
       "subtitle": "Operational alerts for the vendor team"
-    },
-    "profile": {
-      "title": "My Profile",
-      "subtitle": "Vendor user details",
-      "name": "Name",
-      "email": "Email",
-      "userFallback": "User"
     },
     "sales": {
       "title": "Today's Sales",

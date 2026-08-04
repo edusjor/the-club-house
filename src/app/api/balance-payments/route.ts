@@ -5,7 +5,7 @@ import { prisma } from "@/lib/db";
 export async function POST(request: NextRequest) {
   try {
     const session = await auth();
-    if (!session?.user?.id || (session.user as any).role !== "PARENT") {
+    if (!session?.user?.id || (session.user as { role?: string }).role !== "PARENT") {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -21,7 +21,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Get parent balance
-    let balance = await prisma.parentBalance.findUnique({
+    const balance = await prisma.parentBalance.findUnique({
       where: { parentId: session.user.id },
     });
 
@@ -29,9 +29,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Balance not found" }, { status: 404 });
     }
 
-    if (amount > balance.pendingBalance) {
-      return NextResponse.json({ error: "Amount exceeds pending balance" }, { status: 400 });
-    }
+    // A parent can pay off exactly what they owe, or deliberately pay more
+    // to preload credit for future orders/packages — both are valid, so
+    // there's no cap against pendingBalance here. If approved, an amount
+    // beyond what's charged becomes creditBalance (see recomputeParentBalance).
 
     // Create payment record
     const payment = await prisma.payment.create({

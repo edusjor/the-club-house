@@ -41,6 +41,7 @@ async function getDashboardData() {
     prisma.order.count({
       where: {
         createdAt: { gte: new Date(new Date().setHours(0, 0, 0, 0)) },
+        status: { not: "CANCELLED" },
       },
     }),
     prisma.studentPackage.count({ where: { status: "ACTIVE" } }),

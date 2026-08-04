@@ -1,5 +1,6 @@
 import { auth } from "@/auth";
 import { prisma } from "@/lib/db";
+import { chargeParentBalance } from "@/lib/balance";
 import { normalizePriceLevel } from "@/lib/utils";
 import { getFoodTab, isPackageEligibleFoodTab } from "@/lib/food-tabs";
 import {
@@ -256,28 +257,23 @@ export async function POST(req: NextRequest) {
     });
 
     // A package purchase is charged the same way an order is: it lands on
-    // the parent's pending balance immediately, and the parent settles it
-    // later from /parent/balance (upload a receipt, admin approves it).
-    // There's no separate "payment awaiting approval" record for the
-    // purchase itself — that would leave the charge invisible on the
-    // balance the parent actually sees.
-    let balance = await tx.parentBalance.findUnique({ where: { parentId: student.parentId } });
-    if (!balance) {
-      balance = await tx.parentBalance.create({
-        data: { parentId: student.parentId, pendingBalance: 0, approvedBalance: 0 },
-      });
-    }
-
-    await tx.parentBalance.update({
+    // the parent's balance immediately (draining any creditBalance first),
+    // and the parent settles whatever's left later from /parent/balance
+    // (upload a receipt, admin approves it). There's no separate "payment
+    // awaiting approval" record for the purchase itself — that would leave
+    // the charge invisible on the balance the parent actually sees.
+    await tx.parentBalance.upsert({
       where: { parentId: student.parentId },
-      data: { pendingBalance: balance.pendingBalance + packagePrice },
+      create: { parentId: student.parentId, pendingBalance: 0, approvedBalance: 0 },
+      update: {},
     });
+    await chargeParentBalance(tx, student.parentId, packagePrice, { enforceCreditLimit: false });
 
     await tx.notification.create({
       data: {
         userId: student.parentId,
         title: "Paquete adquirido",
-        message: `Se registró ${pkg.name} para ${student.name}. Se agregaron ${packagePrice} CRC a tu saldo por pagar.`,
+        message: `Se registró ${pkg.name} para ${student.name}. Costo: ${packagePrice} CRC, aplicado a tu cuenta.`,
       },
     });
 

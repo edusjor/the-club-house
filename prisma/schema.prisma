@@ -222,6 +222,7 @@ model ParentBalance {
   parent          User     @relation(fields: [parentId], references: [id])
   pendingBalance  Int      @default(0)
   approvedBalance Int      @default(0)
+  creditBalance   Int      @default(0) // money paid/approved beyond what's actually charged (e.g. an overpayment approved on purpose) — available to offset future charges, never silently dropped
   creditLimit     Int      @default(100000) // max pendingBalance allowed before new orders are blocked; admin can raise per-parent
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt

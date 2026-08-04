@@ -1,5 +1,6 @@
 import { auth } from "@/auth";
 import { prisma } from "@/lib/db";
+import { recomputeParentBalance } from "@/lib/balance";
 import { formatOrderNumber } from "@/lib/utils";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -141,15 +142,19 @@ export async function PUT(
 
     // Orders are charged to the parent's balance as soon as they're created
     // (status leaves PENDING), so cancelling one has to refund that amount.
+    // Recomputed from source (not `pendingBalance - order.total`, floored at
+    // 0) so a cancellation that refunds more than the parent currently owes
+    // correctly becomes creditBalance instead of the excess being erased.
     if (nextStatus === "CANCELLED" && order.status !== "PENDING") {
       const balance = await tx.parentBalance.findUnique({
         where: { parentId: result.parentId },
       });
 
       if (balance) {
+        const recomputed = await recomputeParentBalance(tx, result.parentId);
         await tx.parentBalance.update({
           where: { parentId: result.parentId },
-          data: { pendingBalance: Math.max(0, balance.pendingBalance - order.total) },
+          data: recomputed,
         });
       }
     }

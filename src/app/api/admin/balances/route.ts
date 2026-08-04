@@ -18,7 +18,7 @@ export async function GET() {
       phone: true,
       active: true,
       parentBalance: {
-        select: { pendingBalance: true, approvedBalance: true, creditLimit: true },
+        select: { pendingBalance: true, approvedBalance: true, creditBalance: true, creditLimit: true },
       },
     },
   });
@@ -28,6 +28,7 @@ export async function GET() {
   const balances = parents.map((parent) => {
     const pendingBalance = parent.parentBalance?.pendingBalance ?? 0;
     const approvedBalance = parent.parentBalance?.approvedBalance ?? 0;
+    const creditBalance = parent.parentBalance?.creditBalance ?? 0;
     const creditLimit = parent.parentBalance?.creditLimit ?? 100000;
 
     return {
@@ -38,6 +39,7 @@ export async function GET() {
       active: parent.active,
       pendingBalance,
       approvedBalance,
+      creditBalance,
       creditLimit,
       available: Math.max(0, creditLimit - pendingBalance),
       overLimitBy: Math.max(0, pendingBalance - creditLimit),

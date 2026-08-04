@@ -19,7 +19,11 @@ export default async function ParentStatementsPage({
   if (!parentId) redirect(localePath(locale, "/login"));
 
   const [orders, payments, consumptions, dict] = await Promise.all([
-    prisma.order.aggregate({ where: { parentId }, _sum: { total: true }, _count: { _all: true } }),
+    prisma.order.aggregate({
+      where: { parentId, status: { not: "CANCELLED" } },
+      _sum: { total: true },
+      _count: { _all: true },
+    }),
     prisma.payment.aggregate({ where: { parentId, status: "APPROVED" }, _sum: { amount: true }, _count: { _all: true } }),
     prisma.orderItem.count({ where: { delivered: true, student: { parentId } } }),
     getDictionary(locale),

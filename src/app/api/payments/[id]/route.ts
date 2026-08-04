@@ -33,7 +33,7 @@ export async function PUT(
     const payment = await prisma.$transaction(async (tx) => {
       const existing = await tx.payment.findUnique({
         where: { id },
-        select: { id: true, parentId: true, orderId: true, amount: true, status: true, comment: true },
+        select: { id: true, parentId: true, amount: true, status: true, comment: true },
       });
 
       if (!existing) {
@@ -62,17 +62,18 @@ export async function PUT(
         },
         include: {
           parent: { select: { name: true, email: true } },
-          order: { select: { id: true, total: true, status: true } },
           approvedBy: { select: { name: true } },
         },
       });
 
-      // Handle balance payments (no orderId). Recomputed from source
-      // (orders + packages still charged, minus approved balance payments)
-      // rather than patched incrementally, so correcting an already-approved
-      // payment's amount self-heals the balance instead of compounding a
-      // stale pendingBalance floor-at-zero clamp from an earlier mistake.
-      if (!nothingChanged && !updated.order?.id) {
+      // Every real payment today is a balance payment (money applied against
+      // the parent's general pending balance, not tied to one order — see
+      // orders/route.ts). Recomputed from source (orders + packages still
+      // charged, minus approved balance payments) rather than patched
+      // incrementally, so correcting an already-approved payment's amount
+      // self-heals the balance instead of compounding a stale pendingBalance
+      // floor-at-zero clamp from an earlier mistake.
+      if (!nothingChanged) {
         const existingBalance = await tx.parentBalance.findUnique({
           where: { parentId: updated.parentId },
         });
@@ -82,36 +83,6 @@ export async function PUT(
           await tx.parentBalance.update({
             where: { parentId: updated.parentId },
             data: recomputed,
-          });
-        }
-      }
-
-      // Handle order payments
-      if (updated.order?.id) {
-        const [approved, undeliveredItems] = await Promise.all([
-          tx.payment.aggregate({
-            where: { orderId: updated.order.id, status: "APPROVED" },
-            _sum: { amount: true },
-          }),
-          tx.orderItem.aggregate({
-            where: { orderId: updated.order.id, delivered: false },
-            _sum: { quantity: true },
-          }),
-        ]);
-
-        const approvedAmount = approved._sum.amount ?? 0;
-        const undeliveredUnits = undeliveredItems._sum.quantity ?? 0;
-        const nextOrderStatus =
-          approvedAmount >= updated.order.total
-            ? "PAID"
-            : undeliveredUnits === 0
-            ? "DELIVERED"
-            : "PENDING";
-
-        if (nextOrderStatus !== updated.order.status) {
-          await tx.order.update({
-            where: { id: updated.order.id },
-            data: { status: nextOrderStatus },
           });
         }
       }

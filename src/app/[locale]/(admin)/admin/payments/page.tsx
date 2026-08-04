@@ -17,7 +17,11 @@ type Payment = {
   receipt?: string | null;
   comment?: string | null;
   createdAt: string;
-  parent?: { name: string; email: string };
+  parent?: {
+    name: string;
+    email: string;
+    parentBalance?: { pendingBalance: number; creditBalance: number } | null;
+  };
   order?: { id: string; total: number };
 };
 
@@ -38,13 +42,27 @@ function PaymentCard({
   const amountChanged = parsedAmount !== payment.amount;
   const commentChanged = comment !== (payment.comment ?? "");
   const amountValid = Number.isFinite(parsedAmount) && parsedAmount > 0;
+  const pendingBalance = payment.parent?.parentBalance?.pendingBalance ?? 0;
 
-  const confirmIfNeeded = () => {
+  // `targetStatus` is undefined for a plain "Guardar cambios" — in that case
+  // the payment's current status is what it'll stay at.
+  const confirmIfNeeded = (targetStatus?: string) => {
+    const willBeApproved = targetStatus ? targetStatus === "APPROVED" : payment.status === "APPROVED";
+    const effectiveAmount = amountChanged ? parsedAmount : payment.amount;
+
+    if (willBeApproved && effectiveAmount > pendingBalance) {
+      const excess = effectiveAmount - pendingBalance;
+      return window.confirm(
+        `Este monto (${formatCurrency(effectiveAmount)}) es MAYOR al saldo pendiente actual del padre (${formatCurrency(pendingBalance)}).\n\nSe va a aprobar por más de lo que debe. El excedente de ${formatCurrency(excess)} quedará registrado como saldo a favor del padre, para futuros pedidos.\n\n¿Continuar?`
+      );
+    }
+
     if (amountChanged && payment.status === "APPROVED") {
       return window.confirm(
         `Este pago ya está aprobado. Cambiar el monto de ${formatCurrency(payment.amount)} a ${formatCurrency(parsedAmount)} ajustará el saldo del padre. ¿Continuar?`
       );
     }
+
     return true;
   };
 
@@ -57,7 +75,7 @@ function PaymentCard({
   };
 
   const handleDecision = (status: string) => {
-    if (!amountValid || !confirmIfNeeded()) return;
+    if (!amountValid || !confirmIfNeeded(status)) return;
     onUpdate({
       status,
       amount: amountChanged ? parsedAmount : undefined,
@@ -71,6 +89,14 @@ function PaymentCard({
         <div>
           <h3 className="font-bold text-slate-900">{payment.parent?.name ?? "Padre"}</h3>
           <p className="text-sm text-slate-500">{payment.parent?.email ?? ""}</p>
+          <p className="mt-1 text-xs text-slate-500">
+            Saldo pendiente: <span className="font-semibold text-slate-700">{formatCurrency(pendingBalance)}</span>
+            {payment.parent?.parentBalance?.creditBalance ? (
+              <span className="ml-2 font-semibold text-emerald-600">
+                · Saldo a favor: {formatCurrency(payment.parent.parentBalance.creditBalance)}
+              </span>
+            ) : null}
+          </p>
           <p className="mt-1 text-xs text-slate-500">{formatDateTime(payment.createdAt)}</p>
           {receipt?.kind === "UPLOAD" ? (
             <p className="mt-2 text-xs text-slate-500">

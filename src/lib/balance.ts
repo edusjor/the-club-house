@@ -34,8 +34,51 @@ export async function recomputeParentBalance(tx: TxClient, parentId: string) {
     packages.reduce((sum, sp) => sum + sp.pricePaid, 0);
   const totalApproved = approvedPayments._sum.amount ?? 0;
 
+  // net > 0: the parent still owes the difference (pendingBalance).
+  // net < 0: approved payments cover more than what's charged — instead of
+  // clamping that excess away (which used to just erase it), it's tracked as
+  // creditBalance, which new charges draw down first (see chargeParentBalance).
+  const net = totalCharged - totalApproved;
+
   return {
-    pendingBalance: Math.max(0, totalCharged - totalApproved),
+    pendingBalance: Math.max(0, net),
+    creditBalance: Math.max(0, -net),
     approvedBalance: totalApproved,
   };
+}
+
+// Atomically charges `amount` against a parent's balance — draining any
+// existing creditBalance first, only growing pendingBalance once the credit
+// runs out. A single conditional UPDATE (not read-then-write), so two
+// near-simultaneous charges for the same parent can't both read the same
+// "before" balance and both slip past the credit limit: Postgres locks the
+// matched row for this statement, so a concurrent transaction waits and
+// re-evaluates the WHERE clause against the already-updated balance.
+//
+// Returns false (balance left untouched) only when enforceCreditLimit is
+// true and the charge would push net owed beyond creditLimit.
+export async function chargeParentBalance(
+  tx: TxClient,
+  parentId: string,
+  amount: number,
+  { enforceCreditLimit }: { enforceCreditLimit: boolean }
+): Promise<boolean> {
+  const rows = enforceCreditLimit
+    ? await tx.$executeRaw`
+        UPDATE "ParentBalance"
+        SET
+          "pendingBalance" = GREATEST(0, ("pendingBalance" - "creditBalance") + ${amount}),
+          "creditBalance" = GREATEST(0, -(("pendingBalance" - "creditBalance") + ${amount}))
+        WHERE "parentId" = ${parentId}
+          AND ("pendingBalance" - "creditBalance") + ${amount} <= "creditLimit"
+      `
+    : await tx.$executeRaw`
+        UPDATE "ParentBalance"
+        SET
+          "pendingBalance" = GREATEST(0, ("pendingBalance" - "creditBalance") + ${amount}),
+          "creditBalance" = GREATEST(0, -(("pendingBalance" - "creditBalance") + ${amount}))
+        WHERE "parentId" = ${parentId}
+      `;
+
+  return rows > 0;
 }

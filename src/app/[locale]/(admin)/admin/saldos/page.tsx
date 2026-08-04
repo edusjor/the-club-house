@@ -16,6 +16,7 @@ type ParentBalanceRow = {
   active: boolean;
   pendingBalance: number;
   approvedBalance: number;
+  creditBalance: number;
   creditLimit: number;
   available: number;
   overLimitBy: number;
@@ -245,7 +246,14 @@ export default function AdminBalancesPage() {
                       <div className="text-xs text-slate-500">{balance.email}</div>
                     </td>
                     <td className="px-5 py-3.5 text-right text-slate-700">{formatCurrency(balance.creditLimit)}</td>
-                    <td className="px-5 py-3.5 text-right font-semibold text-slate-900">{formatCurrency(balance.pendingBalance)}</td>
+                    <td className="px-5 py-3.5 text-right font-semibold text-slate-900">
+                      {formatCurrency(balance.pendingBalance)}
+                      {balance.creditBalance ? (
+                        <div className="text-xs font-semibold text-emerald-600">
+                          + {formatCurrency(balance.creditBalance)} a favor
+                        </div>
+                      ) : null}
+                    </td>
                     <td className="px-5 py-3.5 text-right text-slate-700">{formatCurrency(balance.available)}</td>
                     <td className="px-5 py-3.5">
                       <span

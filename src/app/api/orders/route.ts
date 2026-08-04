@@ -1,5 +1,6 @@
 import { auth } from "@/auth";
 import { prisma } from "@/lib/db";
+import { chargeParentBalance } from "@/lib/balance";
 import { normalizePriceLevel } from "@/lib/utils";
 import { buildScheduledDateForMealPeriod, isMealPeriod, type MealPeriod } from "@/lib/meal-scheduling";
 import { canRoleSeeVendorOnlyItems, getFoodVisibility } from "@/lib/food-visibility";
@@ -552,12 +553,11 @@ export async function POST(req: NextRequest) {
   let orders;
   try {
     orders = await prisma.$transaction(async (tx) => {
-      let balance = await tx.parentBalance.findUnique({ where: { parentId } });
-      if (!balance) {
-        balance = await tx.parentBalance.create({
-          data: { parentId, pendingBalance: 0, approvedBalance: 0 },
-        });
-      }
+      await tx.parentBalance.upsert({
+        where: { parentId },
+        create: { parentId, pendingBalance: 0, approvedBalance: 0 },
+        update: {},
+      });
 
       // A parent can't order past their credit limit — this is the amount an
       // admin sets per parent (100,000 colones by default); it only goes back
@@ -567,7 +567,14 @@ export async function POST(req: NextRequest) {
         0
       );
 
-      if (balance.pendingBalance + totalToCharge > balance.creditLimit) {
+      // Draws down any existing creditBalance first, then charges
+      // pendingBalance for the rest — atomically, so two near-simultaneous
+      // orders from the same parent can't both slip past the credit limit.
+      const charged = await chargeParentBalance(tx, parentId, totalToCharge, {
+        enforceCreditLimit: true,
+      });
+
+      if (!charged) {
         throw new Error("CREDIT_LIMIT_EXCEEDED");
       }
 
@@ -600,12 +607,6 @@ export async function POST(req: NextRequest) {
         });
         createdOrders.push(order);
       }
-
-      const totalCharged = createdOrders.reduce((sum, order) => sum + order.total, 0);
-      await tx.parentBalance.update({
-        where: { parentId },
-        data: { pendingBalance: balance.pendingBalance + totalCharged },
-      });
 
       const usedPackageIds = [...claimedPackageIdsInRequest];
       for (const packageId of usedPackageIds) {

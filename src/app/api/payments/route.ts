@@ -13,7 +13,13 @@ export async function GET() {
     role === "ADMIN"
       ? await prisma.payment.findMany({
           include: {
-            parent: { select: { name: true, email: true } },
+            parent: {
+              select: {
+                name: true,
+                email: true,
+                parentBalance: { select: { pendingBalance: true, creditBalance: true } },
+              },
+            },
             order: { select: { id: true, total: true } },
             approvedBy: { select: { name: true } },
           },

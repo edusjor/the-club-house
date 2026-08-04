@@ -224,7 +224,9 @@ export default function ParentPackagesPage() {
         </div>
 
         {studentPackages.map((studentPackage) => {
-          const price = priceForLevel(studentPackage.package.prices, studentPackage.student.level) ?? 0;
+          // What was actually charged for this specific purchase — not the
+          // package's current list price, which can drift from it over time.
+          const price = studentPackage.pricePaid;
           const notStarted = hasNotStartedYet(studentPackage.startDate);
           const canCancel = studentPackage.status === "ACTIVE" && notStarted;
           const alreadyStarted = studentPackage.status === "ACTIVE" && !notStarted;

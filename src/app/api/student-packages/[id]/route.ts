@@ -1,5 +1,6 @@
 import { auth } from "@/auth";
 import { prisma } from "@/lib/db";
+import { recomputeParentBalance } from "@/lib/balance";
 import { NextRequest, NextResponse } from "next/server";
 
 const ACTIONS = ["cancel", "reactivate"] as const;
@@ -112,17 +113,14 @@ export async function PATCH(
       });
     }
 
-    if (action === "cancel") {
-      await tx.parentBalance.update({
-        where: { parentId: studentPackage.student.parentId },
-        data: { pendingBalance: Math.max(0, balance.pendingBalance - studentPackage.pricePaid) },
-      });
-    } else {
-      await tx.parentBalance.update({
-        where: { parentId: studentPackage.student.parentId },
-        data: { pendingBalance: balance.pendingBalance + studentPackage.pricePaid },
-      });
-    }
+    // Recomputed from source rather than +/- pricePaid floored at 0, so
+    // cancelling a package that was already covered by an overpayment
+    // correctly becomes creditBalance instead of erasing the excess.
+    const recomputed = await recomputeParentBalance(tx, studentPackage.student.parentId);
+    await tx.parentBalance.update({
+      where: { parentId: studentPackage.student.parentId },
+      data: recomputed,
+    });
 
     await tx.notification.create({
       data: {

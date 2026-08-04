@@ -181,7 +181,9 @@ function PurchasesTab() {
             ) : filtered.length === 0 ? (
               <tr><td className="py-12 text-center text-slate-400" colSpan={8}>No hay compras que coincidan</td></tr>
             ) : filtered.map((sp) => {
-              const price = sp.package.prices.find((p) => p.level === sp.student.level)?.price;
+              // What was actually charged for this purchase — not the
+              // package's current list price, which can drift from it over time.
+              const price = sp.pricePaid;
               const isActing = actionMutation.isPending && actionMutation.variables?.id === sp.id;
               const canCancel = sp.status === "ACTIVE";
               const canReactivate = sp.status === "CANCELLED" || sp.status === "CANCELLED_BY_ADMIN";
