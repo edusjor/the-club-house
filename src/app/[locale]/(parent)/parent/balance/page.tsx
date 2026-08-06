@@ -82,8 +82,6 @@ export default function ParentBalancePage() {
     [payments, activePaymentTab]
   );
 
-  const availableToOrder = Math.max(0, (balance?.creditLimit ?? 0) - (balance?.pendingBalance ?? 0));
-
   const amountValue = amountInput || (balance?.pendingBalance ? String(balance.pendingBalance) : "");
   const amount = normalizeAmountInput(amountValue);
   // Not a validation error — paying more than what's owed is allowed on
@@ -206,29 +204,6 @@ export default function ParentBalancePage() {
                     </p>
                     <p className="mt-1 text-xs text-slate-500">{t("parent.balance.totalToPay")}</p>
                   </div>
-                  <div
-                    className={`rounded-xl border p-4 ${
-                      availableToOrder > 0 ? "border-emerald-200 bg-emerald-50" : "border-red-200 bg-red-50"
-                    }`}
-                  >
-                    <p
-                      className={`text-xs font-semibold ${
-                        availableToOrder > 0 ? "text-emerald-700" : "text-red-700"
-                      }`}
-                    >
-                      {t("parent.balance.availableLabel")}
-                    </p>
-                    <p
-                      className={`mt-1 text-2xl font-black ${
-                        availableToOrder > 0 ? "text-emerald-700" : "text-red-700"
-                      }`}
-                    >
-                      {formatCurrency(availableToOrder)}
-                    </p>
-                    <p className={`mt-1 text-xs ${availableToOrder > 0 ? "text-emerald-700" : "text-red-700"}`}>
-                      {t("parent.balance.limitLabel")}: {formatCurrency(balance?.creditLimit || 0)}
-                    </p>
-                  </div>
                   <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
                     <p className="text-xs font-semibold text-amber-700">{t("parent.balance.pendingApproval")}</p>
                     <p className="mt-1 text-2xl font-black text-amber-700">
@@ -246,12 +221,6 @@ export default function ParentBalancePage() {
                     </div>
                   ) : null}
                 </div>
-
-                {availableToOrder <= 0 ? (
-                  <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-                    {t("parent.balance.limitReachedNote")}
-                  </div>
-                ) : null}
 
                 <div className="rounded-xl border border-cyan-200 bg-cyan-50 px-4 py-3 text-sm text-cyan-700">
                   <p className="font-semibold">{t("parent.balance.importantInfo")}</p>

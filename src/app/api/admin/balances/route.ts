@@ -4,7 +4,8 @@ import { NextResponse } from "next/server";
 
 export async function GET() {
   const session = await auth();
-  if (!session?.user || (session.user as { role?: string }).role !== "ADMIN") {
+  const role = (session?.user as { role?: string } | undefined)?.role;
+  if (!session?.user || (role !== "ADMIN" && role !== "VENDOR")) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -19,6 +20,11 @@ export async function GET() {
       active: true,
       parentBalance: {
         select: { pendingBalance: true, approvedBalance: true, creditBalance: true, creditLimit: true },
+      },
+      parentStudents: {
+        where: { active: true },
+        select: { name: true },
+        orderBy: { name: "asc" },
       },
     },
   });
@@ -37,6 +43,9 @@ export async function GET() {
       email: parent.email,
       phone: parent.phone,
       active: parent.active,
+      // Surfaced so the admin can search by a child's name and still land
+      // on (and visually confirm) the parent's balance row.
+      children: parent.parentStudents.map((student) => student.name),
       pendingBalance,
       approvedBalance,
       creditBalance,

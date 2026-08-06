@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
+import Link from "@/i18n/Link";
 import Header from "@/components/dashboard/Header";
 import { formatDateTime, isInternalStudentEmail } from "@/lib/utils";
 import StudentFormModal, {
@@ -191,7 +192,16 @@ export default function AdminStudentsPage() {
                         </td>
 
                         <td className="px-5 py-3.5 text-slate-700">
-                          <p className="font-medium">{student.parent?.name ?? "Sin asignar"}</p>
+                          {student.parent ? (
+                            <Link
+                              href={`/admin/parents/${student.parent.id}`}
+                              className="font-medium hover:text-cyan-700 hover:underline"
+                            >
+                              {student.parent.name}
+                            </Link>
+                          ) : (
+                            <p className="font-medium">Sin asignar</p>
+                          )}
                           <p className="text-xs text-slate-500">{student.parent?.email ?? "—"}</p>
                         </td>
 

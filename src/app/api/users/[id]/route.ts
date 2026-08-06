@@ -8,7 +8,8 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await auth();
-  if (!session?.user || (session.user as { role?: string }).role !== "ADMIN") {
+  const role = (session?.user as { role?: string } | undefined)?.role;
+  if (!session?.user || (role !== "ADMIN" && role !== "VENDOR")) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -45,12 +46,14 @@ export async function GET(
             orderBy: { createdAt: "desc" },
             select: {
               id: true,
+              studentId: true,
+              packageId: true,
               status: true,
               consumed: true,
               pricePaid: true,
               startDate: true,
               endDate: true,
-              package: { select: { name: true, validityDays: true } },
+              package: { select: { id: true, name: true, validityDays: true } },
             },
           },
         },

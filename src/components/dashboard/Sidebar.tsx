@@ -18,7 +18,6 @@ import {
   ShoppingCart,
   CreditCard,
   LogOut,
-  Calendar,
   History,
   Search,
   Baby,
@@ -63,10 +62,11 @@ const parentNav: NavItem[] = [
   { href: "/monthly-menu", labelKey: "publicNav.monthMenu", icon: Images },
   { href: "/parent/dashboard", labelKey: "nav.parent.dashboard", icon: LayoutDashboard },
   { href: "/parent/children", labelKey: "nav.parent.myChildren", icon: Baby },
-  { href: "/parent/menu", labelKey: "nav.parent.menu", icon: UtensilsCrossed },
-  { href: "/parent/plan", labelKey: "nav.parent.plan", icon: Calendar },
+  // "/parent/menu" and "/parent/plan" (Plan Meals) intentionally hidden from
+  // the menu — not in use right now. Routes/pages left intact in case
+  // they're reactivated.
   { href: "/parent/packages", labelKey: "nav.parent.packages", icon: Package },
-  { href: "/parent/history", labelKey: "nav.parent.history", icon: History },
+  // "/parent/history" (History & Tracking) intentionally hidden — see note above.
   { href: "/parent/balance", labelKey: "nav.parent.balance", icon: DollarSign },
   { href: "/parent/profile", labelKey: "nav.parent.profile", icon: UserCog },
   { href: "/guide", label: "Guide", icon: HelpCircle },
@@ -80,6 +80,8 @@ const vendorNav: NavItem[] = [
   { href: "/vendor/orders", labelKey: "nav.vendor.ordersOfDay", icon: ShoppingCart },
   { href: "/vendor/search", labelKey: "nav.vendor.searchStudent", icon: Search },
   { href: "/vendor/history", labelKey: "nav.vendor.history", icon: History },
+  { href: "/vendor/saldos", labelKey: "nav.vendor.balances", icon: DollarSign },
+  { href: "/vendor/payments", labelKey: "nav.vendor.payments", icon: CreditCard },
   { href: "/vendor/profile", labelKey: "nav.vendor.profile", icon: UserCog },
   { href: "/guide", label: "Guide", icon: HelpCircle },
 ];

@@ -2,13 +2,13 @@
 
 import ParentDetailView from "@/components/parents/ParentDetailView";
 
-export default function AdminParentDetailPage() {
+export default function VendorParentDetailPage() {
   return (
     <ParentDetailView
-      backHref="/admin/parents"
-      canEdit
+      backHref="/vendor/saldos"
+      canEdit={false}
       canManagePayments
-      canEditCreditLimit
+      canEditCreditLimit={false}
     />
   );
 }

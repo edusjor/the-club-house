@@ -135,3 +135,21 @@ export function isWeekendDate(date: Date): boolean {
   ).getUTCDay();
   return dayOfWeek === 0 || dayOfWeek === 6;
 }
+
+// Rolls an arbitrary calendar day forward to the next Monday if it falls on
+// a weekend — used for package renewal defaults (day after expiration),
+// unlike resolveEarliestSchoolDate* which is always anchored to "now".
+export function rollDateForwardOffWeekend(date: Date): Date {
+  const { year, month, day } = rollToNextSchoolDay({
+    year: date.getUTCFullYear(),
+    month: date.getUTCMonth(),
+    day: date.getUTCDate(),
+  });
+  return new Date(Date.UTC(year, month, day, 0, 0) + CR_OFFSET_MS);
+}
+
+export function toDateInputString(date: Date): string {
+  return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, "0")}-${String(
+    date.getUTCDate()
+  ).padStart(2, "0")}`;
+}

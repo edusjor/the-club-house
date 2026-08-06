@@ -6,7 +6,20 @@ import axios from "axios";
 import Header from "@/components/dashboard/Header";
 import StatusBadge from "@/components/dashboard/StatusBadge";
 import { formatCurrency, formatDate, PRICE_LEVELS } from "@/lib/utils";
+import {
+  classifyPackageLifecycle,
+  findScheduledRenewal,
+  PACKAGE_LIFECYCLE_BADGE_CLASSES,
+  type PackageLifecycle,
+} from "@/lib/package-lifecycle";
 import { Plus, Search, Edit2, Trash2, X, XCircle, RotateCcw } from "lucide-react";
+
+const LIFECYCLE_LABELS: Record<PackageLifecycle, string> = {
+  ACTIVE: "Activo",
+  EXPIRING_SOON: "Por vencer",
+  EXPIRED: "Vencido",
+  NOT_STARTED: "No iniciado",
+};
 
 type Category = { id: string; name: string };
 type PackageItem = { id?: string; categoryId: string; category?: Category };
@@ -187,6 +200,8 @@ function PurchasesTab() {
               const isActing = actionMutation.isPending && actionMutation.variables?.id === sp.id;
               const canCancel = sp.status === "ACTIVE";
               const canReactivate = sp.status === "CANCELLED" || sp.status === "CANCELLED_BY_ADMIN";
+              const lifecycle = sp.status === "ACTIVE" ? classifyPackageLifecycle(sp) : null;
+              const scheduledRenewal = lifecycle === "EXPIRED" ? findScheduledRenewal(sp, purchases) : null;
               return (
                 <tr key={sp.id} className="hover:bg-slate-50">
                   <td className="px-5 py-3.5">
@@ -197,8 +212,23 @@ function PurchasesTab() {
                   <td className="px-5 py-3.5 text-slate-700">{sp.package.name}</td>
                   <td className="px-5 py-3.5 text-right text-slate-700">{price != null ? formatCurrency(price) : "—"}</td>
                   <td className="px-5 py-3.5 text-slate-500">{formatDate(sp.startDate)}</td>
-                  <td className="px-5 py-3.5 text-slate-500">{sp.endDate ? formatDate(sp.endDate) : "Sin vencimiento"}</td>
-                  <td className="px-5 py-3.5"><StatusBadge status={sp.status} /></td>
+                  <td className="px-5 py-3.5 text-slate-500">
+                    {sp.endDate ? formatDate(sp.endDate) : "Sin vencimiento"}
+                    {scheduledRenewal ? (
+                      <div className="text-[11px] font-semibold text-emerald-600">
+                        Renovación: {formatDate(scheduledRenewal.startDate)}
+                      </div>
+                    ) : null}
+                  </td>
+                  <td className="px-5 py-3.5">
+                    {lifecycle ? (
+                      <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold ${PACKAGE_LIFECYCLE_BADGE_CLASSES[lifecycle]}`}>
+                        {LIFECYCLE_LABELS[lifecycle]}
+                      </span>
+                    ) : (
+                      <StatusBadge status={sp.status} />
+                    )}
+                  </td>
                   <td className="px-5 py-3.5 text-right">
                     {canCancel ? (
                       <button

@@ -568,10 +568,12 @@ export async function POST(req: NextRequest) {
       );
 
       // Draws down any existing creditBalance first, then charges
-      // pendingBalance for the rest — atomically, so two near-simultaneous
-      // orders from the same parent can't both slip past the credit limit.
+      // pendingBalance for the rest. Credit limit enforcement is disabled for
+      // now (product decision, 2026-08) — creditLimit still exists on
+      // ParentBalance and is still shown in the admin UI, it's just not
+      // checked here. Flip this back to true to re-enable it later.
       const charged = await chargeParentBalance(tx, parentId, totalToCharge, {
-        enforceCreditLimit: true,
+        enforceCreditLimit: false,
       });
 
       if (!charged) {

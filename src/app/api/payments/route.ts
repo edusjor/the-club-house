@@ -10,7 +10,7 @@ export async function GET() {
   const userId = (session.user as { id?: string }).id;
 
   const payments =
-    role === "ADMIN"
+    role === "ADMIN" || role === "VENDOR"
       ? await prisma.payment.findMany({
           include: {
             parent: {

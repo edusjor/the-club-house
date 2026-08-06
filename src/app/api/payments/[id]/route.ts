@@ -10,7 +10,8 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await auth();
-  if (!session?.user || (session.user as { role?: string }).role !== "ADMIN") {
+  const role = (session?.user as { role?: string } | undefined)?.role;
+  if (!session?.user || (role !== "ADMIN" && role !== "VENDOR")) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

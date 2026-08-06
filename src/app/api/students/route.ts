@@ -84,11 +84,22 @@ export async function GET() {
       OR: [{ user: { role: "STUDENT" } }, { user: { role: "PARENT", isStaff: true } }],
     },
     include: {
-      parent: { select: { name: true, phone: true } },
+      parent: {
+        select: {
+          id: true,
+          name: true,
+          phone: true,
+          // Family-level payment signal for the vendor "Find Student" cards —
+          // there's no per-purchase payment ledger, so this reflects the
+          // account as a whole, not a specific package.
+          parentBalance: { select: { pendingBalance: true } },
+        },
+      },
       user: { select: { id: true, name: true, email: true, phone: true, active: true, role: true } },
       studentPackages: {
         where: { status: "ACTIVE" },
         include: { package: true },
+        orderBy: { startDate: "desc" },
       },
     },
     orderBy: { name: "asc" },
