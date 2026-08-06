@@ -239,6 +239,32 @@ export async function POST(req: NextRequest) {
       ? new Date(effectiveStartDate.getTime() + pkg.validityDays * 24 * 60 * 60 * 1000)
       : null;
 
+  // Server-side backstop for the "renew instead of buy a new one" rule the
+  // UI already enforces via its dropdown filter — this blocks two ACTIVE
+  // packages of the same type overlapping in time for the same student
+  // (double-charging them for the same coverage window), while still
+  // allowing a renewal purchase that starts after the current one ends.
+  const existingActiveOfType = await prisma.studentPackage.findMany({
+    where: { studentId, packageId, status: "ACTIVE" },
+    select: { startDate: true, endDate: true },
+  });
+  const newStartMs = effectiveStartDate.getTime();
+  const newEndMs = endDate ? endDate.getTime() : Infinity;
+  const hasOverlap = existingActiveOfType.some((existing) => {
+    const existingStartMs = existing.startDate.getTime();
+    const existingEndMs = existing.endDate ? existing.endDate.getTime() : Infinity;
+    return newStartMs <= existingEndMs && existingStartMs <= newEndMs;
+  });
+  if (hasOverlap) {
+    return NextResponse.json(
+      {
+        error:
+          "Este estudiante ya tiene un paquete de este tipo activo en ese rango de fechas. Usa la opción de renovar en vez de comprar uno nuevo.",
+      },
+      { status: 409 }
+    );
+  }
+
   const result = await prisma.$transaction(async (tx) => {
     const studentPackage = await tx.studentPackage.create({
       data: {

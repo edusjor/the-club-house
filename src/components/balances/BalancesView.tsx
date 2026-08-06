@@ -6,9 +6,8 @@ import axios from "axios";
 import Link from "@/i18n/Link";
 import Header from "@/components/dashboard/Header";
 import { formatCurrency } from "@/lib/utils";
-import { cn } from "@/lib/utils";
 import { useTranslations } from "@/i18n/I18nProvider";
-import { Search, Pencil, Wallet, AlertTriangle, TrendingUp } from "lucide-react";
+import { Search, Pencil, Wallet, TrendingUp } from "lucide-react";
 
 type ParentBalanceRow = {
   id: string;
@@ -147,15 +146,12 @@ export default function BalancesView({
   }, [balances, search, amountField, operator, amountValue]);
 
   const totalPending = useMemo(() => balances.reduce((sum, b) => sum + b.pendingBalance, 0), [balances]);
-  const atOrOverLimitCount = useMemo(
-    () => balances.filter((b) => b.available === 0).length,
-    [balances]
-  );
 
-  // Credit limit isn't in active use right now — the vendor's table only
-  // shows who a parent is and what they currently owe (2 columns); the
-  // limit/available/status/edit columns stay admin-only.
-  const columnCount = canEditLimit ? 6 : 2;
+  // Credit limit isn't in active use right now — hiding the limit/available/
+  // status columns (and the "at limit" tile) for everyone, admin included,
+  // so nobody reads them as if the limit were actually blocking anything.
+  // Admin still gets an edit action to adjust limits ahead of reactivating it.
+  const columnCount = canEditLimit ? 3 : 2;
 
   return (
     <div>
@@ -168,14 +164,6 @@ export default function BalancesView({
             </div>
             <div className="mt-1 text-3xl font-black text-slate-900">{formatCurrency(totalPending)}</div>
           </div>
-          {canEditLimit ? (
-            <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-              <div className="flex items-center gap-2 text-sm text-slate-500">
-                <AlertTriangle className="h-4 w-4" /> {t("balancesView.atLimitCount")}
-              </div>
-              <div className="mt-1 text-3xl font-black text-slate-900">{atOrOverLimitCount}</div>
-            </div>
-          ) : null}
           <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
             <div className="flex items-center gap-2 text-sm text-slate-500">
               <TrendingUp className="h-4 w-4" /> {t("balancesView.usersWithBalance")}
@@ -244,10 +232,7 @@ export default function BalancesView({
             <thead className="bg-slate-50 text-xs font-semibold uppercase tracking-wide text-slate-500">
               <tr>
                 <th className="px-5 py-3 text-left">{t("balancesView.colParent")}</th>
-                {canEditLimit ? <th className="px-5 py-3 text-right">{t("balancesView.colLimit")}</th> : null}
                 <th className="px-5 py-3 text-right">{canEditLimit ? t("balancesView.colSpent") : t("balancesView.colSpentVendor")}</th>
-                {canEditLimit ? <th className="px-5 py-3 text-right">{t("balancesView.colAvailable")}</th> : null}
-                {canEditLimit ? <th className="px-5 py-3 text-left">{t("balancesView.colStatus")}</th> : null}
                 {canEditLimit ? <th className="px-5 py-3" /> : null}
               </tr>
             </thead>
@@ -257,9 +242,6 @@ export default function BalancesView({
               ) : filtered.length === 0 ? (
                 <tr><td className="py-12 text-center text-slate-400" colSpan={columnCount}>{t("balancesView.noResults")}</td></tr>
               ) : filtered.map((balance) => {
-                const isOverLimit = balance.overLimitBy > 0;
-                const isAtLimit = !isOverLimit && balance.available === 0;
-
                 const query = search.trim().toLowerCase();
 
                 return (
@@ -288,9 +270,6 @@ export default function BalancesView({
                         </div>
                       ) : null}
                     </td>
-                    {canEditLimit ? (
-                      <td className="px-5 py-3.5 text-right text-slate-700">{formatCurrency(balance.creditLimit)}</td>
-                    ) : null}
                     <td className="px-5 py-3.5 text-right font-semibold text-slate-900">
                       {formatCurrency(balance.pendingBalance)}
                       {balance.creditBalance ? (
@@ -299,29 +278,6 @@ export default function BalancesView({
                         </div>
                       ) : null}
                     </td>
-                    {canEditLimit ? (
-                      <td className="px-5 py-3.5 text-right text-slate-700">{formatCurrency(balance.available)}</td>
-                    ) : null}
-                    {canEditLimit ? (
-                      <td className="px-5 py-3.5">
-                        <span
-                          className={cn(
-                            "inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold",
-                            isOverLimit
-                              ? "bg-red-100 text-red-700"
-                              : isAtLimit
-                              ? "bg-yellow-100 text-yellow-700"
-                              : "bg-emerald-100 text-emerald-700"
-                          )}
-                        >
-                          {isOverLimit
-                            ? t("balancesView.overLimitBy").replace("{amount}", formatCurrency(balance.overLimitBy))
-                            : isAtLimit
-                            ? t("balancesView.noRoom")
-                            : t("balancesView.hasRoom")}
-                        </span>
-                      </td>
-                    ) : null}
                     {canEditLimit ? (
                       <td className="px-5 py-3.5 text-right">
                         <button

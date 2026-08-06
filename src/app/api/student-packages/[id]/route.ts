@@ -5,11 +5,11 @@ import { NextRequest, NextResponse } from "next/server";
 
 const ACTIONS = ["cancel", "reactivate"] as const;
 
-// A parent can only self-cancel within 30 minutes of the purchase (an "oops"
+// A parent can only self-cancel within 10 minutes of the purchase (an "oops"
 // undo window) — regardless of whether the coverage start date has already
 // arrived. Past that, only an admin can cancel or edit it. Mirrored
 // client-side in parent/packages/page.tsx.
-const PARENT_CANCEL_WINDOW_MS = 30 * 60 * 1000;
+const PARENT_CANCEL_WINDOW_MS = 10 * 60 * 1000;
 
 export async function PATCH(
   req: NextRequest,
@@ -69,7 +69,7 @@ export async function PATCH(
       return NextResponse.json(
         {
           error:
-            "Ya pasaron los 30 minutos para cancelar esta compra. Solicita la cancelación a un administrador.",
+            "Ya pasaron los 10 minutos para cancelar esta compra. Solicita la cancelación a un administrador.",
         },
         { status: 400 }
       );

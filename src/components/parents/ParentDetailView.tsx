@@ -79,6 +79,7 @@ type ParentDetail = {
     comment?: string | null;
     createdAt: string;
     orderId?: string | null;
+    approvedBy?: { name: string; role: string } | null;
   }>;
   parentStudents: Array<{
     id: string;
@@ -728,6 +729,12 @@ export default function ParentDetailView({
                       <td className="px-5 py-3.5 font-semibold text-slate-900">{formatCurrency(payment.amount)}</td>
                       <td className="px-5 py-3.5">
                         <StatusBadge status={payment.status} />
+                        {payment.status === "APPROVED" && payment.approvedBy ? (
+                          <div className="mt-1 text-[11px] text-slate-500">
+                            {t("parentDetailView.approvedBy")}: {payment.approvedBy.name}
+                            {payment.approvedBy.role === "VENDOR" ? ` (${t("status.vendor")})` : ""}
+                          </div>
+                        ) : null}
                       </td>
                       <td className="px-5 py-3.5 text-xs text-slate-500">
                         {parsedReceipt?.kind === "UPLOAD" ? (

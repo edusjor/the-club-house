@@ -26,6 +26,7 @@ type Payment = {
     parentBalance?: { pendingBalance: number; creditBalance: number } | null;
   };
   order?: { id: string; total: number };
+  approvedBy?: { name: string; role: string } | null;
 };
 
 function fill(template: string, values: Record<string, string>): string {
@@ -119,6 +120,16 @@ function PaymentCard({
             ) : null}
           </p>
           <p className="mt-1 text-xs text-slate-500">{formatDateTime(payment.createdAt)}</p>
+          {payment.status === "APPROVED" && payment.approvedBy ? (
+            <p className="mt-1 text-xs text-slate-500">
+              {t("paymentsView.approvedBy")}: <span className="font-semibold text-slate-700">{payment.approvedBy.name}</span>
+              {payment.approvedBy.role === "VENDOR" ? (
+                <span className="ml-1 rounded-full bg-orange-100 px-1.5 py-0.5 text-[10px] font-bold text-orange-700">
+                  {t("status.vendor")}
+                </span>
+              ) : null}
+            </p>
+          ) : null}
           {receipt?.kind === "UPLOAD" ? (
             <p className="mt-2 text-xs text-slate-500">
               {t("paymentsView.receipt")}: {formatReceiptSummary(payment.receipt)} ·{" "}

@@ -21,7 +21,7 @@ export async function GET() {
               },
             },
             order: { select: { id: true, total: true } },
-            approvedBy: { select: { name: true } },
+            approvedBy: { select: { name: true, role: true } },
           },
           orderBy: { createdAt: "desc" },
         })

@@ -45,11 +45,11 @@ type StudentPackage = {
   package: { id: string; name: string; validityDays?: number | null; prices: PriceRow[] };
 };
 
-// A parent can only self-cancel a purchase within 30 minutes of buying it
+// A parent can only self-cancel a purchase within 10 minutes of buying it
 // (an "oops" undo window) — regardless of the coverage start date. Past
 // that, only an admin can cancel or edit it. Mirrors the server-side check
 // in /api/student-packages/[id].
-const CANCEL_WINDOW_MS = 30 * 60 * 1000;
+const CANCEL_WINDOW_MS = 10 * 60 * 1000;
 
 function isWithinCancelWindow(createdAt: string, reference: Date = new Date()): boolean {
   return reference.getTime() - new Date(createdAt).getTime() <= CANCEL_WINDOW_MS;

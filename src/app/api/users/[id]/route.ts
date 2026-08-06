@@ -106,6 +106,7 @@ export async function GET(
           comment: true,
           createdAt: true,
           orderId: true,
+          approvedBy: { select: { name: true, role: true } },
         },
       },
     },
