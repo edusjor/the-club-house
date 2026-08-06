@@ -36,7 +36,8 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    const resetUrl = `${req.nextUrl.origin}${localePath(locale, `/reset-password?token=${token}`)}`;
+    const baseUrl = process.env.NEXTAUTH_URL?.replace(/\/$/, "") || req.nextUrl.origin;
+    const resetUrl = `${baseUrl}${localePath(locale, `/reset-password?token=${token}`)}`;
 
     try {
       await sendMail({
